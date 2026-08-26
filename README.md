@@ -38,7 +38,9 @@ Where Backlog.md has a relationship, Muster shows it without inventing a shape f
 | [pnpm](https://pnpm.io)                                | 11 or newer                       |
 | [Wails v3 CLI](https://v3.wails.io)                    | v3.0.0-beta.8                     |
 | [golangci-lint](https://golangci-lint.run)             | v2 (needed by the git hooks)      |
-| [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 (at runtime, not to build) |
+| [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 minimum, 1.50.1 recommended (at runtime, not to build) |
+
+1.48.0 is the floor because that is the version the [format contract](<backlog/docs/doc-3 - Backlog.md-Format-Contract.md>) was measured against; 1.50.1 writes byte-identical files but reports two failures that 1.48.0 swallows, so it is what the author runs. Muster never relies on an exit code for a write whose result it can check.
 
 The two Go tools install themselves:
 

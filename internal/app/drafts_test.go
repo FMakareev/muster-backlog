@@ -205,3 +205,28 @@ func TestRevisingRefusesWhatCannotWork(t *testing.T) {
 		t.Errorf("a refused revision changed the inbox: %v", titles(got))
 	}
 }
+
+// A write whose outcome can be checked is checked, because a zero exit is not
+// proof: on 1.48.0 both promote and archive exit 0 for an id they cannot find.
+func TestDraftWritesAreConfirmedByOutcome(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "Still here", time.Now())
+	s := startService(t, withRegistry(t, one))
+
+	for name, act := range map[string]func() app.WriteResult{
+		"promote": func() app.WriteResult { return s.PromoteDraft(one, "DRAFT-404") },
+		"discard": func() app.WriteResult { return s.DiscardDraft(one, "DRAFT-404") },
+	} {
+		result := act()
+		if result.OK {
+			t.Errorf("%s of an id that does not resolve reported success", name)
+		}
+	}
+	// And the real note is untouched by any of it.
+	if got := s.Drafts(); len(got) != 1 || got[0].Entity.Title != "Still here" {
+		t.Errorf("the inbox changed: %v", titles(got))
+	}
+}

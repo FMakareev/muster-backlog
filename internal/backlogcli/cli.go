@@ -27,7 +27,26 @@ const BinaryName = "backlog"
 
 // MinimumVersion is the oldest CLI this was verified against. The on-disk
 // format contract in the project documentation was derived from it.
-const MinimumVersion = "1.48.0"
+//
+// It stays at 1.48.0 rather than following the newest release, because that is
+// the version the format was measured on and raising it would turn an
+// unmeasured claim into a hard requirement on someone else's machine.
+//
+// RecommendedVersion is where the known differences stop mattering, and 1.48.0
+// carries one that does: `draft promote` and `draft archive` exit 0 there when
+// the id does not resolve, so a write that did nothing looks like a write that
+// worked. Muster does not rely on the exit code for those - it checks that the
+// note actually left the inbox - but the check exists because of this.
+const (
+	MinimumVersion     = "1.48.0"
+	RecommendedVersion = "1.50.1"
+)
+
+// AtLeastRecommended reports whether the resolved CLI is new enough that none
+// of the known older behaviours apply.
+func (r *Runner) AtLeastRecommended() bool {
+	return atLeast(r.version, RecommendedVersion)
+}
 
 // DefaultTimeout bounds a single command. The CLI is fast; anything that hangs
 // this long is stuck, and an application that waits forever looks broken.

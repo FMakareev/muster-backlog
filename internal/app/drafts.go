@@ -78,10 +78,11 @@ func sortDrafts(drafts []DraftView) {
 
 // PromoteDraft turns a draft into a task in its own project.
 func (s *BoardService) PromoteDraft(projectPath, draftID string) WriteResult {
-	return s.write(projectPath, fmt.Sprintf("%s could not be promoted", draftID),
+	result := s.write(projectPath, fmt.Sprintf("%s could not be promoted", draftID),
 		func(cli *backlogcli.Runner) error {
 			return cli.PromoteDraft(context.Background(), s.dataDirFor(projectPath), draftID)
 		})
+	return s.confirmDraftLeft(result, projectPath, draftID, "promoted")
 }
 
 // DiscardDraft archives a draft.
@@ -89,10 +90,48 @@ func (s *BoardService) PromoteDraft(projectPath, draftID string) WriteResult {
 // Archiving rather than deleting: Backlog.md has no delete, and a note
 // captured in a hurry is exactly the kind of thing someone wants back.
 func (s *BoardService) DiscardDraft(projectPath, draftID string) WriteResult {
-	return s.write(projectPath, fmt.Sprintf("%s could not be discarded", draftID),
+	result := s.write(projectPath, fmt.Sprintf("%s could not be discarded", draftID),
 		func(cli *backlogcli.Runner) error {
 			return cli.ArchiveDraft(context.Background(), s.dataDirFor(projectPath), draftID)
 		})
+	return s.confirmDraftLeft(result, projectPath, draftID, "discarded")
+}
+
+// confirmDraftLeft checks that a draft actually left the inbox.
+//
+// Not defensiveness for its own sake: on 1.48.0 both `draft promote` and
+// `draft archive` exit 0 when the id does not resolve, so a write that did
+// nothing at all arrives here as a success. 1.50.1 exits 1, but the check is
+// cheap and the store has already been re-read by this point, so it costs a
+// map lookup and holds on every version.
+func (s *BoardService) confirmDraftLeft(
+	result WriteResult, projectPath, draftID, what string,
+) WriteResult {
+	if !result.OK || !s.draftPresent(projectPath, draftID) {
+		return result
+	}
+	return WriteResult{Problem: &Problem{
+		Kind:  ProblemCLI,
+		Title: fmt.Sprintf("%s was not %s", draftID, what),
+		Detail: "Backlog.md reported no error and the note is still in the " +
+			"inbox. On CLI versions before " + backlogcli.RecommendedVersion +
+			" that is what an id it could not find looks like.",
+		Path: projectPath,
+	}}
+}
+
+// draftPresent reports whether a draft is still waiting in a project.
+func (s *BoardService) draftPresent(projectPath, draftID string) bool {
+	for _, item := range s.store.Entities(backlog.KindDraft) {
+		if item.Ref.Class != backlog.ClassActive {
+			continue
+		}
+		if item.Ref.Project == projectPath &&
+			strings.EqualFold(item.Ref.ID, draftID) {
+			return true
+		}
+	}
+	return false
 }
 
 // DraftEdit is a draft's editable content, as the CLI defines it.

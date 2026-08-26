@@ -469,6 +469,25 @@ Package `backlog.md@1.48.0`, installed via pnpm, running the compiled `backlog.m
 
 **Re-derive this contract on every Backlog.md minor release.** The two checks that matter most: the section-marker constants and the frontmatter serialiser field order, both readable straight out of the binary.
 
+### 7.1 Re-derived against 1.50.1 (2026-08-26)
+
+The contract holds unchanged. Rather than reading the constants back out of a newer binary, the serialiser was compared by what it writes: both versions initialised a project and wrote a task carrying every section and every optional key — description, two acceptance criteria, a definition-of-done item, plan, notes, final summary, labels, assignee, priority, type, ordinal, reference, documentation and modified file — plus a draft.
+
+**The files are byte-identical**, as are `config.yml` and the eleven-directory skeleton. Nothing in sections 1 to 6 changes.
+
+Four behavioural differences matter to a program driving the CLI, none of them to the format:
+
+| | 1.48.0 | 1.50.1 |
+| :-- | :-- | :-- |
+| `draft promote` / `draft archive` with an id that does not resolve | prints nothing useful, **exits 0** | exits 1 |
+| `task edit` on a `DRAFT-` id | "Task DRAFT-1 not found", exits 1 | same, with a note about branches |
+| `backlog init` with no project name and `--defaults` | prompts, finds no terminal, **exits 0 having created nothing** | unchanged |
+| Read commands | plain text only | stable JSON output available |
+
+The first is why Muster checks that a promoted or discarded note actually left the inbox instead of trusting the exit code, and the third is why the project name is always passed to `init` rather than left to the CLI's own default.
+
+**Still absent in 1.50.1: any way to edit a draft.** There is no `draft edit`, and `task edit` refuses a `DRAFT-` id. A draft can be created with the full task field surface through `task create --draft`, and it can be promoted or archived, but between those two points it cannot be changed. Anything calling itself draft editing is capture-and-discard.
+
 ---
 
 ## 8. Where the CLI and the corpus diverge
