@@ -16,6 +16,8 @@ Muster is that view: one board, one list, one search, one set of numbers, over e
 
 An ordinary task manager — kanban with drag-and-drop, a sortable list, filters, cross-project search, a drafts inbox, a reader for project documents and decisions, and analytics. Nothing about that is novel. The only thing that is: all of it spans every registered project at once, and any folder on your disk can become one from inside the application.
 
+Where Backlog.md has a relationship, Muster shows it without inventing a shape for it. Subtasks are the case that tempts a redesign: a parent card says how many of its subtasks are finished and a subtask card says whose it is, but the board stays flat and the links live in the task panel. Nesting cards inside cards would cost more legibility across nine projects than the relationship is worth.
+
 ## What it is not
 
 - **Not a replacement for Backlog.md.** It is a view onto it.

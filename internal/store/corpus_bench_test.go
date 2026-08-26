@@ -88,4 +88,24 @@ func TestLoadRealCorpusWithinBudget(t *testing.T) {
 	start = time.Now()
 	got := s.Query(store.Query{Statuses: []string{"To Do"}})
 	t.Logf("querying %d of %d tasks took %s", len(got), tasks, time.Since(start))
+
+	// The kin index is rebuilt on every board refresh, so its cost is paid
+	// alongside the query rather than once at startup.
+	start = time.Now()
+	kin := s.KinIndex()
+	elapsed = time.Since(start)
+	var resolved, counted int
+	for _, k := range kin {
+		if k.Parent != nil {
+			resolved++
+		}
+		counted += len(k.Children)
+	}
+	// The two differ by the archived subtasks, which keep their link upwards
+	// and are counted under no parent.
+	t.Logf("resolved %d parent links, %d of them counted as subtasks, in %s",
+		resolved, counted, elapsed)
+	if elapsed > 50*time.Millisecond {
+		t.Errorf("kin index took %s over the whole corpus", elapsed)
+	}
 }

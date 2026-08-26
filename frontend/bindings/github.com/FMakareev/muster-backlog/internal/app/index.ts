@@ -20,6 +20,8 @@ export type {
     ConflictView,
     CountView,
     CreateResult,
+    EntityRef,
+    FamilyView,
     MilestoneView,
     NewTaskInput,
     Problem,

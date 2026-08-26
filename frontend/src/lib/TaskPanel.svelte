@@ -1,5 +1,6 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
+  import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
   import { milestoneLabel, milestones, refresh, settings } from "./board";
   import { projectColour } from "./colour";
   import { notify } from "./notices";
@@ -119,6 +120,50 @@
     await refresh();
   }
 
+  /**
+   * Subtasks are fetched when a task is opened, not carried on every card.
+   *
+   * The board asks for hundreds of cards at once and each shows only a count;
+   * the list with titles and statuses is worth a request only here.
+   */
+  let subtasks = $state<TaskView[]>([]);
+  let subtaskToken = 0;
+
+  $effect(() => {
+    const open = task;
+    if (!open) {
+      subtasks = [];
+      return;
+    }
+    const mine = ++subtaskToken;
+    void BoardService.Subtasks(
+      open.project,
+      open.kind,
+      open.class,
+      open.id,
+    ).then((found) => {
+      // A slower earlier request must not land on a later task.
+      if (mine !== subtaskToken) return;
+      subtasks = found ?? [];
+    });
+  });
+
+  const parent = $derived(task?.family?.parent ?? null);
+
+  function openRef(ref: {
+    project: string;
+    kind: string;
+    class: string;
+    id: string;
+  }): void {
+    openTask({
+      project: ref.project,
+      kind: ref.kind,
+      class: ref.class,
+      id: ref.id,
+    });
+  }
+
   function shortDate(value: string): string {
     if (!value || value.startsWith("0001-01-01")) return "";
     return value.slice(0, 16).replace("T", " ");
@@ -168,6 +213,31 @@
     </header>
 
     <div class="flex flex-col gap-4 px-4 py-3">
+      {#if entity.ParentTaskID}
+        <p class="-mb-2 flex items-baseline gap-2 text-data text-chalk-faint">
+          <span>Subtask of</span>
+          {#if parent}
+            <button
+              type="button"
+              class="border-b border-chalk-faint font-mono text-chalk hover:border-chalk"
+              onclick={() => openRef(parent)}
+            >
+              {parent.id}
+            </button>
+            <span class="truncate text-chalk-dim"
+              >{task.family?.parentTitle}</span
+            >
+          {:else}
+            <span
+              class="font-mono"
+              title="No task with this id in {task.projectName}"
+            >
+              {entity.ParentTaskID}
+            </span>
+          {/if}
+        </p>
+      {/if}
+
       {#if renaming}
         <input
           class="w-full"
@@ -244,6 +314,38 @@
                     {id}
                   </span>
                 {/if}
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/if}
+
+      {#if subtasks.length > 0}
+        <section>
+          <h3
+            class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+          >
+            Subtasks {task.family?.done ?? 0}/{task.family?.total ??
+              subtasks.length}
+          </h3>
+          <ul class="mt-1 flex flex-col">
+            {#each subtasks as child (child.project + child.class + child.id)}
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-baseline gap-2 py-1 text-left hover:bg-ink"
+                  onclick={() => openRef(child)}
+                >
+                  <span class="font-mono text-data text-chalk-faint"
+                    >{child.id}</span
+                  >
+                  <span class="min-w-0 flex-1 truncate text-data text-chalk"
+                    >{child.entity.Title}</span
+                  >
+                  <span class="font-mono text-micro text-chalk-faint"
+                    >{child.entity.Status}</span
+                  >
+                </button>
               </li>
             {/each}
           </ul>

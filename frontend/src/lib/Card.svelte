@@ -22,6 +22,19 @@
   const colour = $derived(
     task ? projectColour(task.project, task.projectColour) : "transparent",
   );
+
+  /**
+   * Subtasks are shown as a count, never as nesting.
+   *
+   * A nested board is a worse board: the columns are already carrying nine
+   * projects, and indenting some cards under others would cost more legibility
+   * than the relationship is worth. A parent says how many of its subtasks are
+   * finished, a subtask says whose it is, and the panel has the links.
+   */
+  const family = $derived(task?.family ?? null);
+  const parentID = $derived(
+    family?.parent?.id ?? task?.entity.ParentTaskID ?? "",
+  );
 </script>
 
 {#if task}
@@ -49,8 +62,28 @@
 
     <span class="text-body text-chalk">{task.entity.Title}</span>
 
-    {#if task.entity.Milestone || (task.entity.Labels?.length ?? 0) > 0 || (task.entity.Assignee?.length ?? 0) > 0}
+    {#if parentID || (family?.total ?? 0) > 0 || task.entity.Milestone || (task.entity.Labels?.length ?? 0) > 0 || (task.entity.Assignee?.length ?? 0) > 0}
       <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        {#if (family?.total ?? 0) > 0}
+          <span
+            class="rounded-[2px] border border-rule px-1 font-mono text-micro text-chalk-dim"
+            title="{family?.done} of {family?.total} subtasks finished"
+          >
+            {family?.done}/{family?.total} subtasks
+          </span>
+        {/if}
+        {#if parentID}
+          <!-- The id rather than the parent's title: it is what the board and
+               the search box are keyed by, and a title would not fit here. -->
+          <span
+            class="rounded-[2px] border border-rule px-1 font-mono text-micro text-chalk-dim"
+            title={family?.parentTitle
+              ? `Subtask of ${parentID} — ${family.parentTitle}`
+              : `Subtask of ${parentID}, which is not in this project`}
+          >
+            ↳ {parentID}
+          </span>
+        {/if}
         {#if task.entity.Milestone}
           <!-- Named, and marked as a milestone: a bare id like m-1 reads
                exactly like a task id and tells nobody anything. -->

@@ -84,12 +84,7 @@ func (s *Store) Analytics(opts AnalyticsOptions) []Analytics {
 			continue
 		}
 
-		// "Finished" is the last status a project declares: the only
-		// definition the format offers.
-		var terminal string
-		if list := state.Scanned.Config.Statuses; len(list) > 0 {
-			terminal = list[len(list)-1]
-		}
+		terminal := terminalStatus(state)
 
 		a := Analytics{Project: path, ProjectName: state.Registry.DisplayName}
 		ps, pp, pt := map[string]int{}, map[string]int{}, map[string]int{}

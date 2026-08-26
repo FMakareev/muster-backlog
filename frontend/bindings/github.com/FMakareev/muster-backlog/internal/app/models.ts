@@ -83,6 +83,42 @@ export interface CreateResult {
 }
 
 /**
+ * EntityRef names one entity, in the shape the interface uses to open it.
+ */
+export interface EntityRef {
+    "project": string;
+    "kind": backlog$0.Kind;
+    "class": backlog$0.Class;
+    "id": string;
+}
+
+/**
+ * FamilyView is what a card needs to show a parent or subtask relationship
+ * without asking for anything else.
+ * 
+ * Counts rather than the subtasks themselves: the board asks for hundreds of
+ * cards at once and a card only ever shows how many there are. The panel asks
+ * for the list separately, once, when a task is opened.
+ */
+export interface FamilyView {
+    /**
+     * Parent is where the parent lives, which is not always the same
+     * directory the child is in. Nil when the task has no parent, and also
+     * when it declares one that no file answers to - the declared id is on the
+     * entity either way.
+     */
+    "parent"?: EntityRef | null;
+    "parentTitle"?: string;
+
+    /**
+     * Done and Total count subtasks. Archived subtasks are in neither, since
+     * the board does not show them.
+     */
+    "done": number;
+    "total": number;
+}
+
+/**
  * MilestoneView is one milestone, with enough to show it by name and to see
  * how far along it is.
  */
@@ -274,6 +310,13 @@ export interface TaskView {
     "class": backlog$0.Class;
     "id": string;
     "entity": backlog$0.Entity;
+
+    /**
+     * Family is present only for a task that has a parent or subtasks, which
+     * is 92 of the 712 in the author's projects. Nil for everything else, so
+     * the relationship costs nothing on the cards that have none.
+     */
+    "family"?: FamilyView | null;
 }
 
 /**

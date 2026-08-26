@@ -102,6 +102,59 @@ type TaskView struct {
 	Class         backlog.Class  `json:"class"`
 	ID            string         `json:"id"`
 	Entity        backlog.Entity `json:"entity"`
+	// Family is present only for a task that has a parent or subtasks, which
+	// is 92 of the 712 in the author's projects. Nil for everything else, so
+	// the relationship costs nothing on the cards that have none.
+	Family *FamilyView `json:"family,omitempty"`
+}
+
+// EntityRef names one entity, in the shape the interface uses to open it.
+type EntityRef struct {
+	Project string        `json:"project"`
+	Kind    backlog.Kind  `json:"kind"`
+	Class   backlog.Class `json:"class"`
+	ID      string        `json:"id"`
+}
+
+// FamilyView is what a card needs to show a parent or subtask relationship
+// without asking for anything else.
+//
+// Counts rather than the subtasks themselves: the board asks for hundreds of
+// cards at once and a card only ever shows how many there are. The panel asks
+// for the list separately, once, when a task is opened.
+type FamilyView struct {
+	// Parent is where the parent lives, which is not always the same
+	// directory the child is in. Nil when the task has no parent, and also
+	// when it declares one that no file answers to - the declared id is on the
+	// entity either way.
+	Parent      *EntityRef `json:"parent,omitempty"`
+	ParentTitle string     `json:"parentTitle,omitempty"`
+	// Done and Total count subtasks. Archived subtasks are in neither, since
+	// the board does not show them.
+	Done  int `json:"done"`
+	Total int `json:"total"`
+}
+
+// familyOf turns a resolved relationship into what the interface needs, or nil
+// when there is no relationship to show.
+func familyOf(kin store.Kin, ok bool) *FamilyView {
+	if !ok || (kin.Parent == nil && len(kin.Children) == 0) {
+		return nil
+	}
+	out := &FamilyView{
+		ParentTitle: kin.ParentTitle,
+		Done:        kin.Done,
+		Total:       len(kin.Children),
+	}
+	if kin.Parent != nil {
+		out.Parent = &EntityRef{
+			Project: kin.Parent.Project,
+			Kind:    kin.Parent.Kind,
+			Class:   kin.Parent.Class,
+			ID:      kin.Parent.ID,
+		}
+	}
+	return out
 }
 
 // QueryInput is the filter set the frontend sends. Every field is optional and
@@ -380,17 +433,37 @@ func (s *BoardService) Projects() []ProjectView {
 // Tasks returns every task matching a query, across every project.
 func (s *BoardService) Tasks(q QueryInput) []TaskView {
 	items := s.store.Query(q.toQuery())
+	// Resolved once for the whole answer rather than per card: the same slice
+	// would otherwise be scanned once for every task on the board.
+	kin := s.store.KinIndex()
 	out := make([]TaskView, 0, len(items))
 	for _, it := range items {
-		out = append(out, TaskView{
-			Project:       it.Ref.Project,
-			ProjectName:   it.ProjectName,
-			ProjectColour: it.ProjectColour,
-			Kind:          it.Ref.Kind,
-			Class:         it.Ref.Class,
-			ID:            it.Ref.ID,
-			Entity:        it.Entity,
-		})
+		k, ok := kin[it.Ref]
+		out = append(out, taskView(it, familyOf(k, ok)))
+	}
+	return out
+}
+
+// Subtasks returns a task's subtasks, in the order the project scan produced.
+//
+// Separate from the card payload on purpose: this is asked once when a task is
+// opened, where the board asks for every card at once.
+func (s *BoardService) Subtasks(projectPath, kind, class, id string) []TaskView {
+	ref := store.Ref{
+		Project: projectPath,
+		Key: backlog.Key{
+			Kind: backlog.Kind(kind), Class: backlog.Class(class), ID: id,
+		},
+	}
+	kin := s.store.KinIndex()
+	out := make([]TaskView, 0, len(kin[ref].Children))
+	for _, child := range kin[ref].Children {
+		item, ok := s.store.Get(child)
+		if !ok {
+			continue
+		}
+		k, has := kin[child]
+		out = append(out, taskView(item, familyOf(k, has)))
 	}
 	return out
 }
@@ -406,15 +479,9 @@ func (s *BoardService) Task(projectPath string, kind, class, id string) (TaskVie
 	if !ok {
 		return TaskView{}, false
 	}
-	return TaskView{
-		Project:       item.Ref.Project,
-		ProjectName:   item.ProjectName,
-		ProjectColour: item.ProjectColour,
-		Kind:          item.Ref.Kind,
-		Class:         item.Ref.Class,
-		ID:            item.Ref.ID,
-		Entity:        item.Entity,
-	}, true
+	kin := s.store.KinIndex()
+	k, has := kin[item.Ref]
+	return taskView(item, familyOf(k, has)), true
 }
 
 // FilterValues returns the distinct values of one field across every project,
@@ -663,15 +730,8 @@ func (s *BoardService) Entities(kind string) []TaskView {
 
 	out := make([]TaskView, 0, len(items))
 	for _, it := range items {
-		out = append(out, TaskView{
-			Project:       it.Ref.Project,
-			ProjectName:   it.ProjectName,
-			ProjectColour: it.ProjectColour,
-			Kind:          it.Ref.Kind,
-			Class:         it.Ref.Class,
-			ID:            it.Ref.ID,
-			Entity:        it.Entity,
-		})
+		// Documents and milestones have no parent or subtasks to resolve.
+		out = append(out, taskView(it, nil))
 	}
 	return out
 }
@@ -729,11 +789,11 @@ func (s *BoardService) Analytics() []AnalyticsView {
 			AverageAgeDays: r.AverageAgeDays,
 		}
 		for _, item := range r.Stale {
-			view.Stale = append(view.Stale, taskView(item))
+			view.Stale = append(view.Stale, taskView(item, nil))
 		}
 		for _, b := range r.Blocked {
 			view.Blocked = append(view.Blocked, BlockedView{
-				Task: taskView(b.Item), On: b.On,
+				Task: taskView(b.Item, nil), On: b.On,
 			})
 		}
 		out = append(out, view)
@@ -806,7 +866,9 @@ func counts(in []store.Count) []CountView {
 	return out
 }
 
-func taskView(it store.Item) TaskView {
+// taskView assembles one task for the frontend. Family is nil wherever the
+// relationship has not been resolved, which is every list that is not tasks.
+func taskView(it store.Item, family *FamilyView) TaskView {
 	return TaskView{
 		Project:       it.Ref.Project,
 		ProjectName:   it.ProjectName,
@@ -815,5 +877,6 @@ func taskView(it store.Item) TaskView {
 		Class:         it.Ref.Class,
 		ID:            it.Ref.ID,
 		Entity:        it.Entity,
+		Family:        family,
 	}
 }

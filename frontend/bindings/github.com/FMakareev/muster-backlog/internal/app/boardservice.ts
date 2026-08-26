@@ -225,6 +225,16 @@ export function StatusLists(): $CancellablePromise<(string[] | null)[] | null> {
 }
 
 /**
+ * Subtasks returns a task's subtasks, in the order the project scan produced.
+ * 
+ * Separate from the card payload on purpose: this is asked once when a task is
+ * opened, where the board asks for every card at once.
+ */
+export function Subtasks(projectPath: string, kind: string, $class: string, id: string): $CancellablePromise<$models.TaskView[] | null> {
+    return $Call.ByID(62383582, projectPath, kind, $class, id);
+}
+
+/**
  * Task returns one entity, or ok false when the ref names nothing.
  */
 export function Task(projectPath: string, kind: string, $class: string, id: string): $CancellablePromise<[$models.TaskView, boolean]> {
