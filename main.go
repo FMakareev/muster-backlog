@@ -21,6 +21,7 @@ func main() {
 		Description: "A local-first desktop task manager over all your Backlog.md projects at once",
 		Services: []application.Service{
 			application.NewService(app.NewService()),
+			application.NewService(app.NewBoardService()),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
