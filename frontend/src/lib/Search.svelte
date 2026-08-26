@@ -2,7 +2,7 @@
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { SearchHit } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
   import { projectColour } from "./colour";
-  import { openTask, showSearch } from "./ui";
+  import { openEntity, showSearch } from "./ui";
 
   /**
    * Cross-project search.
@@ -37,12 +37,28 @@
   }
 
   function choose(hit: SearchHit): void {
-    openTask({
+    // Routed by kind, so a document hit opens the viewer rather than looking
+    // for a task that does not exist.
+    openEntity({
       project: hit.project,
       kind: hit.kind,
       class: hit.class,
       id: hit.id,
     });
+    showSearch.set(false);
+  }
+
+  /**
+   * Escape closes search from anywhere, not only from the field.
+   *
+   * Clicking a result list or losing focus for any other reason used to leave
+   * the window stuck open until the caret was put back in the input, which is
+   * exactly when a person reaches for Escape.
+   */
+  function onWindowKeydown(event: KeyboardEvent): void {
+    if (!$showSearch || event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
     showSearch.set(false);
   }
 
@@ -68,9 +84,18 @@
   }
 </script>
 
+<svelte:window onkeydown={onWindowKeydown} />
+
 {#if $showSearch}
+  <!-- Clicking away closes it, which is what a person expects of something
+       floating over everything else. -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="absolute inset-0 z-30 flex items-start justify-center bg-ink/70 pt-16"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) showSearch.set(false);
+    }}
   >
     <div
       role="dialog"

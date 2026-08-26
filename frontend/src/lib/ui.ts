@@ -80,6 +80,35 @@ export function openTask(ref: TaskRef): void {
   selected.set(ref);
 }
 
+/**
+ * The document or decision the viewer is showing.
+ *
+ * Kept here rather than inside the viewer so that a search result can open one
+ * from anywhere: a hit is a hit whether it is a task or a document, and having
+ * only tasks openable made half the search results dead ends.
+ */
+export const selectedDoc = atom<TaskRef | null>(null);
+
+/**
+ * Open whatever a reference points at, on the screen that shows it.
+ *
+ * Tasks and drafts belong in the panel; documents, decisions and milestones
+ * belong in the viewer. Routing by kind here means every caller - search, a
+ * dependency link, a list row - can just say "open this".
+ */
+export function openEntity(ref: TaskRef): void {
+  if (
+    ref.kind === "document" ||
+    ref.kind === "decision" ||
+    ref.kind === "milestone"
+  ) {
+    selectedDoc.set(ref);
+    screen.set("docs");
+    return;
+  }
+  openTask(ref);
+}
+
 export function closeTask(): void {
   selected.set(null);
 }

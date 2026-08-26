@@ -5,7 +5,7 @@ status: In Review
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:27'
-updated_date: '2026-08-26 20:48'
+updated_date: '2026-08-26 21:14'
 labels: []
 milestone: m-2
 dependencies:
@@ -39,6 +39,14 @@ Backlog.md projects carry documents and decision records next to tasks, and they
 - [ ] #3 User-facing behaviour change is reflected in README or docs
 - [ ] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Follow-up from first use. Documents were listed in one alphabetical heap of 88 files across nine projects, which told nobody whose they were, and focusing a project in the roll narrowed the board but not this screen - a difference with no reason behind it. Entries are now grouped by project with Documents and Decisions under each, and the roll narrows them: focusing Refloft goes from 88 entries in 8 groups to 13 in 1.
+
+Also fixed: a document found in search could not be opened. Every hit called openTask, which resolves against the task list only, so half the search results were dead ends. Opening now routes by kind - tasks and drafts to the panel, documents, decisions and milestones to the viewer - so a hit is a hit whatever it points at.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

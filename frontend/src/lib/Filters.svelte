@@ -38,6 +38,14 @@
   const labels = $derived(distinct((t) => t.entity.Labels ?? []));
   const milestoneValues = $derived(distinct((t) => [t.entity.Milestone]));
 
+  let field: HTMLInputElement | undefined = $state();
+
+  // Opening a filter panel and then having to reach for the mouse to type in
+  // it defeats the point of a keyboard shortcut.
+  $effect(() => {
+    if ($showFilters) field?.focus();
+  });
+
   function onKeydown(event: KeyboardEvent): void {
     if (event.key === "Escape") {
       event.stopPropagation();
@@ -79,6 +87,7 @@
   >
     <div class="sticky top-0 flex items-baseline gap-3 bg-ink-sunken pb-1">
       <input
+        bind:this={field}
         class="w-64"
         placeholder="Filter by title"
         value={$filters.text}
@@ -110,7 +119,7 @@
     {#each groups as [field, heading, values] (field)}
       {@const list = values()}
       {#if list.length > 0}
-        <div class="flex flex-wrap items-baseline gap-1.5">
+        <div class="flex flex-wrap items-baseline gap-1.5 gap-y-2">
           <span
             class="w-16 shrink-0 text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
           >
@@ -119,7 +128,7 @@
           {#each list as value (value)}
             <button
               type="button"
-              class="rounded-[2px] border px-1.5 text-micro
+              class="min-h-6 rounded-[2px] border px-2 py-0.5 text-micro
                      {chosen(field, value)
                 ? 'border-chalk bg-ink text-chalk'
                 : 'border-rule text-chalk-dim hover:text-chalk'}"

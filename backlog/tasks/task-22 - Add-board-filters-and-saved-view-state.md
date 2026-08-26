@@ -5,7 +5,7 @@ status: In Review
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 20:47'
+updated_date: '2026-08-26 21:14'
 labels: []
 milestone: m-2
 dependencies:
@@ -29,6 +29,12 @@ Specification section 6: filters by milestone, priority, type and label. Without
 - [x] #4 Filter state persists across application restart
 - [x] #5 Text search matches task title and description
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Follow-up from first use: opening the filter panel left focus where it was, so the shortcut had to be followed by reaching for the mouse. It now takes focus in the text field.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

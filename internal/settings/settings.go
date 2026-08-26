@@ -59,6 +59,10 @@ type Settings struct {
 	WIPLimits map[string]int `yaml:"wip_limits" json:"wipLimits"`
 	// StaleAfterDays is when an untouched open task is called stale.
 	StaleAfterDays int `yaml:"stale_after_days" json:"staleAfterDays"`
+	// ScalePercent scales the whole interface. The default density suits a
+	// board over nine projects and suits nobody who needs larger type, so it
+	// is a choice rather than a constraint.
+	ScalePercent int `yaml:"scale_percent" json:"scalePercent"`
 }
 
 // Defaults are what a first run gets: ordinary window behaviour and the side
@@ -70,6 +74,7 @@ func Defaults() Settings {
 		GroupBy:        "",
 		WIPLimits:      map[string]int{},
 		StaleAfterDays: 30,
+		ScalePercent:   100,
 	}
 }
 
@@ -142,6 +147,14 @@ func (s Settings) normalised() Settings {
 	}
 	if out.StaleAfterDays <= 0 {
 		out.StaleAfterDays = 30
+	}
+	// Clamped rather than trusted: a hand-edited 5 or 5000 would leave an
+	// interface nobody could use to fix the setting.
+	if out.ScalePercent < 75 {
+		out.ScalePercent = 100
+	}
+	if out.ScalePercent > 200 {
+		out.ScalePercent = 200
 	}
 	return out
 }

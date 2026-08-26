@@ -31,6 +31,7 @@ func TestRoundTrip(t *testing.T) {
 		GroupBy:        "milestone",
 		WIPLimits:      map[string]int{"In Progress": 3},
 		StaleAfterDays: 14,
+		ScalePercent:   125,
 	}
 	if err := want.SaveTo(path); err != nil {
 		t.Fatalf("SaveTo: %v", err)
@@ -112,4 +113,37 @@ func TestStaleThresholdFallsBack(t *testing.T) {
 	if got.StaleAfterDays != 30 {
 		t.Errorf("StaleAfterDays = %d, want the default", got.StaleAfterDays)
 	}
+}
+
+// A hand-edited scale of 5 or 5000 would leave an interface nobody could use
+// to fix the setting, so it is clamped rather than trusted.
+func TestScaleIsClamped(t *testing.T) {
+	for _, tc := range []struct{ written, want int }{
+		{0, 100}, {5, 100}, {74, 100}, {75, 75}, {150, 150}, {5000, 200},
+	} {
+		path := filepath.Join(t.TempDir(), "settings.yml")
+		content := "scale_percent: " + itoa(tc.written) + "\n"
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		got, err := settings.LoadFrom(path)
+		if err != nil {
+			t.Fatalf("LoadFrom: %v", err)
+		}
+		if got.ScalePercent != tc.want {
+			t.Errorf("scale %d loaded as %d, want %d", tc.written, got.ScalePercent, tc.want)
+		}
+	}
+}
+
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	var digits []byte
+	for n > 0 {
+		digits = append([]byte{byte('0' + n%10)}, digits...)
+		n /= 10
+	}
+	return string(digits)
 }

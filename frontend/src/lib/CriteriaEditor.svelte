@@ -131,7 +131,7 @@
   {:else if items.length === 0}
     <p class="mt-1 text-body text-chalk-faint">None recorded.</p>
   {:else}
-    <ul class="mt-1 flex flex-col gap-1">
+    <ul class="mt-1 flex flex-col gap-2">
       {#each items as criterion (criterion.Index)}
         <li class="flex items-baseline gap-2">
           <input

@@ -146,7 +146,12 @@
     >
       <header class="flex items-baseline gap-3">
         <h2 class="text-title font-semibold">New task</h2>
-        <select class="ml-auto" bind:value={project} disabled={busy}>
+        <select
+          class="ml-auto"
+          aria-label="Project this task belongs to"
+          bind:value={project}
+          disabled={busy}
+        >
           {#each healthy as p (p.path)}
             <option value={p.path}>{p.name}</option>
           {/each}

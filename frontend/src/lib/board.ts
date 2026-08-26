@@ -57,6 +57,19 @@ export const settings = atom<Settings>({
   groupBy: "",
   wipLimits: {},
   staleAfterDays: 30,
+  scalePercent: 100,
+});
+
+/**
+ * Apply the interface scale.
+ *
+ * Every size in the stylesheet is in rem, so setting the root font size moves
+ * type, spacing, controls and the fixed chrome heights together. Changing only
+ * the font size would leave large text in small boxes.
+ */
+settings.subscribe((prefs) => {
+  const scale = (prefs.scalePercent || 100) / 100;
+  document.documentElement.style.setProperty("--muster-scale", String(scale));
 });
 
 /**

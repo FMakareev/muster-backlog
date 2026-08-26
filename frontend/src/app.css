@@ -147,9 +147,12 @@
   --color-ink-sunken: #101218;
   --color-rule: #272c38;
 
+  /* Three tiers of text, all of which have to clear 4.5:1 against every
+     surface they land on. The original faint tone was 3.11:1 - readable to me
+     and not to everyone - which an audit found in 390 places. */
   --color-chalk: #e6e9f0;
-  --color-chalk-dim: #8a93a6;
-  --color-chalk-faint: #5b6376;
+  --color-chalk-dim: #a7aec0;
+  --color-chalk-faint: #828b9d;
 
   /* There is deliberately no accent hue. Every colour in this interface
      belongs to a project, taken from the registry; a brand hue would be a
@@ -162,7 +165,10 @@
     "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
 
   /* A dense desktop scale. The board shows hundreds of rows, so the steps are
-     tight and the smallest sizes still have to be legible at arm's length. */
+     tight and the smallest sizes still have to be legible at arm's length.
+     Every size derives from the root font size, which the scale preference
+     sets, so scaling moves type, spacing and controls together instead of
+     leaving a large font in a small box. */
   --text-micro: 0.625rem;
   --text-micro--line-height: 0.875rem;
   --text-data: 0.6875rem;
@@ -176,6 +182,11 @@
   --spacing-bar: 2.25rem;
   --spacing-strip: 1.5rem;
   --spacing-roll: 14rem;
+}
+
+html {
+  /* The scale preference sets this; everything else is in rem. */
+  font-size: calc(16px * var(--muster-scale, 1));
 }
 
 html,
@@ -304,6 +315,15 @@ body {
 .prose-muster input[type="checkbox"] {
   margin-right: 0.5em;
   accent-color: var(--color-chalk-dim);
+}
+
+/* Interactive targets clear 24 by 24, which a dense interface will not give
+   them on its own. */
+input[type="checkbox"] {
+  min-width: 1rem;
+  min-height: 1rem;
+  padding: 0.25rem;
+  box-sizing: content-box;
 }
 
 .prose-muster a {

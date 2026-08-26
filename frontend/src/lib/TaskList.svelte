@@ -149,6 +149,8 @@
     <button
       type="button"
       class="ml-auto font-mono text-data text-chalk-faint hover:text-chalk"
+      aria-expanded={picking}
+      aria-label="Choose which columns to show"
       onclick={() => (picking = !picking)}
     >
       columns
@@ -186,6 +188,7 @@
               <button
                 type="button"
                 class="hover:text-chalk"
+                aria-label="Sort by {column.label}"
                 onclick={() => sortBy(column.key)}
               >
                 {column.label}{sortKey === column.key

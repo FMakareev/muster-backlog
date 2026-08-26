@@ -66,6 +66,7 @@
       <div class={row}>
         <span class={label}>When the window is closed</span>
         <select
+          aria-label="When the window is closed"
           disabled={busy}
           value={$settings.onWindowClose}
           onchange={(e) =>
@@ -89,8 +90,29 @@
       </div>
 
       <div class={row}>
+        <span class={label}>Interface scale</span>
+        <select
+          aria-label="Interface scale"
+          disabled={busy}
+          value={String($settings.scalePercent || 100)}
+          onchange={(e) =>
+            save({ ...$settings, scalePercent: Number(e.currentTarget.value) })}
+        >
+          {#each [75, 90, 100, 110, 125, 150, 175, 200] as percent (percent)}
+            <option value={String(percent)}>{percent}%</option>
+          {/each}
+        </select>
+        <p class="text-body text-chalk-faint">
+          The interface is dense on purpose, which suits a board over many
+          projects and suits nobody who needs larger type. This moves type,
+          spacing and controls together.
+        </p>
+      </div>
+
+      <div class={row}>
         <span class={label}>Where a task opens</span>
         <select
+          aria-label="Where a task opens"
           disabled={busy}
           value={$settings.taskView}
           onchange={(e) =>

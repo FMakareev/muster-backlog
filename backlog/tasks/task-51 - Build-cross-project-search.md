@@ -5,7 +5,7 @@ status: In Review
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:27'
-updated_date: '2026-08-26 20:47'
+updated_date: '2026-08-26 21:14'
 labels: []
 milestone: m-2
 dependencies:
@@ -39,6 +39,12 @@ With several projects loaded, finding a task by memory of its title is the most 
 - [ ] #3 User-facing behaviour change is reflected in README or docs
 - [ ] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Two follow-ups from first use. Escape did not close search unless the caret was in the field, which is exactly when a person reaches for Escape; it now closes from anywhere, and clicking away closes it too. And a document hit could not be opened at all, because every result was routed to the task panel - opening now routes by kind.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

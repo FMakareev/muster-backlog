@@ -33,6 +33,13 @@ export interface Settings {
      * StaleAfterDays is when an untouched open task is called stale.
      */
     "staleAfterDays": number;
+
+    /**
+     * ScalePercent scales the whole interface. The default density suits a
+     * board over nine projects and suits nobody who needs larger type, so it
+     * is a choice rather than a constraint.
+     */
+    "scalePercent": number;
 }
 
 /**
