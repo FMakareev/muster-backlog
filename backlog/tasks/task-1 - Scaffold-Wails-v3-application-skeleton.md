@@ -1,11 +1,11 @@
 ---
 id: TASK-1
 title: Scaffold Wails v3 application skeleton
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 15:43'
+updated_date: '2026-08-26 19:39'
 labels: []
 milestone: m-0
 dependencies: []

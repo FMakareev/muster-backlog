@@ -34,9 +34,9 @@
     busy = false;
   }
 
-  const control =
-    "rounded-sm border border-rule bg-ink px-1.5 py-0.5 text-data text-chalk " +
-    "disabled:opacity-50";
+  // Colours and borders come from app.css, which has to set them explicitly
+  // because the system theme draws these controls otherwise.
+  const control = "disabled:opacity-50";
 </script>
 
 <div class="flex flex-wrap items-center gap-2">

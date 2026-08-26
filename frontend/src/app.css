@@ -491,3 +491,60 @@ i[class*=" wxi-"]::before {
 .wxi-plus::before {
   content: "\f149";
 }
+
+/* Native form controls inside a WebKitGTK webview are drawn by the system
+   theme, which ignores the page's colours and produces a white field with
+   near-white text on this palette. Everything is set explicitly, including the
+   option list, which is a separate surface the theme also owns. */
+select,
+input[type="text"],
+input:not([type]) {
+  appearance: none;
+  background-color: var(--color-ink);
+  color: var(--color-chalk);
+  border: 1px solid var(--color-rule);
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: var(--text-data);
+  line-height: 1.4;
+  padding: 0.15rem 0.4rem;
+}
+
+select {
+  /* The arrow disappears with appearance:none, so it is drawn back in. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-chalk-dim) 50%),
+    linear-gradient(135deg, var(--color-chalk-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) calc(50% + 1px),
+    calc(100% - 8px) calc(50% + 1px);
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+  padding-right: 1.35rem;
+}
+
+select option {
+  background-color: var(--color-ink-raised);
+  color: var(--color-chalk);
+}
+
+select:disabled,
+input:disabled {
+  color: var(--color-chalk-faint);
+}
+
+input::placeholder {
+  color: var(--color-chalk-faint);
+}
+
+/* Dragging a card must not sweep a text selection across the columns it passes
+   over. Text inside the panel stays selectable; the board does not need it. */
+.wx-kanban,
+.wx-board,
+.wx-column,
+.wx-card {
+  user-select: none;
+  -webkit-user-select: none;
+}

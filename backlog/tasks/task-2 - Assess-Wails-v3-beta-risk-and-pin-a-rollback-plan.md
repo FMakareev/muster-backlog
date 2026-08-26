@@ -1,11 +1,11 @@
 ---
 id: TASK-2
 title: Assess Wails v3 beta risk and pin a rollback plan
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 16:06'
+updated_date: '2026-08-26 19:39'
 labels: []
 milestone: m-0
 dependencies: []

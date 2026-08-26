@@ -1,11 +1,11 @@
 ---
 id: TASK-3
 title: Add MIT license
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 15:45'
+updated_date: '2026-08-26 19:40'
 labels: []
 milestone: m-0
 dependencies: []
