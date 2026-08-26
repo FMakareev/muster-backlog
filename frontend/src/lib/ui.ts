@@ -31,6 +31,20 @@ export interface TaskRef {
   id: string;
 }
 
+/**
+ * Whether cards are grouped by project inside each column.
+ *
+ * SVAR's open edition has no swimlanes, so grouping is expressed by ordering:
+ * with it on, a column's cards clump by project instead of interleaving. On a
+ * board over nine projects that is the difference between reading a column and
+ * scanning it.
+ */
+export const groupByProject = atom<boolean>(false);
+
+export function toggleGrouping(): void {
+  groupByProject.set(!groupByProject.get());
+}
+
 export const selected = atom<TaskRef | null>(null);
 
 export function openTask(ref: TaskRef): void {

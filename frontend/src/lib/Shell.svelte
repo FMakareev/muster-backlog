@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { loading, problems, projects, registryPath } from "./board";
   import { screenFor, screens } from "./screens";
-  import { screen } from "./ui";
+  import { groupByProject, screen, toggleGrouping } from "./ui";
   import { dismiss, notices } from "./notices";
   import ProjectRoll from "./ProjectRoll.svelte";
   import StatusStrip from "./StatusStrip.svelte";
@@ -27,6 +27,12 @@
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement
     ) {
+      return;
+    }
+
+    if (event.key.toLowerCase() === "g") {
+      event.preventDefault();
+      toggleGrouping();
       return;
     }
 
@@ -76,7 +82,21 @@
       {/each}
     </nav>
 
-    <span class="ml-auto font-mono text-data text-chalk-faint tabular-nums">
+    <button
+      type="button"
+      class="ml-auto flex items-baseline gap-1.5 rounded-sm px-2 py-1 text-body
+             {$groupByProject
+        ? 'bg-ink text-chalk'
+        : 'text-chalk-dim hover:text-chalk'}"
+      aria-pressed={$groupByProject}
+      title="Keep each project's cards together inside a column"
+      onclick={toggleGrouping}
+    >
+      Group by project
+      <kbd class="font-mono text-micro text-chalk-faint">g</kbd>
+    </button>
+
+    <span class="font-mono text-data text-chalk-faint tabular-nums">
       {#if $loading}loading{/if}
     </span>
   </header>

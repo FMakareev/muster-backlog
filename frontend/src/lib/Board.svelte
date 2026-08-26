@@ -1,11 +1,12 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { Kanban, WillowDark } from "@svar-ui/svelte-kanban";
-  import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
+  import type { KanbanCard, KanbanInstanceApi } from "@svar-ui/svelte-kanban";
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
+  import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
   import { canMove, columns, refresh } from "./board";
   import { notify } from "./notices";
-  import { openTask, visibleTasks } from "./ui";
+  import { groupByProject, openTask, visibleTasks } from "./ui";
   import Card from "./Card.svelte";
 
   /**
@@ -33,6 +34,18 @@
   );
 
   const byID = $derived(new Map(boardCards.map((c) => [c.id, c.task])));
+
+  // Grouping is expressed as an ordering, because the open edition of SVAR has
+  // no swimlanes. Within a project the board keeps the order the store gave it,
+  // which is Backlog.md's own comparator.
+  const sort = $derived(
+    $groupByProject
+      ? (a: KanbanCard, b: KanbanCard) =>
+          ((a as { task?: TaskView }).task?.projectName ?? "").localeCompare(
+            (b as { task?: TaskView }).task?.projectName ?? "",
+          )
+      : null,
+  );
 
   /** Open the task a DOM node belongs to.
    *
@@ -180,6 +193,7 @@
       cards={boardCards}
       columns={boardColumns}
       cardContent={Card}
+      {sort}
       {init}
       render={{ virtualizeCards: true, columnScroll: true }}
     />
