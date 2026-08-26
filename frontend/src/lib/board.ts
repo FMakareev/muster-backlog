@@ -53,6 +53,11 @@ export const layout = atom<BoardLayout>({ columns: null, conflicts: null });
 
 export const columns = computed(layout, (l) => l.columns ?? []);
 
+/** What one project configures, for the controls that edit a task. */
+export function projectConfig(path: string): ProjectView | undefined {
+  return projects.get().find((p) => p.path === path);
+}
+
 /** Whether a task in a project may take a status. */
 export function canMove(project: string, status: string): boolean {
   const column = (layout.get().columns ?? []).find((c) => c.name === status);
@@ -97,4 +102,21 @@ export function connect(): () => void {
     offProject();
     offRegistry();
   };
+}
+
+/**
+ * Apply a write and take whatever the files say afterwards.
+ *
+ * Every editing control goes through this, so none of them can quietly assume
+ * the write succeeded. A failure is reported where the person is working.
+ */
+export async function applyWrite(
+  run: () => Promise<{ ok: boolean; problem: Problem | null }>,
+  whenFailed: (message: string) => void,
+): Promise<void> {
+  const result = await run();
+  if (!result.ok && result.problem) {
+    whenFailed(`${result.problem.title}: ${result.problem.detail}`);
+  }
+  await refresh();
 }

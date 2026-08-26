@@ -76,6 +76,11 @@ type ProjectView struct {
 	// Statuses is what this project declares, in its own order. The board's
 	// columns are the union of these across projects.
 	Statuses []string `json:"statuses"`
+	// Priorities and Types are what this project configures. They are read
+	// from the project rather than assumed, because both are configurable and
+	// a hardcoded list would be wrong the first time someone changes one.
+	Priorities []string `json:"priorities"`
+	Types      []string `json:"types"`
 	// Layout is how the project's data directory was found.
 	Layout string `json:"layout"`
 }
@@ -306,6 +311,8 @@ func (s *BoardService) Projects() []ProjectView {
 			view.TaskCount = len(p.Scanned.Tasks)
 			view.DraftCount = len(p.Scanned.Drafts)
 			view.Statuses = p.Scanned.Config.Statuses
+			view.Priorities = p.Scanned.Config.Priorities
+			view.Types = p.Scanned.Config.Types
 			view.Layout = string(p.Registry.Location.Layout)
 		}
 		out = append(out, view)

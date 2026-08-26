@@ -15,6 +15,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * AddLabel adds a label to a task without touching the others.
+ */
+export function AddLabel(projectPath: string, taskID: string, label: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(3047498661, projectPath, taskID, label);
+}
+
+/**
  * CLIVersion reports the CLI version in use, empty when there is none.
  */
 export function CLIVersion(): $CancellablePromise<string> {
@@ -92,6 +99,13 @@ export function RegistryPath(): $CancellablePromise<string> {
  */
 export function Reload(): $CancellablePromise<$models.Problem[] | null> {
     return $Call.ByID(2009135923);
+}
+
+/**
+ * RemoveLabel removes one label without touching the others.
+ */
+export function RemoveLabel(projectPath: string, taskID: string, label: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2631086464, projectPath, taskID, label);
 }
 
 /**

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { projectColour } from "./colour";
   import Markdown from "./Markdown.svelte";
+  import TaskControls from "./TaskControls.svelte";
   import { closeTask, findInProject, openTask, selectedTask } from "./ui";
 
   /**
@@ -115,6 +116,8 @@
     <div class="flex flex-col gap-4 px-4 py-3">
       <h2 class="text-title font-semibold text-chalk">{entity.Title}</h2>
 
+      <TaskControls {task} />
+
       <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-data">
         {#snippet field(label: string, value: string)}
           {#if value}
@@ -122,12 +125,11 @@
             <dd class="text-chalk-dim">{value}</dd>
           {/if}
         {/snippet}
-        {@render field("Status", entity.Status)}
-        {@render field("Priority", entity.Priority)}
+        <!-- Status, priority, assignee and labels are not repeated here: the
+             controls above already show them, and showing a value twice a few
+             pixels apart only invites the two to disagree. -->
         {@render field("Type", entity.Type)}
         {@render field("Milestone", entity.Milestone)}
-        {@render field("Assignee", (entity.Assignee ?? []).join(", "))}
-        {@render field("Labels", (entity.Labels ?? []).join(", "))}
         {@render field("Updated", shortDate(String(entity.Updated ?? "")))}
         {@render field("Created", shortDate(String(entity.Created ?? "")))}
       </dl>

@@ -171,3 +171,19 @@ func (s *BoardService) resolveCLI() {
 		s.mu.Unlock()
 	}
 }
+
+// AddLabel adds a label to a task without touching the others.
+func (s *BoardService) AddLabel(projectPath, taskID, label string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be labelled", taskID),
+		func(cli *backlogcli.Runner) error {
+			return cli.AddLabel(context.Background(), s.dataDirFor(projectPath), taskID, label)
+		})
+}
+
+// RemoveLabel removes one label without touching the others.
+func (s *BoardService) RemoveLabel(projectPath, taskID, label string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be relabelled", taskID),
+		func(cli *backlogcli.Runner) error {
+			return cli.RemoveLabel(context.Background(), s.dataDirFor(projectPath), taskID, label)
+		})
+}

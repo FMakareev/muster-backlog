@@ -129,6 +129,14 @@ export interface ProjectView {
     "statuses": string[] | null;
 
     /**
+     * Priorities and Types are what this project configures. They are read
+     * from the project rather than assumed, because both are configurable and
+     * a hardcoded list would be wrong the first time someone changes one.
+     */
+    "priorities": string[] | null;
+    "types": string[] | null;
+
+    /**
      * Layout is how the project's data directory was found.
      */
     "layout": string;

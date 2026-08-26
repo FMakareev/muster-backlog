@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { Kanban, WillowDark } from "@svar-ui/svelte-kanban";
   import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
@@ -55,14 +56,66 @@
     openFrom(event.target);
   }
 
+  /** Put focus back on a card after the board has been re-rendered. */
+  async function restoreFocus(dataID: string | null): Promise<void> {
+    if (!dataID) return;
+    await tick();
+    const selector = `.wx-card[data-id="${CSS.escape(dataID)}"]`;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const card = document.querySelector<HTMLElement>(selector);
+      if (card) {
+        card.focus();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+
   // Cards are focusable, so a keyboard user reaches them by Tab and opens the
   // panel the same way they would open anything else.
   function onCardKeydown(event: KeyboardEvent): void {
-    if (event.key !== "Enter" && event.key !== " ") return;
     const card = (event.target as Element | null)?.closest(".wx-card");
     if (!card) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openFrom(event.target);
+      return;
+    }
+
+    // Square brackets move a focused card to the previous or next status its
+    // own project declares, so a card can be moved without a mouse at all.
+    if (event.key !== "[" && event.key !== "]") return;
+    const raw = card.getAttribute("data-id");
+    const task = raw ? byID.get(raw.replace(/^:/, "")) : undefined;
+    if (!task) return;
     event.preventDefault();
-    openFrom(event.target);
+
+    const allowed = $columns
+      .map((c) => c.name)
+      .filter((name) => canMove(task.project, name));
+    const at = allowed.indexOf(task.entity.Status);
+    const next = allowed[at + (event.key === "]" ? 1 : -1)];
+    if (at < 0 || !next) {
+      notify(
+        `${task.id} is already at the ${event.key === "]" ? "last" : "first"} ` +
+          `status ${task.projectName} declares.`,
+      );
+      return;
+    }
+
+    void BoardService.SetStatus(task.project, task.id, next).then(
+      async (result) => {
+        if (!result.ok && result.problem) {
+          notify(`${result.problem.title}: ${result.problem.detail}`);
+        }
+        await refresh();
+        // The refresh re-renders the card, which drops focus. Without putting
+        // it back, a second keypress goes nowhere and the board stops being
+        // keyboard-driven after exactly one move.
+        void restoreFocus(raw);
+      },
+    );
   }
 
   function init(api: KanbanInstanceApi): void {
