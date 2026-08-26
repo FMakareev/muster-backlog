@@ -21,8 +21,8 @@ importers:
         specifier: 2.6.0
         version: 2.6.0(picomatch@4.0.7)(svelte@5.56.10(@typescript-eslint/types@8.68.0))(typescript@5.9.3)
       '@wailsio/runtime':
-        specifier: 3.0.0-beta.13
-        version: 3.0.0-beta.13
+        specifier: 3.0.0-beta.8
+        version: 3.0.0-beta.8
       nanostores:
         specifier: 1.5.2
         version: 1.5.2
@@ -605,8 +605,8 @@ packages:
     resolution: {integrity: sha512-YR65gGdGvTUAWLldC3xLOvOzamdGzB4A5/N8rehEaHs3Zvoe39BhgY+u0SPch1OvrVTfLcc55wsSgK2NcnTS/A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@wailsio/runtime@3.0.0-beta.13':
-    resolution: {integrity: sha512-59nmw/qiRN8LukEmIDDmyTZBZJ/pCoxpLowAtnS6VVJvoQhiTryB28menjgNhkbZg36g8nd4GifBlKzjmtycyA==}
+  '@wailsio/runtime@3.0.0-beta.8':
+    resolution: {integrity: sha512-c9PZJcOR9z1a6cxtBS2q5cygNajlxDE8Oxv/vvcTFYRbZSoOGBszq4uzlkPTOd0Bot1xkM81jnpaBgKWRpBh2g==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2009,7 +2009,7 @@ snapshots:
       '@typescript-eslint/types': 8.68.0
       eslint-visitor-keys: 5.0.1
 
-  '@wailsio/runtime@3.0.0-beta.13': {}
+  '@wailsio/runtime@3.0.0-beta.8': {}
 
   acorn-jsx@5.3.2(acorn@8.18.0):
     dependencies:

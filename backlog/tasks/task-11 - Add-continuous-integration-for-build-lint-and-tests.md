@@ -4,9 +4,9 @@ title: 'Add continuous integration for build, lint and tests'
 status: To Do
 assignee: []
 created_date: '2026-08-26 15:00'
-updated_date: '2026-08-26 15:25'
+updated_date: '2026-08-26 16:00'
 labels: []
-milestone: m-0
+milestone: m-4
 dependencies:
   - TASK-6
   - TASK-1

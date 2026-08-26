@@ -3,7 +3,7 @@ id: doc-1
 title: Muster Specification v0.1
 type: specification
 created_date: '2026-08-26 14:57'
-updated_date: '2026-08-26 15:30'
+updated_date: '2026-08-26 16:06'
 ---
 > Muster every backlog. One application over every project.
 
@@ -135,10 +135,13 @@ The MVP answers one question: **does a standalone application over several proje
 
 ## 8. Open questions
 
-1. **Wails v3 is still beta.** Tolerable in a previous project, but the decision is taken deliberately with a pinned version and a rollback plan.
-2. **SVAR Kanban has no swimlanes in the MIT edition.** Projects are distinguished by grouping and card colour instead. Confirm this reads well at six projects before building the rest of the board.
-3. **Column ordering across disagreeing projects.** The union is well defined; the order is not. Needs a deterministic, documented rule.
-4. **Name display.** Files are named `task-10 - Bike-rig-on-2D-physics-frame-and-wheels.md` — hyphens instead of spaces. Show `title` from frontmatter, not the file name.
+1. **SVAR Kanban has no swimlanes in the MIT edition.** Confirmed by reading the 2.6.0 component API: there is no rows prop, whatever the readme implies. Projects are distinguished by grouping and card colour instead. Confirm this still reads well at nine projects before building the rest of the board.
+2. **Column ordering across disagreeing projects.** The union is well defined; the order is not, and it needs a deterministic, documented rule. Measured position is easier than feared: only two distinct status lists exist across the nine projects, and one is a superset of the other, so today's union orders itself. That is a coincidence of this corpus, not a property of the format — the rule must still handle disjoint lists.
+
+### Settled since the first draft
+
+- **Wails v3 beta** — settled in [decision-1](../decisions/decision-1%20-%20Build-the-desktop-shell-on-Wails-v3-beta.md): pinned to beta.8 across all three version streams, confined to the stable half of the API, with an upgrade policy and Wails v2 as the fallback.
+- **Name display** — files are named `task-10 - Bike-rig-on-2D-physics-frame-and-wheels.md`, hyphens instead of spaces. Measured in the format contract: only 20% of filenames round-trip back to their title, and five collapse to nothing at all. The title always comes from frontmatter. No longer a question, just a rule.
 
 ## 9. Open source
 
@@ -156,3 +159,5 @@ The README makes one promise: **a local-first desktop task manager over all your
 - No special "personal project" concept: any folder can be initialised as a project from the UI.
 - License MIT; release automation via release-please driven by Conventional Commits.
 - Repository name `muster-backlog`.
+- Documentation and decisions live as Backlog.md documents and decisions rather than in a separate `docs/` tree — see [decision-3](../decisions/decision-3%20-%20Read-Backlog.md-markdown-directly-write-only-through-the-CLI.md) and the [conventions](doc-4%20-%20Documentation-and-decision-conventions.md).
+- Publication to GitHub waits until the application actually delivers a multi-project board, not merely a tidy repository.

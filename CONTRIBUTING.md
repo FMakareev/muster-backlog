@@ -56,25 +56,45 @@ docs: explain the Ubuntu 24.04 GTK 3 build path
 build(deps): pin svelte to 5.56.10 for SVAR compatibility
 ```
 
-## Tasks
+## How work is tracked
 
-Work is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) in [`backlog/`](backlog/), not in GitHub Issues. Reference the task in the commit body or the pull request description.
-
-```sh
-backlog task list --plain
-backlog task view TASK-1 --plain
-backlog board
-```
-
-## Development
-
-See the [README](README.md) for prerequisites, build, run and lint commands.
+**There are no GitHub Issues in this project.** Work is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) in the [`backlog/`](backlog/) directory of this repository — tasks are markdown files, versioned alongside the code they describe. Muster itself is a tool for working with exactly this format, so the project uses it on itself.
 
 ```sh
-pnpm install          # installs the workspace and the git hooks
-wails3 task build     # build
-wails3 task lint      # every linter and formatter check
+backlog task list --plain          # what is open
+backlog task view TASK-1 --plain   # one task in full
+backlog board                      # the kanban board
+backlog overview                   # counts, blocked tasks, stale tasks
 ```
+
+Every task carries acceptance criteria. Those are the definition of done — not a suggestion, and not something to reinterpret while implementing.
+
+Never edit files under `backlog/` by hand. The CLI owns their metadata, filenames and relationships; a hand edit will look fine and then diverge. The single documented exception is the body of a decision record, which no CLI path can write — see [the conventions document](backlog/docs/doc-4%20-%20Documentation-and-decision-conventions.md).
+
+If you want to work on something, say so on the task before starting, so two people do not implement the same acceptance criteria twice.
+
+## Setting up
+
+See the [README](README.md) for the full prerequisite table. In short: Go 1.25+, Node 24+, pnpm 11+, the Wails v3 CLI, and `golangci-lint`.
+
+```sh
+git clone <this repository>
+cd muster-backlog
+pnpm install                 # installs the workspace and the git hooks
+wails3 task build            # or: wails3 task build EXTRA_TAGS=gtk3
+```
+
+On Ubuntu 24.04 LTS and anything else without WebKitGTK 6.0, build with `EXTRA_TAGS=gtk3`. The README explains why.
+
+## Before you push
+
+```sh
+wails3 task lint             # golangci-lint, ESLint, Prettier, svelte-check
+wails3 task lint:fix         # apply every available autofix
+go test -tags gtk3 ./...     # Go tests
+```
+
+The hooks run most of this for you, but running it yourself is faster than finding out from a red pull request.
 
 ## Git hooks
 
@@ -91,3 +111,21 @@ lefthook install
 | `pre-push` | `go test` and `svelte-check` | under 3 seconds |
 
 `pre-commit` restages what the formatters fix, so a commit is never left half-formatted. The budget above is the point of the design: a hook slow enough to provoke `--no-verify` is a hook that does not run. If `pre-commit` ever exceeds it, move the offending check to CI rather than to a flag.
+
+## Pull requests
+
+1. Branch from the default branch. Name the branch after the task: `task-21-multi-project-board`.
+2. Keep the change to one task. If you find unrelated work, note it on a task rather than folding it in — a reviewer who has to hold two changes in their head reviews neither well.
+3. Reference the task ID in the description, and say which acceptance criteria the change satisfies.
+4. Explain how you verified it. "Tests pass" is not verification; naming what you ran and what it showed is.
+5. Make sure `wails3 task lint` and the tests are green before asking for review.
+
+Changes that add a field, a label convention or a sidecar file to the Backlog.md format will be declined regardless of how useful they are. That constraint is the point of the project, not an oversight — see [decision-3](backlog/decisions/decision-3%20-%20Read-Backlog.md-markdown-directly-write-only-through-the-CLI.md).
+
+## Reporting problems
+
+Bugs and ideas belong on a Backlog.md task in this repository, not in a GitHub issue. Security problems go through the private channel described in [SECURITY.md](SECURITY.md) — never in public.
+
+## Code of conduct
+
+Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).

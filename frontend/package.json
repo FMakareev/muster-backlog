@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@svar-ui/svelte-kanban": "2.6.0",
-    "@wailsio/runtime": "3.0.0-beta.13",
+    "@wailsio/runtime": "3.0.0-beta.8",
     "nanostores": "1.5.2"
   },
   "devDependencies": {

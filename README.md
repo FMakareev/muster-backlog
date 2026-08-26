@@ -1,10 +1,27 @@
 # Muster
 
-A local-first desktop task manager over all your [Backlog.md](https://github.com/MrLesk/Backlog.md) projects at once.
+**A local-first desktop task manager over all your [Backlog.md](https://github.com/MrLesk/Backlog.md) projects at once.**
 
-> **Status: pre-alpha.** This is a project skeleton. It builds and opens a window with a placeholder board; it does not read your backlogs yet. See [the roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md).
+> **Status: pre-alpha.** This is a project skeleton. It builds, opens a window and draws a placeholder board — it does not read your backlogs yet. Follow [the roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) if you want to know when it will.
 
-Muster reads Backlog.md markdown directly and writes only through the `backlog` CLI. It adds no fields, labels or sidecar files of its own — the format stays entirely Backlog.md's to define.
+## Why
+
+Backlog.md keeps tasks as markdown inside the repository they belong to, which is the right place for them. The cost of that is one backlog per repository, and every tool for it works on one at a time: `backlog browser` is single-repo by design and pins the same port in every project, and the excellent [VSCode extension](https://github.com/ysamlan/vscode-backlog-md) switches between backlog folders rather than combining them.
+
+So there is no answer to *what is happening across everything I work on*. Nine repositories, a thousand task files, and no single view of them.
+
+Muster is that view: one board, one list, one search, one set of numbers, over every project you register.
+
+## What it will be
+
+An ordinary task manager — kanban with drag-and-drop, a sortable list, filters, cross-project search, a drafts inbox, a reader for project documents and decisions, and analytics. Nothing about that is novel. The only thing that is: all of it spans every registered project at once, and any folder on your disk can become one from inside the application.
+
+## What it is not
+
+- **Not a replacement for Backlog.md.** It is a view onto it.
+- **Not a new format.** Muster reads Backlog.md markdown directly and writes only through the `backlog` CLI. It adds no field, no label convention and no sidecar file of its own — if Backlog.md does not support something natively, Muster does not store it. That is a hard rule, not an aspiration; it is why the review-budget planner from the first draft of the specification no longer exists.
+- **Not a server, a team tool, or a sync service.** One machine, one person, no accounts, no network.
+- **Not a time tracker**, and not an estimation tool.
 
 ## Prerequisites
 
@@ -14,12 +31,14 @@ Muster reads Backlog.md markdown directly and writes only through the `backlog` 
 | [Node.js](https://nodejs.org) | 24 or newer |
 | [pnpm](https://pnpm.io) | 11 or newer |
 | [Wails v3 CLI](https://v3.wails.io) | v3.0.0-beta.8 |
-| [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 (runtime, not build) |
+| [golangci-lint](https://golangci-lint.run) | v2 (needed by the git hooks) |
+| [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 (at runtime, not to build) |
 
-Install the Wails CLI with:
+The two Go tools install themselves:
 
 ```sh
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 ```
 
 ### Linux system libraries
@@ -42,8 +61,21 @@ wails3 task build EXTRA_TAGS=gtk3
 
 ## Build and run
 
+From a clean machine, after the prerequisites above:
+
 ```sh
-wails3 task build     # build to bin/muster
+git clone https://github.com/FMakareev/muster-backlog
+cd muster-backlog
+pnpm install                        # workspace dependencies and the git hooks
+wails3 task build                   # add EXTRA_TAGS=gtk3 where WebKitGTK 6.0 is missing
+./bin/muster
+```
+
+A window opens with a placeholder board. That is currently the whole of it — there is no registry to point at your projects yet.
+
+Day to day:
+
+```sh
 wails3 task run       # build and run
 wails3 task dev       # run with frontend hot reload
 ```
@@ -89,7 +121,20 @@ backlog task list --plain
 backlog overview
 ```
 
-The [specification](backlog/docs/doc-1%20-%20Muster-Specification-v0.1.md) and the [roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) explain what is being built and in what order.
+## Documentation
+
+Documentation lives as Backlog.md documents and decisions, not in a separate tree — see [Documentation and decision conventions](backlog/docs/doc-4%20-%20Documentation-and-decision-conventions.md) for why and how to add to it.
+
+| | |
+| :-- | :-- |
+| [Specification v0.1](backlog/docs/doc-1%20-%20Muster-Specification-v0.1.md) | what is being built, and explicitly what is not |
+| [Roadmap to 1.0](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) | the five milestones and why they are ordered that way |
+| [Backlog.md Format Contract](backlog/docs/doc-3%20-%20Backlog.md-Format-Contract.md) | the on-disk format, measured against 1021 real files |
+| [Decisions](backlog/decisions/) | architecture decision records |
+
+## Contributing
+
+Work is tracked as Backlog.md tasks in this repository, not as GitHub Issues. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the commit convention, the hooks and the pull request flow; participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). Security problems go through the private channel in [SECURITY.md](SECURITY.md), never a public report.
 
 ## Licence
 
