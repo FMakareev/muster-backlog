@@ -13,9 +13,12 @@ export {
 } from "./models.js";
 
 export type {
+    AnalyticsView,
+    BlockedView,
     BoardLayout,
     ColumnView,
     ConflictView,
+    CountView,
     CreateResult,
     MilestoneView,
     NewTaskInput,
@@ -23,6 +26,8 @@ export type {
     ProjectChanged,
     ProjectView,
     QueryInput,
+    SearchHit,
     TaskView,
+    WIPStatus,
     WriteResult
 } from "./models.js";

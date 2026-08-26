@@ -137,12 +137,107 @@ export function findInProject(project: string, id: string) {
 }
 
 /**
+ * Board filters.
+ *
+ * Without them the board shows every open task at once, which is the dump
+ * problem that disqualified the table alternative. Kept in one object so the
+ * whole set clears in one action and can be saved as a view.
+ */
+export interface Filters {
+  statuses: string[];
+  priorities: string[];
+  types: string[];
+  labels: string[];
+  milestones: string[];
+  text: string;
+}
+
+export const emptyFilters: Filters = {
+  statuses: [],
+  priorities: [],
+  types: [],
+  labels: [],
+  milestones: [],
+  text: "",
+};
+
+export const filters = atom<Filters>({ ...emptyFilters });
+
+export const filtersActive = computed(
+  filters,
+  (f) =>
+    f.statuses.length +
+      f.priorities.length +
+      f.types.length +
+      f.labels.length +
+      f.milestones.length >
+      0 || f.text.trim() !== "",
+);
+
+export function clearFilters(): void {
+  filters.set({ ...emptyFilters });
+}
+
+export function toggleFilter(field: keyof Filters, value: string): void {
+  const current = filters.get();
+  const list = current[field];
+  if (!Array.isArray(list)) return;
+  filters.set({
+    ...current,
+    [field]: list.includes(value)
+      ? list.filter((v) => v !== value)
+      : [...list, value],
+  });
+}
+
+/**
+ * Bumped whenever a project has been reloaded.
+ *
+ * Screens that fetch their own data - the documents viewer, the overview -
+ * watch this instead of subscribing to every task, so they stay as live as the
+ * board without holding a second copy of it.
+ */
+export const projectChanged = atom<number>(0);
+
+/** Whether search is open. */
+export const showSearch = atom<boolean>(false);
+
+/** Whether the filter panel is open. */
+export const showFilters = atom<boolean>(false);
+
+/**
  * The tasks currently on screen.
  *
  * Derived in one place so that nothing can disagree about it: the board and the
  * status strip both read this, rather than each filtering for themselves and
  * drifting apart the moment one of them changes.
  */
-export const visibleTasks = computed([tasks, focusedProject], (all, focused) =>
-  focused ? all.filter((task) => task.project === focused) : all,
+export const visibleTasks = computed(
+  [tasks, focusedProject, filters],
+  (all, focused, f) => {
+    const matches = (values: string[], value: string) =>
+      values.length === 0 ||
+      values.some((v) => v.toLowerCase() === (value ?? "").toLowerCase());
+
+    const needle = f.text.trim().toLowerCase();
+
+    return all.filter((task) => {
+      if (focused && task.project !== focused) return false;
+      const e = task.entity;
+      if (!matches(f.statuses, e.Status)) return false;
+      if (!matches(f.priorities, e.Priority)) return false;
+      if (!matches(f.types, e.Type)) return false;
+      if (!matches(f.milestones, e.Milestone)) return false;
+      if (
+        f.labels.length > 0 &&
+        !(e.Labels ?? []).some((l) =>
+          f.labels.some((w) => w.toLowerCase() === l.toLowerCase()),
+        )
+      ) {
+        return false;
+      }
+      if (needle && !e.Title.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  },
 );

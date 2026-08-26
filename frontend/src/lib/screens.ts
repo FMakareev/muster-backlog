@@ -32,7 +32,7 @@ export const screens: Screen[] = [
     label: "List",
     key: "l",
     purpose: "A sortable table across every project",
-    available: false,
+    available: true,
   },
   {
     id: "inbox",
@@ -46,14 +46,14 @@ export const screens: Screen[] = [
     label: "Docs",
     key: "d",
     purpose: "Documents and decisions, rendered",
-    available: false,
+    available: true,
   },
   {
     id: "stats",
     label: "Stats",
     key: "s",
     purpose: "Counts, stale tasks and what is blocked",
-    available: false,
+    available: true,
   },
 ];
 

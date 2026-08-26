@@ -20,6 +20,19 @@ export interface Settings {
      * GroupBy is what the board groups cards by: empty, project or milestone.
      */
     "groupBy": string;
+
+    /**
+     * WIPLimits are advisory ceilings on how many tasks a project may have in
+     * a status, keyed by status name. They are counted from native data and
+     * never enforced - a limit that blocks a drag is a limit people work
+     * around rather than a signal they act on.
+     */
+    "wipLimits": { [_ in string]?: number } | null;
+
+    /**
+     * StaleAfterDays is when an untouched open task is called stale.
+     */
+    "staleAfterDays": number;
 }
 
 /**

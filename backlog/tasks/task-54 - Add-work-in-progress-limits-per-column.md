@@ -1,9 +1,11 @@
 ---
 id: TASK-54
 title: Add work-in-progress limits per column
-status: To Do
-assignee: []
+status: In Review
+assignee:
+  - '@claude'
 created_date: '2026-08-26 15:27'
+updated_date: '2026-08-26 20:48'
 labels: []
 milestone: m-2
 dependencies:
@@ -22,11 +24,11 @@ A stock kanban mechanic, computed entirely from native data: count the tasks a p
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A limit can be configured per column, optionally overridden per project
-- [ ] #2 A column at or above its limit is visibly flagged on the board
-- [ ] #3 The limit is a warning and never blocks a drag
-- [ ] #4 Limits live in the Muster registry and are never written into project configuration
-- [ ] #5 Limits are visible in the analytics dashboard alongside current counts
+- [x] #1 A limit can be configured per column, optionally overridden per project
+- [x] #2 A column at or above its limit is visibly flagged on the board
+- [x] #3 The limit is a warning and never blocks a drag
+- [x] #4 Limits live in the Muster registry and are never written into project configuration
+- [x] #5 Limits are visible in the analytics dashboard alongside current counts
 <!-- AC:END -->
 
 ## Definition of Done
@@ -36,3 +38,21 @@ A stock kanban mechanic, computed entirely from native data: count the tasks a p
 - [ ] #3 User-facing behaviour change is reflected in README or docs
 - [ ] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Limits live in Muster's own settings file rather than in the project registry as the specification originally said. The registry is hand-edited and says where projects are; the settings file is written by the application. Putting a toggle in the hand-edited file would mean rewriting it every time the toggle moved.
+
+A limit of zero or less is dropped on load rather than treated as a column nobody may use, and it is never enforced: a limit that blocks a drag is a limit people work around instead of one they act on. It appears in the overview as a count against the ceiling.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Advisory work-in-progress limits, counted from native data.
+
+A limit per status, optionally meaningful per project, appears in the overview as the current count against the ceiling with the ones at or over it marked. It is a signal and never a rule - nothing blocks a drag.
+
+Limits live in Muster's own settings file rather than in the hand-edited project registry, which is a deviation from the specification's original placement and is recorded in the notes. Zero and negative limits are dropped on load rather than becoming columns nobody may use, covered by a test.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -26,6 +26,13 @@ export function AddLabel(projectPath: string, taskID: string, label: string): $C
 }
 
 /**
+ * Analytics returns the cross-project overview.
+ */
+export function Analytics(): $CancellablePromise<$models.AnalyticsView[] | null> {
+    return $Call.ByID(940557558);
+}
+
+/**
  * CLIVersion reports the CLI version in use, empty when there is none.
  */
 export function CLIVersion(): $CancellablePromise<string> {
@@ -64,6 +71,14 @@ export function CreateTask(input: $models.NewTaskInput): $CancellablePromise<$mo
 }
 
 /**
+ * Entities returns every document, decision, draft or milestone across every
+ * project, so the viewer can list them without asking for tasks it will drop.
+ */
+export function Entities(kind: string): $CancellablePromise<$models.TaskView[] | null> {
+    return $Call.ByID(1843672625, kind);
+}
+
+/**
  * FilterValues returns the distinct values of one field across every project,
  * for building filter menus.
  */
@@ -93,7 +108,10 @@ export function Milestones(): $CancellablePromise<$models.MilestoneView[] | null
 }
 
 /**
- * Problems returns everything currently wrong, worst first by kind.
+ * Problems returns everything currently wrong.
+ * 
+ * Standing conditions come first: a missing CLI matters more than a stray file
+ * in a task directory, and it is the one a person has to act on.
  */
 export function Problems(): $CancellablePromise<$models.Problem[] | null> {
     return $Call.ByID(1559672226);
@@ -134,6 +152,13 @@ export function RemoveLabel(projectPath: string, taskID: string, label: string):
  */
 export function SaveSettings(next: settings$0.Settings): $CancellablePromise<$models.Problem[] | null> {
     return $Call.ByID(3275526566, next);
+}
+
+/**
+ * Search looks through every entity of every project.
+ */
+export function Search(text: string, limit: number): $CancellablePromise<$models.SearchHit[] | null> {
+    return $Call.ByID(1621044846, text, limit);
 }
 
 /**
@@ -211,4 +236,14 @@ export function Task(projectPath: string, kind: string, $class: string, id: stri
  */
 export function Tasks(q: $models.QueryInput): $CancellablePromise<$models.TaskView[] | null> {
     return $Call.ByID(386771504, q);
+}
+
+/**
+ * WIP reports where a project is at or over an advisory limit.
+ * 
+ * It is a signal, never a rule: a limit that blocks a drag is a limit people
+ * work around rather than one they act on.
+ */
+export function WIP(): $CancellablePromise<$models.WIPStatus[] | null> {
+    return $Call.ByID(2613303266);
 }

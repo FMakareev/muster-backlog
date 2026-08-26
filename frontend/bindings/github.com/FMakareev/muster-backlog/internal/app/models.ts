@@ -6,6 +6,33 @@
 import * as backlog$0 from "../backlog/models.js";
 
 /**
+ * AnalyticsView is the overview for one project, or for all of them.
+ */
+export interface AnalyticsView {
+    /**
+     * Project is empty on the entry that covers every project.
+     */
+    "project": string;
+    "projectName": string;
+    "tasks": number;
+    "statuses": CountView[] | null;
+    "priority": CountView[] | null;
+    "types": CountView[] | null;
+    "unprioritised": number;
+    "averageAgeDays": number;
+    "stale": TaskView[] | null;
+    "blocked": BlockedView[] | null;
+}
+
+/**
+ * BlockedView is a task waiting on something unfinished.
+ */
+export interface BlockedView {
+    "task": TaskView;
+    "on": string[] | null;
+}
+
+/**
  * BoardLayout is the board's columns and how they were decided.
  */
 export interface BoardLayout {
@@ -35,6 +62,14 @@ export interface ConflictView {
     "after": string;
     "votes": number;
     "against": number;
+}
+
+/**
+ * CountView is one label and how many things carry it.
+ */
+export interface CountView {
+    "label": string;
+    "total": number;
 }
 
 /**
@@ -116,6 +151,12 @@ export enum ProblemKind {
     $zero = "",
 
     /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
+
+    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -135,12 +176,6 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
-
-    /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
 };
 
 /**
@@ -203,6 +238,28 @@ export interface QueryInput {
 }
 
 /**
+ * SearchHit is one search result as the frontend sees it.
+ */
+export interface SearchHit {
+    "project": string;
+    "projectName": string;
+    "kind": backlog$0.Kind;
+    "class": backlog$0.Class;
+    "id": string;
+    "title": string;
+
+    /**
+     * Field says where the match was: title, id or body.
+     */
+    "field": string;
+
+    /**
+     * Excerpt is the matching text with a little around it.
+     */
+    "excerpt": string;
+}
+
+/**
  * TaskView is one task together with where it came from.
  * 
  * The entity is exposed as the domain type rather than flattened into a
@@ -217,6 +274,18 @@ export interface TaskView {
     "class": backlog$0.Class;
     "id": string;
     "entity": backlog$0.Entity;
+}
+
+/**
+ * WIPStatus is one column's load against its advisory limit.
+ */
+export interface WIPStatus {
+    "project": string;
+    "projectName": string;
+    "status": string;
+    "count": number;
+    "limit": number;
+    "over": boolean;
 }
 
 /**

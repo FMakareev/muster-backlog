@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
@@ -356,7 +358,14 @@ func (s *BoardService) Projects() []ProjectView {
 			view.Problem = p.Err.Error()
 		}
 		if p.OK() {
-			view.TaskCount = len(p.Scanned.Tasks)
+			// Active tasks only. Counting archived and completed ones here
+			// made the roll disagree with the board, the list and the
+			// overview, all of which show what is live.
+			for _, task := range p.Scanned.Tasks {
+				if task.Class == backlog.ClassActive {
+					view.TaskCount++
+				}
+			}
 			view.DraftCount = len(p.Scanned.Drafts)
 			view.Statuses = p.Scanned.Config.Statuses
 			view.Priorities = p.Scanned.Config.Priorities
@@ -611,4 +620,200 @@ func (s *BoardService) SaveSettings(next settings.Settings) []Problem {
 		}}
 	}
 	return nil
+}
+
+// SearchHit is one search result as the frontend sees it.
+type SearchHit struct {
+	Project     string        `json:"project"`
+	ProjectName string        `json:"projectName"`
+	Kind        backlog.Kind  `json:"kind"`
+	Class       backlog.Class `json:"class"`
+	ID          string        `json:"id"`
+	Title       string        `json:"title"`
+	// Field says where the match was: title, id or body.
+	Field string `json:"field"`
+	// Excerpt is the matching text with a little around it.
+	Excerpt string `json:"excerpt"`
+}
+
+// Search looks through every entity of every project.
+func (s *BoardService) Search(text string, limit int) []SearchHit {
+	hits := s.store.Search(text, limit)
+
+	out := make([]SearchHit, 0, len(hits))
+	for _, hit := range hits {
+		out = append(out, SearchHit{
+			Project:     hit.Item.Ref.Project,
+			ProjectName: hit.Item.ProjectName,
+			Kind:        hit.Item.Ref.Kind,
+			Class:       hit.Item.Ref.Class,
+			ID:          hit.Item.Ref.ID,
+			Title:       hit.Item.Entity.Title,
+			Field:       hit.Field,
+			Excerpt:     hit.Excerpt,
+		})
+	}
+	return out
+}
+
+// Entities returns every document, decision, draft or milestone across every
+// project, so the viewer can list them without asking for tasks it will drop.
+func (s *BoardService) Entities(kind string) []TaskView {
+	items := s.store.Entities(backlog.Kind(kind))
+
+	out := make([]TaskView, 0, len(items))
+	for _, it := range items {
+		out = append(out, TaskView{
+			Project:       it.Ref.Project,
+			ProjectName:   it.ProjectName,
+			ProjectColour: it.ProjectColour,
+			Kind:          it.Ref.Kind,
+			Class:         it.Ref.Class,
+			ID:            it.Ref.ID,
+			Entity:        it.Entity,
+		})
+	}
+	return out
+}
+
+// CountView is one label and how many things carry it.
+type CountView struct {
+	Label string `json:"label"`
+	Total int    `json:"total"`
+}
+
+// BlockedView is a task waiting on something unfinished.
+type BlockedView struct {
+	Task TaskView `json:"task"`
+	On   []string `json:"on"`
+}
+
+// AnalyticsView is the overview for one project, or for all of them.
+type AnalyticsView struct {
+	// Project is empty on the entry that covers every project.
+	Project        string        `json:"project"`
+	ProjectName    string        `json:"projectName"`
+	Tasks          int           `json:"tasks"`
+	Statuses       []CountView   `json:"statuses"`
+	Priority       []CountView   `json:"priority"`
+	Types          []CountView   `json:"types"`
+	Unprioritised  int           `json:"unprioritised"`
+	AverageAgeDays float64       `json:"averageAgeDays"`
+	Stale          []TaskView    `json:"stale"`
+	Blocked        []BlockedView `json:"blocked"`
+}
+
+// Analytics returns the cross-project overview.
+func (s *BoardService) Analytics() []AnalyticsView {
+	s.mu.Lock()
+	days := s.prefs.StaleAfterDays
+	s.mu.Unlock()
+	if days <= 0 {
+		days = 30
+	}
+
+	reports := s.store.Analytics(store.AnalyticsOptions{
+		StaleAfter: time.Duration(days) * 24 * time.Hour,
+	})
+
+	out := make([]AnalyticsView, 0, len(reports))
+	for _, r := range reports {
+		view := AnalyticsView{
+			Project:        r.Project,
+			ProjectName:    r.ProjectName,
+			Tasks:          r.Tasks,
+			Statuses:       counts(r.Statuses),
+			Priority:       counts(r.Priority),
+			Types:          counts(r.Types),
+			Unprioritised:  r.Unprioritised,
+			AverageAgeDays: r.AverageAgeDays,
+		}
+		for _, item := range r.Stale {
+			view.Stale = append(view.Stale, taskView(item))
+		}
+		for _, b := range r.Blocked {
+			view.Blocked = append(view.Blocked, BlockedView{
+				Task: taskView(b.Item), On: b.On,
+			})
+		}
+		out = append(out, view)
+	}
+	return out
+}
+
+// WIPStatus is one column's load against its advisory limit.
+type WIPStatus struct {
+	Project     string `json:"project"`
+	ProjectName string `json:"projectName"`
+	Status      string `json:"status"`
+	Count       int    `json:"count"`
+	Limit       int    `json:"limit"`
+	Over        bool   `json:"over"`
+}
+
+// WIP reports where a project is at or over an advisory limit.
+//
+// It is a signal, never a rule: a limit that blocks a drag is a limit people
+// work around rather than one they act on.
+func (s *BoardService) WIP() []WIPStatus {
+	s.mu.Lock()
+	limits := s.prefs.WIPLimits
+	s.mu.Unlock()
+	if len(limits) == 0 {
+		return nil
+	}
+
+	var out []WIPStatus
+	for _, p := range s.store.Projects() {
+		if !p.OK() {
+			continue
+		}
+		counts := s.store.CountByStatus(p.Registry.Path)
+		for status, limit := range limits {
+			count := 0
+			for name, n := range counts {
+				if strings.EqualFold(name, status) {
+					count += n
+				}
+			}
+			if count == 0 {
+				continue
+			}
+			out = append(out, WIPStatus{
+				Project:     p.Registry.Path,
+				ProjectName: p.Registry.DisplayName,
+				Status:      status,
+				Count:       count,
+				Limit:       limit,
+				Over:        count >= limit,
+			})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ProjectName != out[j].ProjectName {
+			return out[i].ProjectName < out[j].ProjectName
+		}
+		return out[i].Status < out[j].Status
+	})
+	return out
+}
+
+func counts(in []store.Count) []CountView {
+	out := make([]CountView, 0, len(in))
+	for _, c := range in {
+		out = append(out, CountView{Label: c.Label, Total: c.Total})
+	}
+	return out
+}
+
+func taskView(it store.Item) TaskView {
+	return TaskView{
+		Project:       it.Ref.Project,
+		ProjectName:   it.ProjectName,
+		ProjectColour: it.ProjectColour,
+		Kind:          it.Ref.Kind,
+		Class:         it.Ref.Class,
+		ID:            it.Ref.ID,
+		Entity:        it.Entity,
+	}
 }

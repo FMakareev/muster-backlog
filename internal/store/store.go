@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/FMakareev/muster-backlog/internal/backlog"
 	"github.com/FMakareev/muster-backlog/internal/registry"
@@ -422,4 +423,120 @@ func add(seen map[string]bool, value string) {
 	if v := strings.TrimSpace(value); v != "" {
 		seen[v] = true
 	}
+}
+
+// Hit is one search result.
+type Hit struct {
+	Item Item
+	// Field says where the match was found, so a result can explain itself
+	// rather than looking arbitrary when the title does not contain the words.
+	Field string
+	// Excerpt is the matching text with a little around it.
+	Excerpt string
+}
+
+// Search looks through every entity of every project.
+//
+// Titles rank above bodies, because someone typing a few words is far more
+// often reaching for a task they remember by name than for a phrase buried in
+// a description.
+func (s *Store) Search(text string, limit int) []Hit {
+	needle := strings.ToLower(strings.TrimSpace(text))
+	if needle == "" {
+		return nil
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var titles, bodies []Hit
+	kinds := []backlog.Kind{
+		backlog.KindTask, backlog.KindDraft, backlog.KindDocument,
+		backlog.KindDecision, backlog.KindMilestone,
+	}
+
+	for _, path := range s.order {
+		state, ok := s.projects[path]
+		if !ok || !state.OK() {
+			continue
+		}
+		for _, kind := range kinds {
+			for _, e := range entitiesOfKind(state.Scanned, kind) {
+				if strings.Contains(strings.ToLower(e.Title), needle) {
+					titles = append(titles, Hit{
+						Item: item(state, e), Field: "title", Excerpt: e.Title,
+					})
+					continue
+				}
+				if excerpt, found := excerptAround(e.Body, needle); found {
+					bodies = append(bodies, Hit{
+						Item: item(state, e), Field: "body", Excerpt: excerpt,
+					})
+					continue
+				}
+				if strings.Contains(strings.ToLower(e.ID), needle) {
+					titles = append(titles, Hit{
+						Item: item(state, e), Field: "id", Excerpt: e.ID,
+					})
+				}
+			}
+		}
+	}
+
+	out := append(titles, bodies...)
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
+// excerptAround returns the matching text with some context, so a body hit can
+// show why it matched.
+func excerptAround(body, needle string) (string, bool) {
+	at := strings.Index(strings.ToLower(body), needle)
+	if at < 0 {
+		return "", false
+	}
+
+	const context = 60
+	start := max(at-context, 0)
+	end := min(at+len(needle)+context, len(body))
+
+	// Do not cut a rune in half.
+	for start > 0 && !utf8.RuneStart(body[start]) {
+		start--
+	}
+	for end < len(body) && !utf8.RuneStart(body[end]) {
+		end++
+	}
+
+	excerpt := strings.Join(strings.Fields(body[start:end]), " ")
+	if start > 0 {
+		excerpt = "…" + excerpt
+	}
+	if end < len(body) {
+		excerpt += "…"
+	}
+	return excerpt, true
+}
+
+// Entities returns every entity of one kind, across every project.
+func (s *Store) Entities(kind backlog.Kind) []Item {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var out []Item
+	for _, path := range s.order {
+		state, ok := s.projects[path]
+		if !ok || !state.OK() {
+			continue
+		}
+		for _, e := range entitiesOfKind(state.Scanned, kind) {
+			out = append(out, item(state, e))
+		}
+	}
+	return out
 }

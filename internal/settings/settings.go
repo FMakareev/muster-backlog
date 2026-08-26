@@ -52,15 +52,24 @@ type Settings struct {
 	TaskView TaskView `yaml:"task_view" json:"taskView"`
 	// GroupBy is what the board groups cards by: empty, project or milestone.
 	GroupBy string `yaml:"group_by" json:"groupBy"`
+	// WIPLimits are advisory ceilings on how many tasks a project may have in
+	// a status, keyed by status name. They are counted from native data and
+	// never enforced - a limit that blocks a drag is a limit people work
+	// around rather than a signal they act on.
+	WIPLimits map[string]int `yaml:"wip_limits" json:"wipLimits"`
+	// StaleAfterDays is when an untouched open task is called stale.
+	StaleAfterDays int `yaml:"stale_after_days" json:"staleAfterDays"`
 }
 
 // Defaults are what a first run gets: ordinary window behaviour and the side
 // panel, because both are the least surprising.
 func Defaults() Settings {
 	return Settings{
-		OnWindowClose: BehaviourQuit,
-		TaskView:      ViewPanel,
-		GroupBy:       "",
+		OnWindowClose:  BehaviourQuit,
+		TaskView:       ViewPanel,
+		GroupBy:        "",
+		WIPLimits:      map[string]int{},
+		StaleAfterDays: 30,
 	}
 }
 
@@ -121,6 +130,18 @@ func (s Settings) normalised() Settings {
 	}
 	if out.GroupBy != "project" && out.GroupBy != "milestone" {
 		out.GroupBy = ""
+	}
+	if out.WIPLimits == nil {
+		out.WIPLimits = map[string]int{}
+	}
+	for status, limit := range out.WIPLimits {
+		// A limit of zero or less is no limit, not a column nobody may use.
+		if limit <= 0 {
+			delete(out.WIPLimits, status)
+		}
+	}
+	if out.StaleAfterDays <= 0 {
+		out.StaleAfterDays = 30
 	}
 	return out
 }

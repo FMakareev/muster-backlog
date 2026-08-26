@@ -55,6 +55,8 @@ export const settings = atom<Settings>({
   onWindowClose: WindowBehaviour.BehaviourQuit,
   taskView: TaskViewMode.ViewPanel,
   groupBy: "",
+  wipLimits: {},
+  staleAfterDays: 30,
 });
 
 /**
@@ -140,6 +142,7 @@ export async function refresh(): Promise<void> {
 export function connect(): () => void {
   const offProject = Events.On("muster:project:changed", () => {
     void refresh();
+    bumpProjectChanged();
   });
   const offRegistry = Events.On("muster:registry:changed", () => {
     void refresh();
@@ -170,4 +173,11 @@ export async function applyWrite(
     whenFailed(`${result.problem.title}: ${result.problem.detail}`);
   }
   await refresh();
+}
+
+/** Let screens that fetch their own data know a project was reloaded. */
+function bumpProjectChanged(): void {
+  void import("./ui").then((ui) =>
+    ui.projectChanged.set(ui.projectChanged.get() + 1),
+  );
 }

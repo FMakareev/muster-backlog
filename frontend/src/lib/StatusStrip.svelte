@@ -1,6 +1,11 @@
 <script lang="ts">
   import { problems, projects, registryPath, tasks } from "./board";
-  import { focusedProject, showProblems, visibleTasks } from "./ui";
+  import {
+    filtersActive,
+    focusedProject,
+    showProblems,
+    visibleTasks,
+  } from "./ui";
 
   /** One line at the foot of the window: what is on screen, and what is wrong.
    *
@@ -10,7 +15,9 @@
 
   const loadedProjects = $derived($projects.filter((p) => p.ok).length);
   const brokenProjects = $derived($projects.length - loadedProjects);
-  const narrowed = $derived($focusedProject !== "");
+  // Narrowed by anything at all: focusing a project or applying a filter.
+  // The strip counts what is on screen, so it has to notice both.
+  const narrowed = $derived($focusedProject !== "" || $filtersActive);
 
   // Having no registry yet is a first run, not a fault. The main area already
   // says so and offers the way out; counting it here as a problem would
@@ -25,7 +32,8 @@
   <span class="tabular-nums">
     {#if narrowed}
       {$visibleTasks.length} of {$tasks.length}
-      {$tasks.length === 1 ? "task" : "tasks"} · 1 of {loadedProjects}
+      {$tasks.length === 1 ? "task" : "tasks"} ·
+      {$focusedProject ? 1 : loadedProjects} of {loadedProjects}
       {loadedProjects === 1 ? "project" : "projects"}
     {:else}
       {$tasks.length}

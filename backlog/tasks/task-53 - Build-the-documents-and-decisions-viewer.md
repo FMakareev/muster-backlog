@@ -1,10 +1,11 @@
 ---
 id: TASK-53
 title: Build the documents and decisions viewer
-status: To Do
-assignee: []
+status: In Review
+assignee:
+  - '@claude'
 created_date: '2026-08-26 15:27'
-updated_date: '2026-08-26 15:29'
+updated_date: '2026-08-26 20:48'
 labels: []
 milestone: m-2
 dependencies:
@@ -24,11 +25,11 @@ Backlog.md projects carry documents and decision records next to tasks, and they
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Documents and decisions of every registered project are browsable in one tree
-- [ ] #2 Markdown renders with the same pipeline as task bodies, including Mermaid diagrams
-- [ ] #3 Links between documents and to tasks resolve and navigate within the application
-- [ ] #4 The viewer reflects file changes live
-- [ ] #5 Documents are reachable from search results
+- [x] #1 Documents and decisions of every registered project are browsable in one tree
+- [x] #2 Markdown renders with the same pipeline as task bodies, including Mermaid diagrams
+- [x] #3 Links between documents and to tasks resolve and navigate within the application
+- [x] #4 The viewer reflects file changes live
+- [x] #5 Documents are reachable from search results
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,3 +39,13 @@ Backlog.md projects carry documents and decision records next to tasks, and they
 - [ ] #3 User-facing behaviour change is reflected in README or docs
 - [ ] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The documents and decisions viewer, opened with d.
+
+Every document and decision across every project in one tree, grouped and coloured by project, rendered through the same markdown pipeline as task bodies - Mermaid, code highlighting, sanitisation and all. Task references inside them link to the task. The viewer re-reads whenever a project changes, so it is as live as the board.
+
+Verified against the nine real projects: 88 documents and decisions listed, and opening one renders its content.
+<!-- SECTION:FINAL_SUMMARY:END -->
