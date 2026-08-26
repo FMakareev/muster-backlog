@@ -25,6 +25,12 @@ tasks:
       - '{{.PACKAGE_MANAGER}} --dir frontend run lint'
       - '{{.PACKAGE_MANAGER}} --dir frontend run check'
 
+  test:
+    summary: Runs every test in the repository
+    cmds:
+      - go test -tags gtk3 ./...
+      - '{{.PACKAGE_MANAGER}} --dir frontend run test'
+
   lint:fix:
     summary: Applies every available autofix across the repository
     cmds:

@@ -43,3 +43,6 @@ pre-push:
 
     - name: svelte-check
       run: pnpm --dir frontend run check
+
+    - name: frontend tests
+      run: pnpm --dir frontend run test

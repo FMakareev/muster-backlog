@@ -241,3 +241,194 @@ body {
   --wx-font-family: var(--font-sans);
   --wx-font-size: var(--text-body);
 }
+
+/* Rendered markdown: task bodies, documents and decisions all use this.
+   Kept deliberately close to the surrounding interface rather than styled as a
+   document — this is a working panel, not an article. */
+.prose-muster {
+  color: var(--color-chalk-dim);
+}
+
+.prose-muster > *:first-child {
+  margin-top: 0;
+}
+
+.prose-muster > *:last-child {
+  margin-bottom: 0;
+}
+
+.prose-muster h1,
+.prose-muster h2,
+.prose-muster h3,
+.prose-muster h4 {
+  margin: 1.25em 0 0.5em;
+  color: var(--color-chalk);
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: var(--text-title--line-height);
+}
+
+.prose-muster h3,
+.prose-muster h4 {
+  font-size: var(--text-body);
+}
+
+.prose-muster p,
+.prose-muster ul,
+.prose-muster ol,
+.prose-muster blockquote,
+.prose-muster table {
+  margin: 0.5em 0;
+}
+
+.prose-muster ul,
+.prose-muster ol {
+  padding-left: 1.25em;
+}
+
+.prose-muster ul {
+  list-style: disc;
+}
+
+.prose-muster ol {
+  list-style: decimal;
+}
+
+/* Acceptance-criteria items. The checkbox is disabled: it shows the state of
+   the file, and changing it goes through the CLI. */
+.prose-muster li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.25em;
+}
+
+.prose-muster input[type="checkbox"] {
+  margin-right: 0.5em;
+  accent-color: var(--color-chalk-dim);
+}
+
+.prose-muster a {
+  color: var(--color-chalk);
+  text-decoration: underline;
+  text-decoration-color: var(--color-chalk-faint);
+  text-underline-offset: 2px;
+}
+
+.prose-muster a[data-task-ref] {
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-chalk-faint);
+}
+
+.prose-muster code {
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  background-color: var(--color-ink-sunken);
+  border-radius: 2px;
+  padding: 0.1em 0.35em;
+}
+
+.prose-muster pre {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  background-color: var(--color-ink-sunken);
+  border: 1px solid var(--color-rule);
+  border-radius: 2px;
+  padding: 0.75em;
+}
+
+.prose-muster pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose-muster blockquote {
+  border-left: 2px solid var(--color-rule);
+  padding-left: 0.75em;
+  color: var(--color-chalk-faint);
+}
+
+.prose-muster table {
+  border-collapse: collapse;
+  font-size: var(--text-data);
+}
+
+.prose-muster th,
+.prose-muster td {
+  border: 1px solid var(--color-rule);
+  padding: 0.25em 0.5em;
+  text-align: left;
+}
+
+.prose-muster hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin: 1em 0;
+}
+
+.prose-muster img {
+  max-width: 100%;
+}
+
+/* An image whose source was blocked leaves a visible gap rather than nothing,
+   so a reader knows something was there. */
+.prose-muster img[data-blocked-src] {
+  display: inline-block;
+  min-width: 8rem;
+  min-height: 1.5rem;
+  border: 1px dashed var(--color-rule);
+}
+
+.prose-muster figure.mermaid {
+  margin: 0.75em 0;
+  overflow-x: auto;
+}
+
+.prose-muster .mermaid-error {
+  color: var(--color-chalk-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+}
+
+/* Syntax highlighting, on the same palette as everything else. */
+.prose-muster .hljs-comment,
+.prose-muster .hljs-quote {
+  color: var(--color-chalk-faint);
+  font-style: italic;
+}
+
+.prose-muster .hljs-keyword,
+.prose-muster .hljs-selector-tag,
+.prose-muster .hljs-literal,
+.prose-muster .hljs-type {
+  color: #bb9af7;
+}
+
+.prose-muster .hljs-string,
+.prose-muster .hljs-regexp,
+.prose-muster .hljs-addition {
+  color: #9ece6a;
+}
+
+.prose-muster .hljs-number,
+.prose-muster .hljs-attr,
+.prose-muster .hljs-variable,
+.prose-muster .hljs-template-variable {
+  color: #e0af68;
+}
+
+.prose-muster .hljs-title,
+.prose-muster .hljs-section,
+.prose-muster .hljs-name {
+  color: #7aa2f7;
+}
+
+.prose-muster .hljs-built_in,
+.prose-muster .hljs-symbol,
+.prose-muster .hljs-meta {
+  color: #7dcfff;
+}
+
+.prose-muster .hljs-deletion {
+  color: #f7768e;
+}
