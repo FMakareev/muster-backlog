@@ -101,6 +101,8 @@ Muster finds a project's data directory the way the Backlog.md CLI does: `backlo
 
 There is no registry file until you create one, and that is not an error — the application will offer to add the first project.
 
+Everything is held in memory and reloaded from disk rather than cached in a database. Measured over nine real projects and 884 tasks: a full load takes about 100 ms, reloading a single project after a file change costs about 11 ms, and a filtered query over the whole corpus takes under a millisecond. The startup budget is 2 seconds, enforced by a test.
+
 ## Git hooks
 
 Installed by `pnpm install`. They format and lint staged files before a commit, check the commit message against the convention, and run tests before a push. See [CONTRIBUTING.md](CONTRIBUTING.md).
