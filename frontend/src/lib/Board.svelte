@@ -4,7 +4,7 @@
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import { canMove, columns, refresh } from "./board";
   import { notify } from "./notices";
-  import { visibleTasks } from "./ui";
+  import { openTask, visibleTasks } from "./ui";
   import Card from "./Card.svelte";
 
   /**
@@ -32,6 +32,38 @@
   );
 
   const byID = $derived(new Map(boardCards.map((c) => [c.id, c.task])));
+
+  /** Open the task a DOM node belongs to.
+   *
+   * SVAR prefixes the identity it writes into data-id with a colon, so the
+   * card's own id has to be recovered from it rather than read straight off. */
+  function openFrom(target: EventTarget | null): void {
+    const card = (target as Element | null)?.closest("[data-id]");
+    const raw = card?.getAttribute("data-id");
+    if (!raw) return;
+    const task = byID.get(raw.replace(/^:/, ""));
+    if (!task) return;
+    openTask({
+      project: task.project,
+      kind: task.kind,
+      class: task.class,
+      id: task.id,
+    });
+  }
+
+  function onCardClick(event: MouseEvent): void {
+    openFrom(event.target);
+  }
+
+  // Cards are focusable, so a keyboard user reaches them by Tab and opens the
+  // panel the same way they would open anything else.
+  function onCardKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = (event.target as Element | null)?.closest(".wx-card");
+    if (!card) return;
+    event.preventDefault();
+    openFrom(event.target);
+  }
 
   function init(api: KanbanInstanceApi): void {
     // Creating, editing and deleting cards from the board are refused for now.
@@ -84,8 +116,13 @@
   }
 </script>
 
-<div class="min-h-0 flex-1">
-  <WillowDark>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="min-h-0 min-w-0 flex-1"
+  onclick={onCardClick}
+  onkeydown={onCardKeydown}
+>
+  <WillowDark fonts={false}>
     <Kanban
       cards={boardCards}
       columns={boardColumns}

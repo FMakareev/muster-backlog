@@ -3,7 +3,7 @@ id: doc-1
 title: Muster Specification v0.1
 type: specification
 created_date: '2026-08-26 14:57'
-updated_date: '2026-08-26 16:06'
+updated_date: '2026-08-26 17:50'
 ---
 > Muster every backlog. One application over every project.
 
@@ -98,6 +98,8 @@ Stack: **Wails v3.0.0-beta.8, Go 1.25, Svelte 5, Vite 8, Tailwind 4, nanostores*
 **Writes go only through the `backlog` CLI.** `task create|edit`, `draft create|promote`, `init`. The VSCode extension writes markdown directly and gets away with it, but the format is alive — bodies are marked up with sections (`<!-- SECTION:DESCRIPTION:BEGIN -->`, `<!-- AC:BEGIN -->`), `ordinal` holds manual ordering, id generation handles collisions, and there is a `backlog doctor` command precisely because that is not trivial. A writer of our own would have to chase every CLI release, and would be the first step toward owning the format. The board therefore settles on what a rescan confirms, not on where a card was dropped.
 
 **Project creation goes through `backlog init`.** Every prompt that command asks has a corresponding flag — `--backlog-dir`, `--config-location`, `--task-prefix`, `--zero-padded-ids`, `--integration-mode`, `--agent-instructions`, `--no-git` — plus `--defaults`. So the UI presents a form over those flags rather than emulating a dialogue. Any folder can become a project, git repository or not.
+
+**Nothing reaches the network.** Fonts, icons and every other asset are bundled, and rendered markdown has its remote resources stripped. This has to be checked rather than assumed: SVAR themes load an icon font and a typeface from cdn.svar.dev by default, which was found only by recording the requests a running window makes. The themes are mounted with fonts disabled and the icons are served from the bundle. Any new dependency needs the same check.
 
 **Liveness via fsnotify** on each project's directories. An agent changes a status and the screen updates without polling.
 

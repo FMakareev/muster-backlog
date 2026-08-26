@@ -440,3 +440,54 @@ body {
 .wx-willow-dark-theme .wx-add {
   display: none;
 }
+
+/* SVAR's themes load an icon font and Open Sans from cdn.svar.dev. A
+   local-first application must not reach a network it may not have, so the
+   theme is mounted with fonts disabled and the handful of icons the board
+   actually uses are declared here from a bundled copy. Open Sans is never
+   fetched anyway: the theme's font family is overridden above. */
+@font-face {
+  font-family: "wx-icons";
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: url("./assets/fonts/wx-icons.woff2") format("woff2");
+}
+
+i[class^="wxi-"]::before,
+i[class*=" wxi-"]::before {
+  font-family: "wx-icons" !important;
+  font-style: normal;
+  font-weight: normal !important;
+  font-variant: normal;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wxi-angle-left::before {
+  content: "\f108";
+}
+
+.wxi-angle-right::before {
+  content: "\f109";
+}
+
+.wxi-close::before {
+  content: "\f11a";
+}
+
+.wxi-dots-h::before {
+  content: "\f124";
+}
+
+.wxi-message::before {
+  content: "\f145";
+}
+
+.wxi-paperclip::before {
+  content: "\f146";
+}
+
+.wxi-plus::before {
+  content: "\f149";
+}
