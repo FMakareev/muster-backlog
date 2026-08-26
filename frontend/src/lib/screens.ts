@@ -40,7 +40,7 @@ export const screens: Screen[] = [
     label: "Inbox",
     key: "i",
     purpose: "Drafts waiting to be triaged",
-    available: false,
+    available: true,
   },
   {
     id: "docs",

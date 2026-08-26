@@ -1,0 +1,207 @@
+package app_test
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/FMakareev/muster-backlog/internal/app"
+)
+
+// draft writes one draft file directly, so the list and its ordering can be
+// tested without the CLI. Writing is always tested through the CLI instead.
+func draft(t *testing.T, root, id, title string, captured time.Time) {
+	t.Helper()
+	dir := filepath.Join(root, "backlog", "drafts")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	date := ""
+	if !captured.IsZero() {
+		date = "created_date: '" + captured.Format("2006-01-02 15:04") + "'\n"
+	}
+	body := "---\nid: " + id + "\ntitle: " + title + "\nstatus: Draft\n" + date +
+		"---\n\n## Description\n\n<!-- SECTION:DESCRIPTION:BEGIN -->\n" +
+		title + " body\n<!-- SECTION:DESCRIPTION:END -->\n"
+	name := strings.ToLower(id) + " - " + strings.ReplaceAll(title, " ", "-") + ".md"
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+		t.Fatalf("write draft: %v", err)
+	}
+}
+
+func titles(drafts []app.DraftView) []string {
+	var out []string
+	for _, d := range drafts {
+		out = append(out, d.Entity.Title)
+	}
+	return out
+}
+
+// The inbox is emptied oldest first, so that is the order it is shown in.
+func TestDraftsAreListedOldestFirstAcrossProjects(t *testing.T) {
+	one := newProject(t, "one", nil)
+	two := newProject(t, "two", nil)
+	now := time.Now()
+
+	draft(t, one, "DRAFT-1", "Three days old", now.AddDate(0, 0, -3))
+	draft(t, one, "DRAFT-2", "Undated", time.Time{})
+	draft(t, two, "DRAFT-1", "Ten days old", now.AddDate(0, 0, -10))
+	draft(t, two, "DRAFT-2", "Captured today", now)
+
+	s := startService(t, withRegistry(t, one, two))
+	got := s.Drafts()
+
+	want := []string{"Ten days old", "Three days old", "Captured today", "Undated"}
+	if strings.Join(titles(got), ",") != strings.Join(want, ",") {
+		t.Fatalf("order is %v, want %v", titles(got), want)
+	}
+	if got[0].WaitingDays != 10 || got[1].WaitingDays != 3 || got[2].WaitingDays != 0 {
+		t.Errorf("waits are %d, %d, %d", got[0].WaitingDays, got[1].WaitingDays, got[2].WaitingDays)
+	}
+	// Nothing is known about an undated note, and -1 says so rather than
+	// pretending it arrived today.
+	if got[3].WaitingDays != -1 {
+		t.Errorf("an undated draft reports a wait of %d", got[3].WaitingDays)
+	}
+	// Ids collide across projects; both are here.
+	if got[0].Project == got[1].Project {
+		t.Error("the two projects' drafts were not both listed")
+	}
+}
+
+// A discarded draft is archived, not deleted, and must not come back in the
+// inbox afterwards.
+func TestDiscardedDraftsLeaveTheInbox(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "A passing thought", time.Now().AddDate(0, 0, -1))
+	s := startService(t, withRegistry(t, one))
+
+	if len(s.Drafts()) != 1 {
+		t.Fatalf("started with %d drafts", len(s.Drafts()))
+	}
+	if result := s.DiscardDraft(one, "DRAFT-1"); !result.OK {
+		t.Fatalf("DiscardDraft: %+v", result.Problem)
+	}
+	if got := s.Drafts(); len(got) != 0 {
+		t.Errorf("a discarded draft is still in the inbox: %v", titles(got))
+	}
+	// Archived, not gone: Backlog.md has no delete and neither does Muster.
+	entries, err := os.ReadDir(filepath.Join(one, "backlog", "archive", "drafts"))
+	if err != nil || len(entries) != 1 {
+		t.Errorf("the note was not archived: %v %v", entries, err)
+	}
+}
+
+func TestPromotingADraftMakesItATask(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "Worth doing", time.Now().AddDate(0, 0, -2))
+	s := startService(t, withRegistry(t, one))
+
+	if result := s.PromoteDraft(one, "DRAFT-1"); !result.OK {
+		t.Fatalf("PromoteDraft: %+v", result.Problem)
+	}
+	if got := s.Drafts(); len(got) != 0 {
+		t.Errorf("the draft is still in the inbox: %v", titles(got))
+	}
+	tasks := s.Tasks(app.QueryInput{})
+	if len(tasks) != 1 || tasks[0].Entity.Title != "Worth doing" {
+		t.Fatalf("got %d tasks: %+v", len(tasks), tasks)
+	}
+	// The board's first status, not Draft.
+	if tasks[0].Entity.Status == "Draft" {
+		t.Error("the promoted task kept the draft status")
+	}
+}
+
+// Backlog.md has no draft edit, so revising is capture-and-discard. The note
+// must survive that whether or not it stays in the same project.
+func TestRevisingADraftRewritesItInPlace(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "vaguely worded thing", time.Now().AddDate(0, 0, -5))
+	s := startService(t, withRegistry(t, one))
+
+	result := s.ReviseDraft(one, "DRAFT-1", app.DraftEdit{
+		Title:       "Clearly worded thing",
+		Description: "With the context I remembered later.",
+		Labels:      []string{"idea", "later"},
+	})
+	if !result.OK {
+		t.Fatalf("ReviseDraft: %+v", result.Problem)
+	}
+
+	got := s.Drafts()
+	if len(got) != 1 {
+		t.Fatalf("got %d drafts, want the one rewritten: %v", len(got), titles(got))
+	}
+	if got[0].Entity.Title != "Clearly worded thing" {
+		t.Errorf("title is %q", got[0].Entity.Title)
+	}
+	if !strings.Contains(got[0].Entity.Sections["description"], "remembered later") {
+		t.Errorf("the body did not carry over: %q", got[0].Entity.Sections["description"])
+	}
+	if strings.Join(got[0].Entity.Labels, ",") != "idea,later" {
+		t.Errorf("labels are %v", got[0].Entity.Labels)
+	}
+	// The wait restarts, which is the cost of having no draft edit.
+	if got[0].WaitingDays != 0 {
+		t.Errorf("the rewritten note reports a wait of %d days", got[0].WaitingDays)
+	}
+}
+
+func TestRevisingADraftCanMoveItToAnotherProject(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	two := newProject(t, "two", nil)
+	draft(t, one, "DRAFT-1", "Belongs elsewhere", time.Now().AddDate(0, 0, -1))
+	s := startService(t, withRegistry(t, one, two))
+
+	result := s.ReviseDraft(one, "DRAFT-1", app.DraftEdit{
+		Title: "Belongs elsewhere", Project: two,
+	})
+	if !result.OK {
+		t.Fatalf("ReviseDraft: %+v", result.Problem)
+	}
+	got := s.Drafts()
+	if len(got) != 1 {
+		t.Fatalf("got %d drafts: %v", len(got), titles(got))
+	}
+	if got[0].Project != two {
+		t.Errorf("the note stayed in %s", got[0].Project)
+	}
+}
+
+func TestRevisingRefusesWhatCannotWork(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "Something", time.Now())
+	s := startService(t, withRegistry(t, one))
+
+	if result := s.ReviseDraft(one, "DRAFT-1", app.DraftEdit{Title: "  "}); result.OK {
+		t.Error("an empty title was accepted")
+	}
+	if result := s.ReviseDraft(one, "DRAFT-1", app.DraftEdit{
+		Title: "Something", Project: "/nowhere",
+	}); result.OK {
+		t.Error("a project that is not registered was accepted")
+	}
+	// Neither refusal touched the note.
+	if got := s.Drafts(); len(got) != 1 || got[0].Entity.Title != "Something" {
+		t.Errorf("a refused revision changed the inbox: %v", titles(got))
+	}
+}

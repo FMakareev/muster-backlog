@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { loading, problems, projects, registryPath } from "./board";
+  import { drafts, loading, problems, projects, registryPath } from "./board";
   import { screenFor, screens } from "./screens";
   import {
     cycleGrouping,
@@ -81,6 +81,11 @@
   const faults = $derived($problems.filter((p) => p.kind !== "no_registry"));
   const firstProblem = $derived(faults[0]);
   const noProjects = $derived(!$loading && $projects.length === 0);
+
+  // The longest a note has waited. Drafts arrive oldest first, so this is the
+  // first one; it decides whether the count on the nav reads as a number or as
+  // something to do something about.
+  const oldest = $derived($drafts[0]?.waitingDays ?? 0);
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -109,6 +114,19 @@
           onclick={() => item.available && screen.set(item.id)}
         >
           {item.label}
+          {#if item.id === "inbox" && $drafts.length > 0}
+            <!-- The depth, on the nav itself. An inbox you have to open to
+                 find out whether it is filling up is the pile nobody reads. -->
+            <span
+              class="rounded-[2px] bg-ink-sunken px-1 font-mono text-micro tabular-nums
+                     {oldest >= 30 ? 'text-chalk' : 'text-chalk-dim'}"
+              title="{$drafts.length} waiting{oldest > 0
+                ? `, the oldest for ${oldest} days`
+                : ''}"
+            >
+              {$drafts.length}
+            </span>
+          {/if}
           {#if item.available}
             <kbd class="font-mono text-micro text-chalk-faint">{item.key}</kbd>
           {/if}

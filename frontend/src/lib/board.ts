@@ -3,6 +3,7 @@ import { Events } from "@wailsio/runtime";
 import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
 import type {
   BoardLayout,
+  DraftView,
   MilestoneView,
   Problem,
   ProjectView,
@@ -49,6 +50,15 @@ export const registryPath = atom<string>("");
 /** Every milestone across every project, so a card can show a name rather
  *  than a bare id that reads exactly like a task id. */
 export const milestones = atom<MilestoneView[]>([]);
+
+/**
+ * Every waiting draft, oldest first.
+ *
+ * Kept alongside the tasks rather than fetched by the inbox screen, because
+ * the navigation shows the depth from everywhere: an inbox you have to open to
+ * discover is the inbox nobody reads.
+ */
+export const drafts = atom<DraftView[]>([]);
 
 /** Muster's own preferences. */
 export const settings = atom<Settings>({
@@ -130,19 +140,27 @@ export function canMove(project: string, status: string): boolean {
 
 /** Reload everything the UI shows from the backend. */
 export async function refresh(): Promise<void> {
-  const [nextProjects, nextTasks, nextProblems, nextLayout, nextMilestones] =
-    await Promise.all([
-      BoardService.Projects(),
-      BoardService.Tasks(allTasks()),
-      BoardService.Problems(),
-      BoardService.Layout(),
-      BoardService.Milestones(),
-    ]);
+  const [
+    nextProjects,
+    nextTasks,
+    nextProblems,
+    nextLayout,
+    nextMilestones,
+    nextDrafts,
+  ] = await Promise.all([
+    BoardService.Projects(),
+    BoardService.Tasks(allTasks()),
+    BoardService.Problems(),
+    BoardService.Layout(),
+    BoardService.Milestones(),
+    BoardService.Drafts(),
+  ]);
   projects.set(nextProjects ?? []);
   tasks.set(nextTasks ?? []);
   problems.set(nextProblems ?? []);
   layout.set(nextLayout);
   milestones.set(nextMilestones ?? []);
+  drafts.set(nextDrafts ?? []);
   loading.set(false);
 }
 

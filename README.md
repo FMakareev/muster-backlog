@@ -16,6 +16,10 @@ Muster is that view: one board, one list, one search, one set of numbers, over e
 
 An ordinary task manager — kanban with drag-and-drop, a sortable list, filters, cross-project search, a drafts inbox, a reader for project documents and decisions, and analytics. Nothing about that is novel. The only thing that is: all of it spans every registered project at once, and any folder on your disk can become one from inside the application.
 
+The **Inbox** (`i`) is the drafts folder made visible. Backlog.md keeps drafts off the board by design, which is what makes capture cheap and also what makes an unread drafts folder the pile nobody looks at — so notes are listed oldest first, across every project, each saying how long it has waited, with the depth on the navigation itself. From there a note is promoted into a task, rewritten, moved to another project, or discarded into the archive.
+
+Backlog.md has no `draft edit` — `task edit` refuses a `DRAFT-` id outright — so rewriting a note captures a new one and archives the old, which is also the only way to move a draft between projects. The consequence is that the wait starts again, and the interface says so rather than hiding it.
+
 Where Backlog.md has a relationship, Muster shows it without inventing a shape for it. Subtasks are the case that tempts a redesign: a parent card says how many of its subtasks are finished and a subtask card says whose it is, but the board stays flat and the links live in the task panel. Nesting cards inside cards would cost more legibility across nine projects than the relationship is worth.
 
 ## What it is not

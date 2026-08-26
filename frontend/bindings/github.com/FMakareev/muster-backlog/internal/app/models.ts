@@ -83,6 +83,51 @@ export interface CreateResult {
 }
 
 /**
+ * DraftEdit is a draft's editable content, as the CLI defines it.
+ */
+export interface DraftEdit {
+    "title": string;
+    "description": string;
+    "labels": string[] | null;
+    "assignee": string;
+
+    /**
+     * Project is where the draft should end up. Empty means where it is.
+     */
+    "project": string;
+}
+
+/**
+ * DraftView is one captured note waiting to be dealt with.
+ * 
+ * Carries the whole entity like every other view, plus the one number the
+ * inbox exists to make visible: how long it has been sitting there.
+ */
+export interface DraftView {
+    "project": string;
+    "projectName": string;
+    "projectColour": string;
+    "kind": backlog$0.Kind;
+    "class": backlog$0.Class;
+    "id": string;
+    "entity": backlog$0.Entity;
+
+    /**
+     * Family is present only for a task that has a parent or subtasks, which
+     * is 92 of the 712 in the author's projects. Nil for everything else, so
+     * the relationship costs nothing on the cards that have none.
+     */
+    "family"?: FamilyView | null;
+
+    /**
+     * WaitingDays is whole days since capture, or -1 when the file carries no
+     * created_date. Counted rather than formatted here, so the interface can
+     * say "today" without parsing anything back.
+     */
+    "waitingDays": number;
+}
+
+/**
  * EntityRef names one entity, in the shape the interface uses to open it.
  */
 export interface EntityRef {

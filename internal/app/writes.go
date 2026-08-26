@@ -101,7 +101,8 @@ func (s *BoardService) CheckCriterion(projectPath, taskID string, index int, che
 func (s *BoardService) CaptureDraft(projectPath, title, description string) WriteResult {
 	return s.write(projectPath, "The note could not be captured",
 		func(cli *backlogcli.Runner) error {
-			return cli.CreateDraft(context.Background(), s.dataDirFor(projectPath), title, description)
+			return cli.CreateDraft(context.Background(), s.dataDirFor(projectPath),
+				backlogcli.NewDraft{Title: title, Description: description})
 		})
 }
 

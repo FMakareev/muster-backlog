@@ -61,21 +61,68 @@ func (r *Runner) UncheckAcceptanceCriterion(ctx context.Context, dir, taskID str
 	return r.edit(ctx, dir, taskID, "--uncheck-ac", fmt.Sprint(index))
 }
 
-// CreateDraft captures text into a project's drafts.
+// NewDraft is everything `backlog draft create` accepts.
+//
+// Deliberately short, because the command is: a draft holds a title, a body,
+// labels and an assignee, and nothing else. Priority, type and milestone are
+// not fields a draft has - they arrive when it becomes a task.
+type NewDraft struct {
+	Title       string
+	Description string
+	Labels      []string
+	Assignee    string
+}
+
+// CreateDraft captures a note into a project's drafts.
 //
 // Drafts stay off the board by design, which is what makes capture cheap.
-func (r *Runner) CreateDraft(ctx context.Context, dir, title, description string) error {
+func (r *Runner) CreateDraft(ctx context.Context, dir string, draft NewDraft) error {
+	title := strings.TrimSpace(draft.Title)
+	if title == "" {
+		return fmt.Errorf("a draft needs a title")
+	}
+
 	args := []string{"draft", "create", title}
-	if strings.TrimSpace(description) != "" {
-		args = append(args, "-d", description)
+	if body := strings.TrimSpace(draft.Description); body != "" {
+		args = append(args, "-d", body)
+	}
+	if labels := joinLabels(draft.Labels); labels != "" {
+		args = append(args, "-l", labels)
+	}
+	if who := strings.TrimSpace(draft.Assignee); who != "" {
+		args = append(args, "-a", who)
 	}
 	_, err := r.Exec(ctx, dir, args...)
 	return err
 }
 
-// PromoteDraft turns a draft into a task.
+// joinLabels renders a label list the way the CLI takes one.
+func joinLabels(labels []string) string {
+	var kept []string
+	for _, label := range labels {
+		if trimmed := strings.TrimSpace(label); trimmed != "" {
+			kept = append(kept, trimmed)
+		}
+	}
+	return strings.Join(kept, ",")
+}
+
+// PromoteDraft turns a draft into a task: the file moves into tasks/, the id
+// changes from DRAFT-n to the next task id, and the status becomes the
+// project's first. The capture date is kept.
 func (r *Runner) PromoteDraft(ctx context.Context, dir, draftID string) error {
 	_, err := r.Exec(ctx, dir, "draft", "promote", draftID)
+	return err
+}
+
+// ArchiveDraft moves a draft into archive/drafts.
+//
+// This is what discarding is: Backlog.md has no delete, and inventing one by
+// removing the file would be Muster writing to a project behind the CLI's
+// back. The note stays recoverable, which is the right default for something
+// captured in a hurry.
+func (r *Runner) ArchiveDraft(ctx context.Context, dir, draftID string) error {
+	_, err := r.Exec(ctx, dir, "draft", "archive", draftID)
 	return err
 }
 

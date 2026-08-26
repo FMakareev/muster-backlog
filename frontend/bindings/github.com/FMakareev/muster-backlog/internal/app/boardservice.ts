@@ -82,6 +82,27 @@ export function CreateTask(input: $models.NewTaskInput): $CancellablePromise<$mo
 }
 
 /**
+ * DiscardDraft archives a draft.
+ * 
+ * Archiving rather than deleting: Backlog.md has no delete, and a note
+ * captured in a hurry is exactly the kind of thing someone wants back.
+ */
+export function DiscardDraft(projectPath: string, draftID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2408719147, projectPath, draftID);
+}
+
+/**
+ * Drafts returns every waiting draft, oldest first.
+ * 
+ * Oldest first because that is the order an inbox has to be emptied in: the
+ * note that has been ignored longest is the one that most needs a decision.
+ * Archived drafts are not here - discarding one is how it leaves.
+ */
+export function Drafts(): $CancellablePromise<$models.DraftView[] | null> {
+    return $Call.ByID(859692890);
+}
+
+/**
  * Entities returns every document, decision, draft or milestone across every
  * project, so the viewer can list them without asking for tasks it will drop.
  */
@@ -162,6 +183,13 @@ export function Projects(): $CancellablePromise<$models.ProjectView[] | null> {
 }
 
 /**
+ * PromoteDraft turns a draft into a task in its own project.
+ */
+export function PromoteDraft(projectPath: string, draftID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(222884257, projectPath, draftID);
+}
+
+/**
  * RegistryPath reports where the registry is read from, so the UI can name it.
  */
 export function RegistryPath(): $CancellablePromise<string> {
@@ -191,6 +219,26 @@ export function RemoveLabel(projectPath: string, taskID: string, label: string):
  */
 export function RemoveProject(path: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(4106624107, path);
+}
+
+/**
+ * ReviseDraft rewrites a draft, in its own project or another one.
+ * 
+ * Backlog.md has no `draft edit`: `task edit` refuses a DRAFT id outright.
+ * So revising is capture-and-discard - the new note is created through the
+ * CLI and the old one archived - which is also the only way to move a draft
+ * between projects, since ids and files belong to one project.
+ * 
+ * The cost is that the new note is captured now, so its wait starts again.
+ * That is stated in the interface rather than hidden, because the wait is the
+ * number the inbox is for.
+ * 
+ * Order matters: create first, archive second. If the create fails there is
+ * still a draft; if the archive fails there are two, which is visible and
+ * fixable. The reverse could lose the note entirely.
+ */
+export function ReviseDraft(projectPath: string, draftID: string, edit: $models.DraftEdit): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2553231505, projectPath, draftID, edit);
 }
 
 /**

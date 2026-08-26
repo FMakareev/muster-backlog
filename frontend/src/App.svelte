@@ -5,6 +5,7 @@
   import Shell from "./lib/Shell.svelte";
   import Board from "./lib/Board.svelte";
   import Docs from "./lib/Docs.svelte";
+  import Inbox from "./lib/Inbox.svelte";
   import Stats from "./lib/Stats.svelte";
   import Projects from "./lib/Projects.svelte";
   import TaskList from "./lib/TaskList.svelte";
@@ -17,6 +18,8 @@
   <div class="flex min-h-0 flex-1">
     {#if $screen === "list"}
       <TaskList />
+    {:else if $screen === "inbox"}
+      <Inbox />
     {:else if $screen === "docs"}
       <Docs />
     {:else if $screen === "stats"}

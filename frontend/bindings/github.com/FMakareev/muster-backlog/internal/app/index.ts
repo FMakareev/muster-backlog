@@ -20,6 +20,8 @@ export type {
     ConflictView,
     CountView,
     CreateResult,
+    DraftEdit,
+    DraftView,
     EntityRef,
     FamilyView,
     FolderView,
