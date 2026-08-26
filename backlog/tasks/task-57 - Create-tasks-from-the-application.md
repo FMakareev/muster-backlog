@@ -5,7 +5,7 @@ status: In Review
 assignee:
   - '@claude'
 created_date: '2026-08-26 19:43'
-updated_date: '2026-08-26 20:10'
+updated_date: '2026-08-26 21:59'
 labels: []
 milestone: m-2
 dependencies:
@@ -38,6 +38,16 @@ A task manager that cannot create a task is a viewer. Today every task has to be
 - [ ] #3 User-facing behaviour change is reflected in README or docs
 - [ ] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Follow-up from first use: the project picker always landed on the first project and ignored the one focused in the roll. The default was being set only when the field was empty, and it never was - the select binds to its first option the moment it renders, and that counted as a choice.
+
+The rule is now one function in the interface layer rather than a decision made per form: the project a person is already looking at, the first registered one when they are looking at all of them, never nothing, and broken projects skipped since they cannot be written to. Anything else that has to choose a project calls it rather than deciding again. It is applied on every opening, latched so that a project list reloading underneath an open form cannot throw away what the person has since picked.
+
+Verified in the browser: with nothing focused the form starts on the first project; with jade-palace, wall_diggers and Treeline focused in turn it starts on each; and a project picked by hand survives a reload of the list while the form is open.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

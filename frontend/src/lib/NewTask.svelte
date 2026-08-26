@@ -3,7 +3,7 @@
   import { columns, milestones, projects, refresh } from "./board";
   import { dismissable } from "./overlay";
   import { notify } from "./notices";
-  import { closeNewTask, focusedProject, openTask, showNewTask } from "./ui";
+  import { closeNewTask, defaultProject, openTask, showNewTask } from "./ui";
 
   /**
    * Creating a task.
@@ -30,12 +30,22 @@
   const healthy = $derived($projects.filter((p) => p.ok));
   const config = $derived(healthy.find((p) => p.path === project));
 
+  // Latched rather than derived: the project is chosen when the form opens,
+  // and a project list that reloads underneath it must not throw away what
+  // the person has since picked.
+  let opened = false;
+
   $effect(() => {
-    if (!open) return;
-    // Default to whichever project the person is already looking at.
-    if (!project) {
-      project = $focusedProject || healthy[0]?.path || "";
+    if (!open) {
+      opened = false;
+      return;
     }
+    if (opened) return;
+    opened = true;
+    // Set on every opening, not only when it is empty. The select binds to
+    // the first option the moment it renders, which used to count as a
+    // choice and left the focused project ignored.
+    project = defaultProject();
     titleField?.focus();
   });
 

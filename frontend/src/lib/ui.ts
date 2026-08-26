@@ -1,7 +1,7 @@
 import { atom, computed } from "nanostores";
 import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
 import { TaskView as TaskViewMode } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
-import { settings as settingsStore, tasks } from "./board";
+import { projects, settings as settingsStore, tasks } from "./board";
 import type { ScreenID } from "./screens";
 
 /** Which screen is showing. */
@@ -17,6 +17,27 @@ export const focusedProject = atom<string>("");
 
 export function toggleProject(path: string): void {
   focusedProject.set(focusedProject.get() === path ? "" : path);
+}
+
+/**
+ * Which project a form starts on.
+ *
+ * The rule, wherever something has to be created somewhere: the project the
+ * person is already looking at, and the first registered one when they are
+ * looking at all of them. Never nothing - a picker that starts empty makes
+ * every creation two decisions instead of one, and the second is a decision
+ * the interface already knows the answer to.
+ *
+ * Broken projects are skipped: they cannot be written to.
+ *
+ * Anything else that has to choose a project should call this rather than
+ * decide again.
+ */
+export function defaultProject(): string {
+  const focused = focusedProject.get();
+  const healthy = projects.get().filter((p) => p.ok);
+  if (focused && healthy.some((p) => p.path === focused)) return focused;
+  return healthy[0]?.path ?? "";
 }
 
 /**
