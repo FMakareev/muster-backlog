@@ -412,3 +412,16 @@ func TestInitWithNoNameStillCreatesAProject(t *testing.T) {
 		t.Errorf("registered as %+v, want the folder name", names(got))
 	}
 }
+
+// There is no application during tests and none in the server build, so the
+// interface must be told there is no dialog rather than offered a button that
+// can only fail.
+func TestNoFolderDialogWithoutADesktop(t *testing.T) {
+	if app.FolderDialogAvailable() {
+		t.Fatal("a dialog was reported available with no application running")
+	}
+	s := startService(t, withRegistry(t))
+	if got := s.ChooseFolder(); got != "" {
+		t.Errorf("ChooseFolder returned %q with no dialog to open", got)
+	}
+}

@@ -30,6 +30,13 @@
   let name = $state("");
   let colour = $state("");
 
+  // Whether the desktop can show a directory chooser. False in the server
+  // build, which has no dialogs, so the button is absent rather than broken.
+  let canBrowse = $state(false);
+  $effect(() => {
+    void BoardService.CanChooseFolder().then((yes) => (canBrowse = yes));
+  });
+
   // The init form. Everything empty means "let Backlog.md decide": the CLI is
   // run with --defaults and only what is filled in here is passed to it.
   let backlogDir = $state("");
@@ -65,6 +72,19 @@
   function onPath(value: string): void {
     path = value;
     void look(value);
+  }
+
+  /**
+   * Pick a folder with the desktop's own chooser.
+   *
+   * The chosen path goes through the same field and the same inspection as one
+   * that was typed, so there is one path into the form rather than two.
+   * Cancelling returns nothing and leaves the form exactly as it was.
+   */
+  async function browse(): Promise<void> {
+    const chosen = await BoardService.ChooseFolder();
+    if (!chosen) return;
+    onPath(chosen);
   }
 
   async function add(): Promise<void> {
@@ -135,18 +155,30 @@
   class="flex flex-col gap-3 border-b border-rule bg-ink-sunken px-4 py-3"
   aria-label="Add a folder"
 >
-  <label class="flex flex-col gap-1">
+  <div class="flex flex-col gap-1">
     <span class={label}>Folder</span>
-    <!-- svelte-ignore a11y_autofocus -->
-    <input
-      class="w-full font-mono"
-      autofocus
-      placeholder="/path/to/a/project, or ~/Dev/thing"
-      value={path}
-      aria-label="Folder to add"
-      oninput={(e) => onPath(e.currentTarget.value)}
-    />
-  </label>
+    <div class="flex items-center gap-2">
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        class="min-w-0 flex-1 font-mono"
+        autofocus
+        placeholder="/path/to/a/project, or ~/Dev/thing"
+        value={path}
+        aria-label="Folder to add"
+        oninput={(e) => onPath(e.currentTarget.value)}
+      />
+      {#if canBrowse}
+        <button
+          type="button"
+          class="min-h-6 shrink-0 border-b border-chalk-faint font-mono text-data
+                 text-chalk hover:border-chalk"
+          onclick={browse}
+        >
+          browse
+        </button>
+      {/if}
+    </div>
+  </div>
 
   {#if looking && !found}
     <p class={note}>Looking…</p>

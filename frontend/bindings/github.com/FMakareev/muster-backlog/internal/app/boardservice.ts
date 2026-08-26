@@ -51,6 +51,17 @@ export function CLIVersion(): $CancellablePromise<string> {
 }
 
 /**
+ * CanChooseFolder reports whether the interface should offer a browse button.
+ * 
+ * Asked rather than assumed: the same frontend runs in the server build, which
+ * has no dialogs at all, and a button that can only fail is worse than no
+ * button.
+ */
+export function CanChooseFolder(): $CancellablePromise<boolean> {
+    return $Call.ByID(2421757485);
+}
+
+/**
  * CanMove reports whether a task in a project may take a status.
  * 
  * A task can only ever hold a status its own project declares; anything else
@@ -72,6 +83,18 @@ export function CaptureDraft(projectPath: string, title: string, description: st
  */
 export function CheckCriterion(projectPath: string, taskID: string, index: number, checked: boolean): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(2097427485, projectPath, taskID, index, checked);
+}
+
+/**
+ * ChooseFolder opens the desktop's own directory chooser.
+ * 
+ * Returns the folder, or "" when the person cancelled - which is not an error
+ * and must not be reported as one. Where there is no dialog at all, the
+ * interface has already hidden the button; this still answers "" rather than
+ * failing, so a stale window cannot produce a broken state.
+ */
+export function ChooseFolder(): $CancellablePromise<string> {
+    return $Call.ByID(3013292659);
 }
 
 /**

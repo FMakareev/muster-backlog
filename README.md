@@ -114,7 +114,7 @@ wip_limits: # optional, advisory only
 
 Order in the file is the order on screen. How a project _works_ — its statuses, priorities, types, labels, task prefix — is read from that project's own `config.yml` and is never copied here, because a copy would go stale the moment the project changed.
 
-You do not have to write this file by hand. The **Projects** screen (`p`) adds folders, renames and recolours them, arranges the order, hides a project from the board without unregistering it, and turns a folder that has no backlog into one by running `backlog init` behind a form. Edits are written into the file in place: comments, key order and indentation survive, and only an entry that actually changes is rewritten. Unregistering a project removes the entry and leaves everything in the folder alone — nothing in Muster deletes a backlog.
+You do not have to write this file by hand. The **Projects** screen (`p`) adds folders — typed, pasted, or chosen with the desktop's own directory picker — renames and recolours them, arranges the order, hides a project from the board without unregistering it, and turns a folder that has no backlog into one by running `backlog init` behind a form. Edits are written into the file in place: comments, key order and indentation survive, and only an entry that actually changes is rewritten. Unregistering a project removes the entry and leaves everything in the folder alone — nothing in Muster deletes a backlog.
 
 An entry may also carry `hidden: true`, which keeps a project registered and loaded but out of the board, the lists, search and the figures.
 
