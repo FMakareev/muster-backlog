@@ -9,6 +9,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/FMakareev/muster-backlog/internal/backlog"
+	"github.com/FMakareev/muster-backlog/internal/backlogcli"
 	"github.com/FMakareev/muster-backlog/internal/registry"
 	"github.com/FMakareev/muster-backlog/internal/store"
 	"github.com/FMakareev/muster-backlog/internal/watcher"
@@ -114,6 +115,11 @@ type BoardService struct {
 	store    *store.Store
 	watch    *watcher.Watcher
 	problems []Problem
+	// cli is the only thing in the application that writes. It is resolved
+	// once at startup so a missing binary is one report rather than the same
+	// failure arriving on every action.
+	cli    *backlogcli.Runner
+	cliErr error
 	// registryPath is where the registry is read from. It is a field rather
 	// than a call to registry.DefaultPath() so that tests can point the service
 	// at their own file instead of manipulating the environment - the XDG
@@ -141,6 +147,7 @@ func (s *BoardService) ServiceName() string { return "muster.board" }
 // would leave them with a window that refuses to appear.
 func (s *BoardService) ServiceStartup(_ context.Context, _ application.ServiceOptions) error {
 	s.reload()
+	s.resolveCLI()
 	return nil
 }
 

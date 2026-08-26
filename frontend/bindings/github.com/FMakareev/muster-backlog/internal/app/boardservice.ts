@@ -15,6 +15,27 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * CLIVersion reports the CLI version in use, empty when there is none.
+ */
+export function CLIVersion(): $CancellablePromise<string> {
+    return $Call.ByID(3640242740);
+}
+
+/**
+ * CaptureDraft writes text into a project's drafts.
+ */
+export function CaptureDraft(projectPath: string, title: string, description: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(4046319439, projectPath, title, description);
+}
+
+/**
+ * CheckCriterion ticks or unticks an acceptance criterion by its 1-based index.
+ */
+export function CheckCriterion(projectPath: string, taskID: string, index: number, checked: boolean): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2097427485, projectPath, taskID, index, checked);
+}
+
+/**
  * FilterValues returns the distinct values of one field across every project,
  * for building filter menus.
  */
@@ -50,6 +71,27 @@ export function RegistryPath(): $CancellablePromise<string> {
  */
 export function Reload(): $CancellablePromise<$models.Problem[] | null> {
     return $Call.ByID(2009135923);
+}
+
+/**
+ * SetAssignee replaces a task's assignee.
+ */
+export function SetAssignee(projectPath: string, taskID: string, assignee: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2574606017, projectPath, taskID, assignee);
+}
+
+/**
+ * SetPriority sets a task's priority.
+ */
+export function SetPriority(projectPath: string, taskID: string, priority: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(192072010, projectPath, taskID, priority);
+}
+
+/**
+ * SetStatus moves a task to another status.
+ */
+export function SetStatus(projectPath: string, taskID: string, status: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(3922990440, projectPath, taskID, status);
 }
 
 /**

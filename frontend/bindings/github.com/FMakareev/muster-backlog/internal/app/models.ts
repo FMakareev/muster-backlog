@@ -41,6 +41,12 @@ export enum ProblemKind {
     $zero = "",
 
     /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
+
+    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -128,4 +134,16 @@ export interface TaskView {
     "class": backlog$0.Class;
     "id": string;
     "entity": backlog$0.Entity;
+}
+
+/**
+ * WriteResult is what the frontend gets back from a write.
+ * 
+ * A write is not "did the call return": it is what the files say afterwards.
+ * So this reports whether the CLI succeeded and carries the problem when it
+ * did not, and the caller re-reads rather than assuming.
+ */
+export interface WriteResult {
+    "ok": boolean;
+    "problem": Problem | null;
 }

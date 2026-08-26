@@ -17,5 +17,6 @@ export type {
     ProjectChanged,
     ProjectView,
     QueryInput,
-    TaskView
+    TaskView,
+    WriteResult
 } from "./models.js";
