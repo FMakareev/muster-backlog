@@ -80,6 +80,27 @@ wails3 task run       # build and run
 wails3 task dev       # run with frontend hot reload
 ```
 
+## Configuration
+
+Muster keeps one file of its own, at `$XDG_CONFIG_HOME/muster/projects.yml` — or `~/.config/muster/projects.yml` when `XDG_CONFIG_HOME` is unset. It records **where** projects are and how to display them, and nothing else:
+
+```yaml
+projects:
+  - path: ~/Dev/treeline          # a leading ~ is expanded
+  - path: /var/mnt/data/refloft
+    name: Refloft                 # optional; the folder name is used otherwise
+    color: "#7aa2f7"              # optional
+
+wip_limits:                       # optional, advisory only
+  In Progress: 3
+```
+
+Order in the file is the order on screen. How a project *works* — its statuses, priorities, types, labels, task prefix — is read from that project's own `config.yml` and is never copied here, because a copy would go stale the moment the project changed.
+
+Muster finds a project's data directory the way the Backlog.md CLI does: `backlog/`, then `.backlog/`, then a custom path named by `backlog_directory` in a root `backlog.config.yml`. A registered folder that holds no Backlog.md project is shown as such rather than dropped, and never prevents the others from loading.
+
+There is no registry file until you create one, and that is not an error — the application will offer to add the first project.
+
 ## Git hooks
 
 Installed by `pnpm install`. They format and lint staged files before a commit, check the commit message against the convention, and run tests before a push. See [CONTRIBUTING.md](CONTRIBUTING.md).
