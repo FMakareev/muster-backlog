@@ -80,6 +80,14 @@ wails3 task run       # build and run
 wails3 task dev       # run with frontend hot reload
 ```
 
+Linux packages, if you want them rather than the bare binary:
+
+```sh
+wails3 task package   # .deb, .rpm, .pkg.tar.zst and an AppImage into bin/
+```
+
+Before trusting a build, walk the [smoke checklist](backlog/docs/doc-5%20-%20v0.1-smoke-checklist.md). It takes a few minutes and every step in it has failed at least once.
+
 ## Configuration
 
 Muster keeps one file of its own, at `$XDG_CONFIG_HOME/muster/projects.yml` — or `~/.config/muster/projects.yml` when `XDG_CONFIG_HOME` is unset. It records **where** projects are and how to display them, and nothing else:

@@ -6,13 +6,13 @@
 name: "muster"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.1.0"
+version: "${PRODUCT_VERSION}"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A muster application"
-vendor: "My Company"
-homepage: "https://wails.io"
+description: "A local-first desktop task manager over all your Backlog.md projects at once"
+vendor: ""
+homepage: "https://github.com/FMakareev/muster-backlog"
 license: "MIT"
 release: "1"
 
