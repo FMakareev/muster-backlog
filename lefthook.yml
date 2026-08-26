@@ -1,0 +1,45 @@
+# Hooks catch mistakes before they reach CI or history. They must stay fast
+# enough that nobody reaches for --no-verify; anything slower than a few seconds
+# belongs in CI instead. See CONTRIBUTING.md.
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: gofmt
+      glob: "*.go"
+      run: golangci-lint fmt {staged_files}
+      stage_fixed: true
+
+    - name: golangci-lint
+      glob: "*.go"
+      # Linting is package-scoped rather than file-scoped: a change in one file
+      # can only be judged against the package it lives in.
+      run: golangci-lint run --new-from-rev=HEAD
+
+    # eslint and prettier are dependencies of the frontend workspace package, so
+    # these jobs run from there; lefthook rewrites {staged_files} relative to
+    # the job root.
+    - name: prettier
+      root: "frontend/"
+      glob: "frontend/**/*.{ts,js,svelte,css,html,json}"
+      run: pnpm exec prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+
+    - name: eslint
+      root: "frontend/"
+      glob: "frontend/**/*.{ts,js,svelte}"
+      run: pnpm exec eslint --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  jobs:
+    - name: go test
+      run: go test -tags gtk3 ./...
+
+    - name: svelte-check
+      run: pnpm --dir frontend run check

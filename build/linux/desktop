@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=My Product
+Comment=A muster application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/muster %u
+Terminal=false
+Type=Application
+Icon=muster
+Categories=Utility;
+StartupWMClass=muster
+
+ 

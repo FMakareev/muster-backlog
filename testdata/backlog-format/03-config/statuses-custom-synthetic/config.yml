@@ -1,0 +1,30 @@
+# SYNTHETIC. Not taken from the corpus.
+# Exercises every key the 1.48.0 config parser understands, including the ones no project on
+# this machine sets: a fully custom status list, custom types and priorities, a custom task
+# prefix, hide_empty_columns, on_status_change, default_assignee and default_reporter.
+project_name: "synthetic-wide"
+default_status: "Backlog"
+default_assignee: "@alice"
+default_reporter: "@bob"
+statuses: ["Backlog", "Ready", "Doing", "Blocked", "Review", "Shipped"]
+labels: ["frontend", "backend", "infra"]
+types: ["bug", "feature", "chore", "research"]
+priorities: ["Critical", "High", "Medium", "Low"]
+definition_of_done:
+  - "Tests pass"
+  - "Docs updated"
+date_format: yyyy-mm-dd
+max_column_width: 32
+default_editor: "nvim"
+auto_open_browser: false
+hide_empty_columns: true
+default_port: 6430
+remote_operations: false
+auto_commit: true
+filesystem_only: false
+zero_padded_ids: 4
+bypass_git_hooks: true
+check_active_branches: false
+active_branch_days: 14
+on_status_change: "./scripts/on-status-change.sh"
+task_prefix: "story"

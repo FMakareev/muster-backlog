@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# Parser fixtures must reach the parser exactly as they were found on disk.
+# Line-ending normalisation would silently defeat the CRLF fixture, and the
+# whole point of this corpus is that it is byte-for-byte real.
+testdata/backlog-format/** -text

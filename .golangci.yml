@@ -1,0 +1,39 @@
+version: "2"
+
+run:
+  # The Linux CGO backend sits behind build tags. Without them the files that do
+  # the actual windowing work are invisible to every linter below.
+  build-tags:
+    - gtk3
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unused
+
+  settings:
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+
+  exclusions:
+    generated: lax
+    paths:
+      - frontend/bindings
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/FMakareev/muster-backlog

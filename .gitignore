@@ -1,0 +1,13 @@
+# Build output
+bin
+frontend/dist
+
+# Dependencies (root and every workspace package)
+node_modules
+
+# Task runner cache
+.task
+
+# Packaging downloads
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe

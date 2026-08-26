@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* The shell owns the window background; SVAR themes paint the board itself. */
+@theme {
+  --color-shell: #0f1115;
+  --color-shell-raised: #171a21;
+  --color-shell-border: #262b36;
+  --color-shell-text: #e6e8ee;
+  --color-shell-muted: #9aa2b1;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-shell);
+  color: var(--color-shell-text);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
