@@ -3,6 +3,7 @@
   import { loading, problems, projects, registryPath } from "./board";
   import { screenFor, screens } from "./screens";
   import { screen } from "./ui";
+  import { dismiss, notices } from "./notices";
   import ProjectRoll from "./ProjectRoll.svelte";
   import StatusStrip from "./StatusStrip.svelte";
 
@@ -121,6 +122,24 @@
             {/if}
           </div>
         {/if}
+        {#each $notices as notice (notice.id)}
+          <div
+            class="flex shrink-0 items-baseline gap-2 border-b border-rule bg-ink-raised px-3 py-1.5"
+            role="status"
+          >
+            <span class="min-w-0 flex-1 text-body text-chalk"
+              >{notice.text}</span
+            >
+            <button
+              type="button"
+              class="shrink-0 font-mono text-data text-chalk-faint hover:text-chalk"
+              onclick={() => dismiss(notice.id)}
+            >
+              dismiss
+            </button>
+          </div>
+        {/each}
+
         {@render children()}
       {/if}
     </main>

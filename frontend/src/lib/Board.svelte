@@ -1,0 +1,97 @@
+<script lang="ts">
+  import { Kanban, WillowDark } from "@svar-ui/svelte-kanban";
+  import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
+  import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
+  import { canMove, columns, refresh } from "./board";
+  import { notify } from "./notices";
+  import { visibleTasks } from "./ui";
+  import Card from "./Card.svelte";
+
+  /**
+   * The multi-project board.
+   *
+   * Columns are the union of what every project declares; a card can only move
+   * within its own project's list, and the move is written by the Backlog.md
+   * CLI. The board settles on what the files say afterwards, never on where the
+   * card was dropped.
+   */
+
+  const boardColumns = $derived(
+    $columns.map((column) => ({ id: column.name, label: column.name })),
+  );
+
+  // A card's identity is its project, kind, class and id together: ids collide
+  // across projects, and one id can name two tasks inside a project.
+  const boardCards = $derived(
+    $visibleTasks.map((task) => ({
+      id: `${task.project}|${task.kind}|${task.class}|${task.id}`,
+      label: task.entity.Title,
+      column: task.entity.Status,
+      task,
+    })),
+  );
+
+  const byID = $derived(new Map(boardCards.map((c) => [c.id, c.task])));
+
+  function init(api: KanbanInstanceApi): void {
+    // Creating, editing and deleting cards from the board are refused for now.
+    // The board would happily do all three in memory, showing a task the files
+    // on disk do not have — which is the one thing this application must never
+    // do. They arrive when the CLI writes them.
+    for (const action of ["add-card", "update-card", "delete-card"] as const) {
+      api.intercept(action, () => {
+        notify(
+          "Tasks are created and edited with the backlog CLI. " +
+            "Muster only moves them for now.",
+        );
+        return false;
+      });
+    }
+
+    // Refuse a move a project cannot represent, and say why. Writing a status
+    // the project does not declare would produce a task the CLI itself rejects,
+    // and the alternative - editing that project's config - is exactly what
+    // Muster does not do.
+    api.intercept("move-card", (raw) => {
+      // The intercept signature covers every store action, so narrow to what
+      // a move actually carries rather than asserting a shape.
+      const event = raw as { id?: string | number; column?: string };
+      const task =
+        event.id === undefined ? undefined : byID.get(String(event.id));
+      const target = event.column;
+      if (!task || !target) return true;
+      if (task.entity.Status === target) return true;
+
+      if (!canMove(task.project, target)) {
+        notify(
+          `${task.projectName} has no “${target}” status, so ${task.id} cannot move there. ` +
+            `Add it to that project's config.yml if it belongs there.`,
+        );
+        return false;
+      }
+
+      // Write through the CLI, then take whatever the files say afterwards.
+      void BoardService.SetStatus(task.project, task.id, target).then(
+        (result) => {
+          if (!result.ok && result.problem) {
+            notify(`${result.problem.title}: ${result.problem.detail}`);
+          }
+          void refresh();
+        },
+      );
+      return true;
+    });
+  }
+</script>
+
+<div class="min-h-0 flex-1">
+  <WillowDark>
+    <Kanban
+      cards={boardCards}
+      columns={boardColumns}
+      cardContent={Card}
+      {init}
+      render={{ virtualizeCards: true, columnScroll: true }}
+    />
+  </WillowDark>
+</div>

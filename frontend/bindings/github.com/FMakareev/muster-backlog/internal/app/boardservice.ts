@@ -22,6 +22,16 @@ export function CLIVersion(): $CancellablePromise<string> {
 }
 
 /**
+ * CanMove reports whether a task in a project may take a status.
+ * 
+ * A task can only ever hold a status its own project declares; anything else
+ * would be a value the Backlog.md CLI itself rejects.
+ */
+export function CanMove(projectPath: string, status: string): $CancellablePromise<boolean> {
+    return $Call.ByID(3472873825, projectPath, status);
+}
+
+/**
  * CaptureDraft writes text into a project's drafts.
  */
 export function CaptureDraft(projectPath: string, title: string, description: string): $CancellablePromise<$models.WriteResult> {
@@ -41,6 +51,17 @@ export function CheckCriterion(projectPath: string, taskID: string, index: numbe
  */
 export function FilterValues(field: string): $CancellablePromise<string[] | null> {
     return $Call.ByID(3592693646, field);
+}
+
+/**
+ * Layout returns the unified board columns.
+ * 
+ * Statuses are per-project configuration and projects do not agree, so the
+ * columns are the union of every declared list. Muster never edits another
+ * project's config to make its own view simpler.
+ */
+export function Layout(): $CancellablePromise<$models.BoardLayout> {
+    return $Call.ByID(1111036648);
 }
 
 /**

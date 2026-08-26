@@ -10,6 +10,7 @@ import (
 
 	"github.com/FMakareev/muster-backlog/internal/backlog"
 	"github.com/FMakareev/muster-backlog/internal/backlogcli"
+	"github.com/FMakareev/muster-backlog/internal/board"
 	"github.com/FMakareev/muster-backlog/internal/registry"
 	"github.com/FMakareev/muster-backlog/internal/store"
 	"github.com/FMakareev/muster-backlog/internal/watcher"
@@ -388,4 +389,69 @@ func (q QueryInput) toQuery() store.Query {
 
 func isNoRegistry(err error) bool {
 	return errors.Is(err, registry.ErrNoRegistry)
+}
+
+// ColumnView is one column of the unified board.
+type ColumnView struct {
+	Name string `json:"name"`
+	// Projects are the registered projects that declare this status. A project
+	// absent from the list simply has no cell in this column.
+	Projects []string `json:"projects"`
+}
+
+// ConflictView records a pair of statuses the projects ordered differently, so
+// the interface can explain an order that would otherwise look arbitrary.
+type ConflictView struct {
+	Before  string `json:"before"`
+	After   string `json:"after"`
+	Votes   int    `json:"votes"`
+	Against int    `json:"against"`
+}
+
+// BoardLayout is the board's columns and how they were decided.
+type BoardLayout struct {
+	Columns   []ColumnView   `json:"columns"`
+	Conflicts []ConflictView `json:"conflicts"`
+}
+
+// Layout returns the unified board columns.
+//
+// Statuses are per-project configuration and projects do not agree, so the
+// columns are the union of every declared list. Muster never edits another
+// project's config to make its own view simpler.
+func (s *BoardService) Layout() BoardLayout {
+	layout := board.Build(s.projectStatuses())
+
+	out := BoardLayout{}
+	for _, c := range layout.Columns {
+		out.Columns = append(out.Columns, ColumnView{Name: c.Name, Projects: c.Projects})
+	}
+	for _, c := range layout.Conflicts {
+		out.Conflicts = append(out.Conflicts, ConflictView{
+			Before: c.Before, After: c.After, Votes: c.Votes, Against: c.Against,
+		})
+	}
+	return out
+}
+
+// CanMove reports whether a task in a project may take a status.
+//
+// A task can only ever hold a status its own project declares; anything else
+// would be a value the Backlog.md CLI itself rejects.
+func (s *BoardService) CanMove(projectPath, status string) bool {
+	return board.Build(s.projectStatuses()).CanMove(projectPath, status)
+}
+
+// projectStatuses collects what each loaded project declares, in registry order.
+func (s *BoardService) projectStatuses() []board.ProjectStatuses {
+	var out []board.ProjectStatuses
+	for _, p := range s.store.Projects() {
+		if p.OK() {
+			out = append(out, board.ProjectStatuses{
+				Project:  p.Registry.Path,
+				Statuses: p.Scanned.Config.Statuses,
+			})
+		}
+	}
+	return out
 }

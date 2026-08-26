@@ -13,6 +13,9 @@ export {
 } from "./models.js";
 
 export type {
+    BoardLayout,
+    ColumnView,
+    ConflictView,
     Problem,
     ProjectChanged,
     ProjectView,

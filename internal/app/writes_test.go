@@ -2,7 +2,9 @@ package app_test
 
 import (
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -137,5 +139,55 @@ func TestCLIVersionIsReported(t *testing.T) {
 	s := startService(t, withRegistry(t, dir))
 	if s.CLIVersion() == "" {
 		t.Error("no CLI version recorded")
+	}
+}
+
+// Muster adapts to what projects declare and never asks them to agree. Nothing
+// it does may alter another project's configuration - not to add a status, not
+// to make the board tidier.
+func TestWritesNeverTouchProjectConfiguration(t *testing.T) {
+	dir := realProject(t)
+	s := startService(t, withRegistry(t, dir))
+	id := firstTaskID(t, s)
+
+	configPath := filepath.Join(dir, "backlog", "config.yml")
+	before, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	stat, err := os.Stat(configPath)
+	if err != nil {
+		t.Fatalf("stat config: %v", err)
+	}
+
+	// Exercise every write the application can perform.
+	if r := s.SetStatus(dir, id, "In Progress"); !r.OK {
+		t.Fatalf("SetStatus: %+v", r.Problem)
+	}
+	if r := s.SetPriority(dir, id, "High"); !r.OK {
+		t.Fatalf("SetPriority: %+v", r.Problem)
+	}
+	if r := s.SetAssignee(dir, id, "@someone"); !r.OK {
+		t.Fatalf("SetAssignee: %+v", r.Problem)
+	}
+	if r := s.CaptureDraft(dir, "A note", ""); !r.OK {
+		t.Fatalf("CaptureDraft: %+v", r.Problem)
+	}
+	// Asking whether a move is allowed must not make it allowed.
+	s.CanMove(dir, "Nonexistent")
+	s.Layout()
+
+	after, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if string(before) != string(after) {
+		t.Errorf("the project configuration was modified:\nbefore:\n%s\nafter:\n%s",
+			before, after)
+	}
+	if stat2, err := os.Stat(configPath); err == nil {
+		if !stat2.ModTime().Equal(stat.ModTime()) {
+			t.Error("the configuration file was rewritten with identical content")
+		}
 	}
 }

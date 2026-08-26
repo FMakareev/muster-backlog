@@ -301,3 +301,99 @@ func TestReloadPicksUpRegistryEdits(t *testing.T) {
 		t.Errorf("got %d tasks after reload, want 2", n)
 	}
 }
+
+// The board's columns are the union of what projects declare, and a project
+// that does not declare a status simply has no cell in that column.
+func TestLayoutUnifiesDifferingStatusLists(t *testing.T) {
+	alpha := newProjectWithStatuses(t, "alpha", `["To Do", "In Progress", "Done"]`,
+		map[string]string{
+			"task-1 - a.md": "---\nid: TASK-1\ntitle: Alpha one\nstatus: To Do\n---\n",
+		})
+	muster := newProjectWithStatuses(t, "muster",
+		`["To Do", "In Progress", "In Review", "Done"]`,
+		map[string]string{
+			"task-1 - m.md": "---\nid: TASK-1\ntitle: Muster one\nstatus: In Review\n---\n",
+		})
+	s := startService(t, withRegistry(t, alpha, muster))
+
+	layout := s.Layout()
+	var got []string
+	for _, c := range layout.Columns {
+		got = append(got, c.Name)
+	}
+	if want := "To Do|In Progress|In Review|Done"; strings.Join(got, "|") != want {
+		t.Errorf("columns = %v, want %s", got, want)
+	}
+
+	for _, c := range layout.Columns {
+		if c.Name != "In Review" {
+			continue
+		}
+		if len(c.Projects) != 1 || c.Projects[0] != muster {
+			t.Errorf("In Review declared by %v, want only muster", c.Projects)
+		}
+	}
+
+	// A task may only take a status its own project declares.
+	if !s.CanMove(alpha, "In Progress") {
+		t.Error("alpha declares In Progress")
+	}
+	if s.CanMove(alpha, "In Review") {
+		t.Error("alpha does not declare In Review and must not be moved there")
+	}
+	if !s.CanMove(muster, "In Review") {
+		t.Error("muster declares In Review")
+	}
+}
+
+// A status added to a project's config must appear without restarting: the
+// watcher reloads the project and the layout is derived fresh each time.
+func TestLayoutFollowsAConfigChange(t *testing.T) {
+	alpha := newProjectWithStatuses(t, "alpha", `["To Do", "Done"]`,
+		map[string]string{
+			"task-1 - a.md": "---\nid: TASK-1\ntitle: One\nstatus: To Do\n---\n",
+		})
+	s := startService(t, withRegistry(t, alpha))
+
+	if n := len(s.Layout().Columns); n != 2 {
+		t.Fatalf("columns = %d, want 2", n)
+	}
+
+	if err := os.WriteFile(filepath.Join(alpha, "backlog", "config.yml"),
+		[]byte("project_name: \"alpha\"\nstatuses: [\"To Do\", \"In Review\", \"Done\"]\n"),
+		0o644); err != nil {
+		t.Fatalf("rewrite config: %v", err)
+	}
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if len(s.Layout().Columns) == 3 {
+			if !s.CanMove(alpha, "In Review") {
+				t.Error("the new status must immediately be a valid target")
+			}
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("the new status never appeared; columns are still %d", len(s.Layout().Columns))
+}
+
+// newProjectWithStatuses is newProject with an explicit status list.
+func newProjectWithStatuses(t *testing.T, name, statuses string, tasks map[string]string) string {
+	t.Helper()
+	root := filepath.Join(t.TempDir(), name)
+	tasksDir := filepath.Join(root, "backlog", "tasks")
+	if err := os.MkdirAll(tasksDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "backlog", "config.yml"),
+		[]byte("project_name: \""+name+"\"\nstatuses: "+statuses+"\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	for file, content := range tasks {
+		if err := os.WriteFile(filepath.Join(tasksDir, file), []byte(content), 0o644); err != nil {
+			t.Fatalf("write task: %v", err)
+		}
+	}
+	return root
+}

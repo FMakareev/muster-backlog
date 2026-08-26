@@ -432,3 +432,11 @@ body {
 .prose-muster .hljs-deletion {
   color: #f7768e;
 }
+
+/* SVAR's per-column add control creates a card in memory. Muster writes only
+   through the backlog CLI, so an affordance that would produce a task the files
+   do not have is removed rather than left to be discovered. The corresponding
+   store actions are refused as well, so this is presentation, not the guard. */
+.wx-willow-dark-theme .wx-add {
+  display: none;
+}

@@ -6,6 +6,38 @@
 import * as backlog$0 from "../backlog/models.js";
 
 /**
+ * BoardLayout is the board's columns and how they were decided.
+ */
+export interface BoardLayout {
+    "columns": ColumnView[] | null;
+    "conflicts": ConflictView[] | null;
+}
+
+/**
+ * ColumnView is one column of the unified board.
+ */
+export interface ColumnView {
+    "name": string;
+
+    /**
+     * Projects are the registered projects that declare this status. A project
+     * absent from the list simply has no cell in this column.
+     */
+    "projects": string[] | null;
+}
+
+/**
+ * ConflictView records a pair of statuses the projects ordered differently, so
+ * the interface can explain an order that would otherwise look arbitrary.
+ */
+export interface ConflictView {
+    "before": string;
+    "after": string;
+    "votes": number;
+    "against": number;
+}
+
+/**
  * Problem is a failure the frontend can render.
  * 
  * Go errors cross the bridge as bare strings, which leaves the UI with nothing

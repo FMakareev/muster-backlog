@@ -2,6 +2,7 @@ import { atom, computed } from "nanostores";
 import { Events } from "@wailsio/runtime";
 import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
 import type {
+  BoardLayout,
   Problem,
   ProjectView,
   QueryInput,
@@ -40,32 +41,38 @@ export const problems = atom<Problem[]>([]);
 export const registryPath = atom<string>("");
 export const loading = atom<boolean>(true);
 
-/** Columns for the board: the statuses every loaded project declares.
+/**
+ * The board's columns, resolved by the backend.
  *
- * This is a placeholder union that simply preserves first-seen order. The real
- * algorithm — which has to cope with projects whose status lists share no
- * order at all — belongs to TASK-27.
+ * Statuses are per-project configuration and projects do not agree, so the
+ * columns are the union of every declared list and the ordering is a weighted
+ * vote across projects. That logic lives in Go where it is tested, rather than
+ * being re-derived here from the raw lists.
  */
-export const columns = computed(projects, (list) => {
-  const seen: string[] = [];
-  for (const project of list) {
-    for (const status of project.statuses ?? []) {
-      if (!seen.includes(status)) seen.push(status);
-    }
-  }
-  return seen;
-});
+export const layout = atom<BoardLayout>({ columns: null, conflicts: null });
+
+export const columns = computed(layout, (l) => l.columns ?? []);
+
+/** Whether a task in a project may take a status. */
+export function canMove(project: string, status: string): boolean {
+  const column = (layout.get().columns ?? []).find((c) => c.name === status);
+  return column ? (column.projects ?? []).includes(project) : false;
+}
 
 /** Reload everything the UI shows from the backend. */
 export async function refresh(): Promise<void> {
-  const [nextProjects, nextTasks, nextProblems] = await Promise.all([
-    BoardService.Projects(),
-    BoardService.Tasks(allTasks()),
-    BoardService.Problems(),
-  ]);
+  const [nextProjects, nextTasks, nextProblems, nextLayout] = await Promise.all(
+    [
+      BoardService.Projects(),
+      BoardService.Tasks(allTasks()),
+      BoardService.Problems(),
+      BoardService.Layout(),
+    ],
+  );
   projects.set(nextProjects ?? []);
   tasks.set(nextTasks ?? []);
   problems.set(nextProblems ?? []);
+  layout.set(nextLayout);
   loading.set(false);
 }
 
