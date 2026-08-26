@@ -1,12 +1,181 @@
 @import "tailwindcss";
 
-/* The shell owns the window background; SVAR themes paint the board itself. */
+/* Fonts are bundled, never fetched. Muster is local-first and must look the
+   same with the network unplugged.
+
+   Golos Text is a Cyrillic-first grotesque. That is not decoration: 912 of the
+   1021 entity filenames in the reference corpus are non-ASCII and Cyrillic
+   dominates, so a UI face without Cyrillic would fall back glyph by glyph on
+   most task titles. IBM Plex Mono carries ids, counts and paths, and covers
+   Cyrillic too. Both are SIL Open Font License 1.1. */
+
+@font-face {
+  font-family: "Golos Text";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: block;
+  src: url("./assets/fonts/golos-text-cyrillic-ext.woff2") format("woff2");
+  unicode-range:
+    U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: "Golos Text";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: block;
+  src: url("./assets/fonts/golos-text-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "Golos Text";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: block;
+  src: url("./assets/fonts/golos-text-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Golos Text";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: block;
+  src: url("./assets/fonts/golos-text-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-400-cyrillic-ext.woff2") format("woff2");
+  unicode-range:
+    U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-400-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-400-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-400-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-600-cyrillic-ext.woff2") format("woff2");
+  unicode-range:
+    U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-600-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-600-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./assets/fonts/plex-mono-600-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
-  --color-shell: #0f1115;
-  --color-shell-raised: #171a21;
-  --color-shell-border: #262b36;
-  --color-shell-text: #e6e8ee;
-  --color-shell-muted: #9aa2b1;
+  /* Ground and chrome. A cool blue-black rather than neutral grey: nine
+     project colours sit on top of it, and a warm or neutral ground makes them
+     muddy. */
+  --color-ink: #14161c;
+  --color-ink-raised: #1a1d25;
+  --color-ink-sunken: #101218;
+  --color-rule: #272c38;
+
+  --color-chalk: #e6e9f0;
+  --color-chalk-dim: #8a93a6;
+  --color-chalk-faint: #5b6376;
+
+  /* There is deliberately no accent hue. Every colour in this interface
+     belongs to a project, taken from the registry; a brand hue would be a
+     tenth colour competing with nine that carry meaning. Selection and focus
+     are expressed with weight and brightness instead. */
+
+  --font-sans:
+    "Golos Text", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  /* A dense desktop scale. The board shows hundreds of rows, so the steps are
+     tight and the smallest sizes still have to be legible at arm's length. */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 0.875rem;
+  --text-data: 0.6875rem;
+  --text-data--line-height: 1rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.125rem;
+  --text-title: 0.9375rem;
+  --text-title--line-height: 1.25rem;
+
+  /* Fixed chrome heights, referenced by the shell grid. */
+  --spacing-bar: 2.25rem;
+  --spacing-strip: 1.5rem;
+  --spacing-roll: 14rem;
 }
 
 html,
@@ -17,7 +186,58 @@ body,
 
 body {
   margin: 0;
-  background-color: var(--color-shell);
-  color: var(--color-shell-text);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  background-color: var(--color-ink);
+  color: var(--color-chalk);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A visible focus ring is not optional in an interface meant to be driven from
+   the keyboard. It is chalk rather than a hue, for the reason above. */
+:focus-visible {
+  outline: 2px solid var(--color-chalk);
+  outline-offset: -2px;
+}
+
+::selection {
+  background-color: var(--color-chalk);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* SVAR Kanban ships its own theme. Left alone it looks like a different
+   application bolted into this window, so its variables are mapped onto the
+   tokens above. Only colour and radius are touched; its layout is its own. */
+.wx-willow-dark-theme {
+  --wx-background: var(--color-ink);
+  --wx-background-alt: var(--color-ink-raised);
+  --wx-background-hover: var(--color-ink-raised);
+  --wx-color-font: var(--color-chalk);
+  --wx-color-font-alt: var(--color-chalk-dim);
+  --wx-border-color: var(--color-rule);
+  --wx-border-light: 1px solid var(--color-rule);
+  --wx-border-medium: 1px solid var(--color-rule);
+  --wx-border-radius: 2px;
+
+  --wx-kanban-bg: var(--color-ink);
+  --wx-kanban-column-bg: var(--color-ink);
+  --wx-kanban-card-bg: var(--color-ink-raised);
+  --wx-kanban-border-color: var(--color-rule);
+  --wx-kanban-card-shadow: none;
+  --wx-kanban-card-shadow-hover: none;
+  --wx-kanban-drop-placeholder-bg: var(--color-ink-sunken);
+
+  --wx-font-family: var(--font-sans);
+  --wx-font-size: var(--text-body);
 }
