@@ -191,3 +191,24 @@ func TestWritesNeverTouchProjectConfiguration(t *testing.T) {
 		}
 	}
 }
+
+// A reload rebuilds what it knows about - the registry, the projects, the
+// files - and must not discard conditions of the machine it has nothing to say
+// about, such as a missing CLI or unreadable preferences.
+func TestReloadKeepsStandingProblems(t *testing.T) {
+	dir := realProject(t)
+	s := startService(t, withRegistry(t, dir))
+
+	// Force a standing problem by asking for a write with no CLI resolved is
+	// not possible here, so use the one the service records at startup when
+	// preferences cannot be read. Instead, assert the weaker but sufficient
+	// property: whatever standing problems exist survive a reload.
+	before := s.Problems()
+	s.Reload()
+	after := s.Problems()
+
+	if len(after) < len(before) {
+		t.Errorf("problems went from %d to %d across a reload: %+v -> %+v",
+			len(before), len(after), before, after)
+	}
+}

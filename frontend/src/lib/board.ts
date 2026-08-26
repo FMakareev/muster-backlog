@@ -3,11 +3,17 @@ import { Events } from "@wailsio/runtime";
 import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
 import type {
   BoardLayout,
+  MilestoneView,
   Problem,
   ProjectView,
   QueryInput,
   TaskView,
 } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
+import {
+  TaskView as TaskViewMode,
+  WindowBehaviour,
+} from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
+import type { Settings } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
 
 /**
  * Backend state, mirrored into nanostores.
@@ -39,6 +45,49 @@ export const projects = atom<ProjectView[]>([]);
 export const tasks = atom<TaskView[]>([]);
 export const problems = atom<Problem[]>([]);
 export const registryPath = atom<string>("");
+
+/** Every milestone across every project, so a card can show a name rather
+ *  than a bare id that reads exactly like a task id. */
+export const milestones = atom<MilestoneView[]>([]);
+
+/** Muster's own preferences. */
+export const settings = atom<Settings>({
+  onWindowClose: WindowBehaviour.BehaviourQuit,
+  taskView: TaskViewMode.ViewPanel,
+  groupBy: "",
+});
+
+/**
+ * A milestone by id or title, inside its own project.
+ *
+ * The list is passed in rather than read from the store here, so that a
+ * component calling this subscribes to it and re-renders when the milestones
+ * arrive. Reading the store inside would capture whatever was loaded at first
+ * render and never update.
+ */
+export function milestoneOf(
+  project: string,
+  value: string,
+  list: readonly MilestoneView[],
+): MilestoneView | undefined {
+  if (!value) return undefined;
+  const needle = value.toLowerCase();
+  return list.find(
+    (m) =>
+      m.project === project &&
+      (m.id.toLowerCase() === needle || m.title.toLowerCase() === needle),
+  );
+}
+
+/** How a milestone should read on screen: its title, or the raw value when it
+ *  names nothing this project has. */
+export function milestoneLabel(
+  project: string,
+  value: string,
+  list: readonly MilestoneView[],
+): string {
+  return milestoneOf(project, value, list)?.title ?? value;
+}
 export const loading = atom<boolean>(true);
 
 /**
@@ -66,18 +115,19 @@ export function canMove(project: string, status: string): boolean {
 
 /** Reload everything the UI shows from the backend. */
 export async function refresh(): Promise<void> {
-  const [nextProjects, nextTasks, nextProblems, nextLayout] = await Promise.all(
-    [
+  const [nextProjects, nextTasks, nextProblems, nextLayout, nextMilestones] =
+    await Promise.all([
       BoardService.Projects(),
       BoardService.Tasks(allTasks()),
       BoardService.Problems(),
       BoardService.Layout(),
-    ],
-  );
+      BoardService.Milestones(),
+    ]);
   projects.set(nextProjects ?? []);
   tasks.set(nextTasks ?? []);
   problems.set(nextProblems ?? []);
   layout.set(nextLayout);
+  milestones.set(nextMilestones ?? []);
   loading.set(false);
 }
 
@@ -96,6 +146,7 @@ export function connect(): () => void {
   });
 
   void BoardService.RegistryPath().then((path) => registryPath.set(path));
+  void BoardService.Settings().then((prefs) => settings.set(prefs));
   void refresh();
 
   return () => {

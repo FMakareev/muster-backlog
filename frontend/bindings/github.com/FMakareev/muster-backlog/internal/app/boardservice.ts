@@ -12,6 +12,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as settings$0 from "../settings/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
 /**
@@ -53,6 +57,13 @@ export function CheckCriterion(projectPath: string, taskID: string, index: numbe
 }
 
 /**
+ * CreateTask writes a new task into a project.
+ */
+export function CreateTask(input: $models.NewTaskInput): $CancellablePromise<$models.CreateResult> {
+    return $Call.ByID(2184482871, input);
+}
+
+/**
  * FilterValues returns the distinct values of one field across every project,
  * for building filter menus.
  */
@@ -69,6 +80,16 @@ export function FilterValues(field: string): $CancellablePromise<string[] | null
  */
 export function Layout(): $CancellablePromise<$models.BoardLayout> {
     return $Call.ByID(1111036648);
+}
+
+/**
+ * Milestones returns every milestone across every project, in registry order.
+ * 
+ * A card carries its milestone as a bare id, which reads exactly like a task
+ * id and says nothing. This is what lets the interface show the title instead.
+ */
+export function Milestones(): $CancellablePromise<$models.MilestoneView[] | null> {
+    return $Call.ByID(4122282057);
 }
 
 /**
@@ -109,6 +130,21 @@ export function RemoveLabel(projectPath: string, taskID: string, label: string):
 }
 
 /**
+ * SaveSettings stores the preferences and applies what can be applied at once.
+ */
+export function SaveSettings(next: settings$0.Settings): $CancellablePromise<$models.Problem[] | null> {
+    return $Call.ByID(3275526566, next);
+}
+
+/**
+ * SetAcceptanceCriteria replaces the whole list, which is what makes adding,
+ * removing and reordering a single operation.
+ */
+export function SetAcceptanceCriteria(projectPath: string, taskID: string, items: string[] | null): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(956380688, projectPath, taskID, items);
+}
+
+/**
  * SetAssignee replaces a task's assignee.
  */
 export function SetAssignee(projectPath: string, taskID: string, assignee: string): $CancellablePromise<$models.WriteResult> {
@@ -123,10 +159,34 @@ export function SetPriority(projectPath: string, taskID: string, priority: strin
 }
 
 /**
+ * SetSection replaces one of a task's body sections.
+ * 
+ * The section names match what the parser exposes, so the frontend never has
+ * to know which CLI flag writes which part of the file.
+ */
+export function SetSection(projectPath: string, taskID: string, section: string, text: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(869701961, projectPath, taskID, section, text);
+}
+
+/**
  * SetStatus moves a task to another status.
  */
 export function SetStatus(projectPath: string, taskID: string, status: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(3922990440, projectPath, taskID, status);
+}
+
+/**
+ * SetTitle renames a task.
+ */
+export function SetTitle(projectPath: string, taskID: string, title: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1385653264, projectPath, taskID, title);
+}
+
+/**
+ * Settings returns the application's own preferences.
+ */
+export function Settings(): $CancellablePromise<settings$0.Settings> {
+    return $Call.ByID(1296259787);
 }
 
 /**

@@ -1,8 +1,19 @@
 <script lang="ts">
+  import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
+  import { milestoneLabel, milestones, refresh, settings } from "./board";
   import { projectColour } from "./colour";
+  import { notify } from "./notices";
+  import CriteriaEditor from "./CriteriaEditor.svelte";
   import Markdown from "./Markdown.svelte";
+  import SectionEditor from "./SectionEditor.svelte";
   import TaskControls from "./TaskControls.svelte";
-  import { closeTask, findInProject, openTask, selectedTask } from "./ui";
+  import {
+    closeTask,
+    findInProject,
+    openTask,
+    selectedTask,
+    toggleTaskView,
+  } from "./ui";
 
   /**
    * The task panel.
@@ -63,19 +74,50 @@
     }
   }
 
-  const sections = $derived(
-    entity
-      ? ([
-          ["Description", entity.Sections?.description],
-          ["Implementation plan", entity.Sections?.plan],
-          ["Implementation notes", entity.Sections?.notes],
-          ["Final summary", entity.Sections?.final_summary],
-        ].filter(([, body]) => (body ?? "").trim() !== "") as [
-          string,
-          string,
-        ][])
-      : [],
-  );
+  // Every editable section is shown whether or not it has content: an empty
+  // plan you can start writing is more useful than a heading that is missing.
+  const sections: [string, string][] = [
+    ["description", "Description"],
+    ["plan", "Implementation plan"],
+    ["notes", "Implementation notes"],
+  ];
+
+  function sectionSource(key: string): string {
+    const map = entity?.Sections as Record<string, string> | undefined;
+    return map?.[key] ?? "";
+  }
+
+  const centred = $derived($settings.taskView === "centred");
+
+  let renaming = $state(false);
+  let titleDraft = $state("");
+  let busyTitle = $state(false);
+
+  function startRename(): void {
+    titleDraft = entity?.Title ?? "";
+    renaming = true;
+  }
+
+  async function saveTitle(): Promise<void> {
+    if (!task || busyTitle || !titleDraft.trim()) return;
+    busyTitle = true;
+    const result = await BoardService.SetTitle(
+      task.project,
+      task.id,
+      titleDraft.trim(),
+    );
+    busyTitle = false;
+    if (!result.ok) {
+      notify(
+        result.problem
+          ? `${result.problem.title}: ${result.problem.detail}`
+          : "The title could not be changed.",
+      );
+      return;
+    }
+    renaming = false;
+    await refresh();
+  }
 
   function shortDate(value: string): string {
     if (!value || value.startsWith("0001-01-01")) return "";
@@ -90,7 +132,9 @@
     tabindex="-1"
     role="dialog"
     aria-label="Task details"
-    class="flex w-[34rem] shrink-0 flex-col overflow-y-auto border-l border-rule bg-ink-sunken"
+    class={centred
+      ? "absolute inset-x-0 top-8 z-10 mx-auto flex max-h-[calc(100%-4rem)] w-full max-w-3xl flex-col overflow-y-auto rounded-sm border border-rule bg-ink-sunken shadow-2xl"
+      : "flex w-[34rem] shrink-0 flex-col overflow-y-auto border-l border-rule bg-ink-sunken"}
     onkeydown={onKeydown}
   >
     <header
@@ -107,6 +151,16 @@
       <button
         type="button"
         class="ml-auto font-mono text-data text-chalk-faint hover:text-chalk"
+        title={centred
+          ? "Show this in the side panel instead"
+          : "Show this centred, which reads better on a wide screen"}
+        onclick={toggleTaskView}
+      >
+        {centred ? "to the side" : "centre"}
+      </button>
+      <button
+        type="button"
+        class="font-mono text-data text-chalk-faint hover:text-chalk"
         onclick={closeTask}
       >
         close esc
@@ -114,7 +168,30 @@
     </header>
 
     <div class="flex flex-col gap-4 px-4 py-3">
-      <h2 class="text-title font-semibold text-chalk">{entity.Title}</h2>
+      {#if renaming}
+        <input
+          class="w-full"
+          bind:value={titleDraft}
+          disabled={busyTitle}
+          aria-label="Task title"
+          onkeydown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Escape") renaming = false;
+            if (e.key === "Enter") void saveTitle();
+          }}
+          onblur={() => void saveTitle()}
+        />
+      {:else}
+        <button
+          type="button"
+          class="text-left text-title font-semibold text-chalk hover:underline
+                 decoration-chalk-faint underline-offset-4"
+          title="Rename"
+          onclick={startRename}
+        >
+          {entity.Title}
+        </button>
+      {/if}
 
       <TaskControls {task} />
 
@@ -129,7 +206,12 @@
              controls above already show them, and showing a value twice a few
              pixels apart only invites the two to disagree. -->
         {@render field("Type", entity.Type)}
-        {@render field("Milestone", entity.Milestone)}
+        {@render field(
+          "Milestone",
+          entity.Milestone
+            ? milestoneLabel(task.project, entity.Milestone, $milestones)
+            : "",
+        )}
         {@render field("Updated", shortDate(String(entity.Updated ?? "")))}
         {@render field("Created", shortDate(String(entity.Created ?? "")))}
       </dl>
@@ -168,55 +250,38 @@
         </section>
       {/if}
 
-      {#if entity.AcceptanceCriteria}
-        <section>
-          <h3
-            class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
-          >
-            Acceptance criteria
-          </h3>
-          {#if entity.AcceptanceCriteria.length === 0}
-            <p class="mt-1 text-body text-chalk-faint">None recorded.</p>
-          {:else}
-            <ul class="mt-1 flex flex-col gap-1">
-              {#each entity.AcceptanceCriteria as criterion (criterion.Index)}
-                <li class="flex items-baseline gap-2">
-                  <input
-                    type="checkbox"
-                    checked={criterion.Checked}
-                    disabled
-                    class="self-center accent-chalk-dim"
-                    aria-label={criterion.Text}
-                  />
-                  <span class="font-mono text-micro text-chalk-faint">
-                    #{criterion.Index}
-                  </span>
-                  <span
-                    class="text-body {criterion.Checked
-                      ? 'text-chalk-faint line-through'
-                      : 'text-chalk-dim'}"
-                  >
-                    {criterion.Text}
-                  </span>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </section>
-      {/if}
+      <CriteriaEditor
+        project={task.project}
+        taskID={task.id}
+        criteria={entity.AcceptanceCriteria}
+      />
 
-      {#each sections as [heading, body] (heading)}
+      {#each sections as [key, heading] (key)}
+        <SectionEditor
+          project={task.project}
+          taskID={task.id}
+          section={key}
+          {heading}
+          source={sectionSource(key)}
+        />
+      {/each}
+
+      {#if sectionSource("final_summary").trim()}
         <section>
           <h3
             class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
           >
-            {heading}
+            Final summary
           </h3>
           <div class="mt-1">
-            <Markdown source={body} project={task.project} {onTaskRef} />
+            <Markdown
+              source={sectionSource("final_summary")}
+              project={task.project}
+              {onTaskRef}
+            />
           </div>
         </section>
-      {/each}
+      {/if}
 
       {#if (entity.Comments?.length ?? 0) > 0}
         <section>

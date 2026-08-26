@@ -4,9 +4,15 @@
   import type { KanbanCard, KanbanInstanceApi } from "@svar-ui/svelte-kanban";
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
-  import { canMove, columns, refresh } from "./board";
+  import {
+    canMove,
+    columns,
+    milestoneLabel,
+    milestones,
+    refresh,
+  } from "./board";
   import { notify } from "./notices";
-  import { groupByProject, openTask, visibleTasks } from "./ui";
+  import { groupBy, openTask, visibleTasks } from "./ui";
   import Card from "./Card.svelte";
 
   /**
@@ -38,12 +44,24 @@
   // Grouping is expressed as an ordering, because the open edition of SVAR has
   // no swimlanes. Within a project the board keeps the order the store gave it,
   // which is Backlog.md's own comparator.
+  function groupKey(card: KanbanCard): string {
+    const task = (card as { task?: TaskView }).task;
+    if (!task) return "";
+    if ($groupBy === "project") return task.projectName;
+    if ($groupBy === "milestone") {
+      const value = task.entity.Milestone;
+      // Tasks with no milestone sort last rather than first, so an unplanned
+      // pile does not push the planned work down the column.
+      return value
+        ? milestoneLabel(task.project, value, $milestones)
+        : "\uffff";
+    }
+    return "";
+  }
+
   const sort = $derived(
-    $groupByProject
-      ? (a: KanbanCard, b: KanbanCard) =>
-          ((a as { task?: TaskView }).task?.projectName ?? "").localeCompare(
-            (b as { task?: TaskView }).task?.projectName ?? "",
-          )
+    $groupBy
+      ? (a: KanbanCard, b: KanbanCard) => groupKey(a).localeCompare(groupKey(b))
       : null,
   );
 

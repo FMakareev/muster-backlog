@@ -163,7 +163,7 @@ func (s *BoardService) resolveCLI() {
 			title = "The Backlog.md CLI is too old"
 		}
 		s.mu.Lock()
-		s.problems = append(s.problems, Problem{
+		s.standingProblems = append(s.standingProblems, Problem{
 			Kind:   ProblemCLI,
 			Title:  title,
 			Detail: err.Error(),
@@ -185,5 +185,105 @@ func (s *BoardService) RemoveLabel(projectPath, taskID, label string) WriteResul
 	return s.write(projectPath, fmt.Sprintf("%s could not be relabelled", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.RemoveLabel(context.Background(), s.dataDirFor(projectPath), taskID, label)
+		})
+}
+
+// NewTaskInput is the create form as the frontend sends it.
+type NewTaskInput struct {
+	Project            string   `json:"project"`
+	Title              string   `json:"title"`
+	Description        string   `json:"description"`
+	Status             string   `json:"status"`
+	Priority           string   `json:"priority"`
+	Type               string   `json:"type"`
+	Milestone          string   `json:"milestone"`
+	Assignee           string   `json:"assignee"`
+	Labels             []string `json:"labels"`
+	AcceptanceCriteria []string `json:"acceptanceCriteria"`
+}
+
+// CreateResult reports what happened, including the id the CLI assigned so the
+// interface can open the task it just made.
+type CreateResult struct {
+	OK      bool     `json:"ok"`
+	TaskID  string   `json:"taskId"`
+	Problem *Problem `json:"problem"`
+}
+
+// CreateTask writes a new task into a project.
+func (s *BoardService) CreateTask(input NewTaskInput) CreateResult {
+	s.mu.Lock()
+	cli := s.cli
+	s.mu.Unlock()
+
+	if cli == nil {
+		if p := s.cliProblem(); p != nil {
+			return CreateResult{Problem: p}
+		}
+	}
+
+	id, err := cli.CreateTask(context.Background(), s.dataDirFor(input.Project),
+		backlogcli.NewTask{
+			Title:              input.Title,
+			Description:        input.Description,
+			Status:             input.Status,
+			Priority:           input.Priority,
+			Type:               input.Type,
+			Milestone:          input.Milestone,
+			Assignee:           input.Assignee,
+			Labels:             input.Labels,
+			AcceptanceCriteria: input.AcceptanceCriteria,
+		})
+
+	if s.store.Reload(input.Project) {
+		emit(EventProjectChanged, ProjectChanged{Project: input.Project})
+	}
+	if err != nil {
+		return CreateResult{Problem: &Problem{
+			Kind:   ProblemCLI,
+			Title:  "The task could not be created",
+			Detail: err.Error(),
+			Path:   input.Project,
+		}}
+	}
+	return CreateResult{OK: true, TaskID: id}
+}
+
+// SetTitle renames a task.
+func (s *BoardService) SetTitle(projectPath, taskID, title string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be renamed", taskID),
+		func(cli *backlogcli.Runner) error {
+			return cli.SetTitle(context.Background(), s.dataDirFor(projectPath), taskID, title)
+		})
+}
+
+// SetSection replaces one of a task's body sections.
+//
+// The section names match what the parser exposes, so the frontend never has
+// to know which CLI flag writes which part of the file.
+func (s *BoardService) SetSection(projectPath, taskID, section, text string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be saved", taskID),
+		func(cli *backlogcli.Runner) error {
+			dir := s.dataDirFor(projectPath)
+			switch section {
+			case "description":
+				return cli.SetDescription(context.Background(), dir, taskID, text)
+			case "plan":
+				return cli.SetPlan(context.Background(), dir, taskID, text)
+			case "notes":
+				return cli.SetNotes(context.Background(), dir, taskID, text)
+			default:
+				return fmt.Errorf("%q is not a section this application writes", section)
+			}
+		})
+}
+
+// SetAcceptanceCriteria replaces the whole list, which is what makes adding,
+// removing and reordering a single operation.
+func (s *BoardService) SetAcceptanceCriteria(projectPath, taskID string, items []string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be saved", taskID),
+		func(cli *backlogcli.Runner) error {
+			return cli.SetAcceptanceCriteria(
+				context.Background(), s.dataDirFor(projectPath), taskID, items)
 		})
 }

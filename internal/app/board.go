@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -12,6 +13,7 @@ import (
 	"github.com/FMakareev/muster-backlog/internal/backlogcli"
 	"github.com/FMakareev/muster-backlog/internal/board"
 	"github.com/FMakareev/muster-backlog/internal/registry"
+	"github.com/FMakareev/muster-backlog/internal/settings"
 	"github.com/FMakareev/muster-backlog/internal/store"
 	"github.com/FMakareev/muster-backlog/internal/watcher"
 )
@@ -117,15 +119,24 @@ type QueryInput struct {
 
 // BoardService is the frontend's only entry point to the backend.
 type BoardService struct {
-	mu       sync.Mutex
-	store    *store.Store
-	watch    *watcher.Watcher
-	problems []Problem
+	mu    sync.Mutex
+	store *store.Store
+	watch *watcher.Watcher
+	// scanProblems come from reading the registry and the projects, and are
+	// replaced wholesale on every reload.
+	scanProblems []Problem
+	// standingProblems are conditions of the machine rather than of the data -
+	// a missing CLI, a desktop with no tray, unreadable preferences. They are
+	// kept apart because a reload has nothing to say about them, and folding
+	// them into one list meant a reload silently discarded them.
+	standingProblems []Problem
 	// cli is the only thing in the application that writes. It is resolved
 	// once at startup so a missing binary is one report rather than the same
 	// failure arriving on every action.
 	cli    *backlogcli.Runner
 	cliErr error
+	// prefs are the application's own settings, separate from the registry.
+	prefs settings.Settings
 	// registryPath is where the registry is read from. It is a field rather
 	// than a call to registry.DefaultPath() so that tests can point the service
 	// at their own file instead of manipulating the environment - the XDG
@@ -152,9 +163,41 @@ func (s *BoardService) ServiceName() string { return "muster.board" }
 // opens, says what is wrong, and lets the user fix it. Returning an error here
 // would leave them with a window that refuses to appear.
 func (s *BoardService) ServiceStartup(_ context.Context, _ application.ServiceOptions) error {
+	s.loadSettings()
 	s.reload()
 	s.resolveCLI()
 	return nil
+}
+
+// loadSettings reads the preferences, keeping the defaults when the file is
+// missing or unreadable rather than refusing to start.
+func (s *BoardService) loadSettings() {
+	prefs, err := settings.Load()
+
+	s.mu.Lock()
+	s.prefs = prefs
+	if err != nil {
+		s.standingProblems = append(s.standingProblems, Problem{
+			Kind:   ProblemRegistry,
+			Title:  "Preferences could not be read",
+			Detail: err.Error(),
+			Path:   settings.Path(),
+		})
+	}
+	s.mu.Unlock()
+
+	applyWindowBehaviour(prefs)
+
+	if prefs.OnWindowClose == settings.BehaviourTray && TrayUnavailable() {
+		s.mu.Lock()
+		s.standingProblems = append(s.standingProblems, Problem{
+			Kind:  ProblemRegistry,
+			Title: "This desktop has no system tray",
+			Detail: "Muster is set to stay in the tray, but nothing on the " +
+				"session bus offers one, so the window behaves ordinarily.",
+		})
+		s.mu.Unlock()
+	}
 }
 
 // ServiceShutdown stops the watcher.
@@ -228,7 +271,7 @@ func (s *BoardService) reload() {
 	}
 
 	s.mu.Lock()
-	s.problems = problems
+	s.scanProblems = problems
 	old := s.watch
 	s.mu.Unlock()
 
@@ -242,7 +285,7 @@ func (s *BoardService) reload() {
 	})
 	if err != nil {
 		s.mu.Lock()
-		s.problems = append(s.problems, Problem{
+		s.scanProblems = append(s.scanProblems, Problem{
 			Kind:   ProblemRegistry,
 			Title:  "Changes on disk will not be picked up",
 			Detail: err.Error(),
@@ -284,12 +327,17 @@ func (s *BoardService) RegistryPath() string {
 	return s.registryPath
 }
 
-// Problems returns everything currently wrong, worst first by kind.
+// Problems returns everything currently wrong.
+//
+// Standing conditions come first: a missing CLI matters more than a stray file
+// in a task directory, and it is the one a person has to act on.
 func (s *BoardService) Problems() []Problem {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]Problem, len(s.problems))
-	copy(out, s.problems)
+
+	out := make([]Problem, 0, len(s.standingProblems)+len(s.scanProblems))
+	out = append(out, s.standingProblems...)
+	out = append(out, s.scanProblems...)
 	return out
 }
 
@@ -461,4 +509,106 @@ func (s *BoardService) projectStatuses() []board.ProjectStatuses {
 		}
 	}
 	return out
+}
+
+// MilestoneView is one milestone, with enough to show it by name and to see
+// how far along it is.
+type MilestoneView struct {
+	Project     string `json:"project"`
+	ProjectName string `json:"projectName"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	// Total and Done count the tasks assigned to it in that project.
+	Total int `json:"total"`
+	Done  int `json:"done"`
+}
+
+// Milestones returns every milestone across every project, in registry order.
+//
+// A card carries its milestone as a bare id, which reads exactly like a task
+// id and says nothing. This is what lets the interface show the title instead.
+func (s *BoardService) Milestones() []MilestoneView {
+	var out []MilestoneView
+
+	for _, p := range s.store.Projects() {
+		if !p.OK() {
+			continue
+		}
+		// Terminal statuses are the last one a project declares, which is the
+		// only definition of "finished" the format offers.
+		var terminal string
+		if statuses := p.Scanned.Config.Statuses; len(statuses) > 0 {
+			terminal = statuses[len(statuses)-1]
+		}
+
+		counts := map[string][2]int{}
+		for _, task := range p.Scanned.Tasks {
+			if task.Class != backlog.ClassActive || task.Milestone == "" {
+				continue
+			}
+			key := strings.ToLower(task.Milestone)
+			c := counts[key]
+			c[0]++
+			if terminal != "" && strings.EqualFold(task.Status, terminal) {
+				c[1]++
+			}
+			counts[key] = c
+		}
+
+		for _, m := range p.Scanned.Milestones {
+			c := counts[strings.ToLower(m.ID)]
+			// A task may name a milestone by title rather than by id.
+			if t := counts[strings.ToLower(m.Title)]; t[0] > c[0] {
+				c = t
+			}
+			out = append(out, MilestoneView{
+				Project:     p.Registry.Path,
+				ProjectName: p.Registry.DisplayName,
+				ID:          m.ID,
+				Title:       m.Title,
+				Total:       c[0],
+				Done:        c[1],
+			})
+		}
+	}
+	return out
+}
+
+// Settings returns the application's own preferences.
+func (s *BoardService) Settings() settings.Settings {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.prefs
+}
+
+// SaveSettings stores the preferences and applies what can be applied at once.
+func (s *BoardService) SaveSettings(next settings.Settings) []Problem {
+	if err := next.Save(); err != nil {
+		return []Problem{{
+			Kind:   ProblemRegistry,
+			Title:  "Preferences could not be saved",
+			Detail: err.Error(),
+			Path:   settings.Path(),
+		}}
+	}
+	s.mu.Lock()
+	s.prefs = next
+	s.mu.Unlock()
+
+	applyWindowBehaviour(next)
+
+	// Asking for the tray on a desktop that has none has to say so. Silently
+	// keeping ordinary behaviour would leave the setting looking as though it
+	// worked, and silently honouring it would make the window vanish with no
+	// way to get it back.
+	if next.OnWindowClose == settings.BehaviourTray && TrayUnavailable() {
+		return []Problem{{
+			Kind:  ProblemRegistry,
+			Title: "This desktop has no system tray",
+			Detail: "Nothing on the session bus offers one, so the window will " +
+				"keep behaving ordinarily. The preference is saved and takes " +
+				"effect wherever a tray is available.",
+		}}
+	}
+	return nil
 }

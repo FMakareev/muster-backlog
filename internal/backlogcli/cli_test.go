@@ -397,3 +397,134 @@ func TestAcceptanceCriteriaCanBeTicked(t *testing.T) {
 			criteria[0].Checked, criteria[1].Checked)
 	}
 }
+
+func TestCreateTaskWithEverySupportedField(t *testing.T) {
+	r := runner(t)
+	dir := newProject(t, r)
+
+	id, err := r.CreateTask(context.Background(), dir, backlogcli.NewTask{
+		Title:              "A fully specified task",
+		Description:        "Why it matters.",
+		Status:             "In Progress",
+		Priority:           "High",
+		Type:               "feature",
+		Assignee:           "@someone",
+		Labels:             []string{"backend", "urgent"},
+		AcceptanceCriteria: []string{"First criterion", "Second criterion"},
+	})
+	if err != nil {
+		t.Fatalf("CreateTask: %v", err)
+	}
+	// The id comes from the CLI rather than being predicted, because generation
+	// handles collisions and zero-padding per project.
+	if id == "" {
+		t.Fatal("no id returned")
+	}
+
+	tasks := scan(t, dir).Tasks
+	if len(tasks) != 1 {
+		t.Fatalf("got %d tasks", len(tasks))
+	}
+	task := tasks[0]
+	if task.ID != id {
+		t.Errorf("id = %q, want the reported %q", task.ID, id)
+	}
+	if task.Title != "A fully specified task" || task.Status != "In Progress" {
+		t.Errorf("title/status = %q/%q", task.Title, task.Status)
+	}
+	if !strings.EqualFold(task.Priority, "High") || task.Type != "feature" {
+		t.Errorf("priority/type = %q/%q", task.Priority, task.Type)
+	}
+	if len(task.Labels) != 2 || len(task.Assignee) != 1 {
+		t.Errorf("labels = %v, assignee = %v", task.Labels, task.Assignee)
+	}
+	if len(task.AcceptanceCriteria) != 2 {
+		t.Fatalf("criteria = %+v, want two", task.AcceptanceCriteria)
+	}
+	if body, ok := task.Section("description"); !ok || !strings.Contains(body, "Why it matters") {
+		t.Errorf("description = %q", body)
+	}
+}
+
+func TestCreateTaskNeedsATitle(t *testing.T) {
+	r := runner(t)
+	if _, err := r.CreateTask(context.Background(), newProject(t, r),
+		backlogcli.NewTask{Title: "   "}); err == nil {
+		t.Fatal("want an error for a blank title")
+	}
+}
+
+func TestEditTaskBody(t *testing.T) {
+	r := runner(t)
+	dir := newProject(t, r)
+	ctx := context.Background()
+	id := createTask(t, r, dir, "A task to rewrite")
+
+	if err := r.SetTitle(ctx, dir, id, "A renamed task"); err != nil {
+		t.Fatalf("SetTitle: %v", err)
+	}
+	if err := r.SetDescription(ctx, dir, id, "New description.\n\nWith a second paragraph."); err != nil {
+		t.Fatalf("SetDescription: %v", err)
+	}
+	if err := r.SetPlan(ctx, dir, id, "1. First\n2. Second"); err != nil {
+		t.Fatalf("SetPlan: %v", err)
+	}
+	if err := r.SetNotes(ctx, dir, id, "What happened."); err != nil {
+		t.Fatalf("SetNotes: %v", err)
+	}
+
+	task := scan(t, dir).Tasks[0]
+	if task.Title != "A renamed task" {
+		t.Errorf("title = %q", task.Title)
+	}
+	for _, want := range []struct {
+		section backlog.Section
+		text    string
+	}{
+		{"description", "second paragraph"},
+		{"plan", "1. First"},
+		{"notes", "What happened."},
+	} {
+		body, ok := task.Section(want.section)
+		if !ok || !strings.Contains(body, want.text) {
+			t.Errorf("%s = %q, want it to contain %q", want.section, body, want.text)
+		}
+	}
+}
+
+// Replacing the whole list is what makes adding, removing and reordering one
+// operation, and keeps the per-item indexes the CLI renumbers out of the UI.
+func TestAcceptanceCriteriaAreReplacedWholesale(t *testing.T) {
+	r := runner(t)
+	dir := newProject(t, r)
+	ctx := context.Background()
+	id := createTask(t, r, dir, "A task with criteria")
+
+	if err := r.SetAcceptanceCriteria(ctx, dir, id, []string{"One", "Two", "Three"}); err != nil {
+		t.Fatalf("SetAcceptanceCriteria: %v", err)
+	}
+	if got := scan(t, dir).Tasks[0].AcceptanceCriteria; len(got) != 3 {
+		t.Fatalf("criteria = %+v, want three", got)
+	}
+
+	// Reorder and drop one in a single call.
+	if err := r.SetAcceptanceCriteria(ctx, dir, id, []string{"Three", "One"}); err != nil {
+		t.Fatalf("SetAcceptanceCriteria: %v", err)
+	}
+	got := scan(t, dir).Tasks[0].AcceptanceCriteria
+	if len(got) != 2 || got[0].Text != "Three" || got[1].Text != "One" {
+		t.Fatalf("criteria = %+v, want Three then One", got)
+	}
+	for i, c := range got {
+		if c.Index != i+1 {
+			t.Errorf("criterion %d has index %d, want them renumbered", i, c.Index)
+		}
+	}
+
+	if err := r.SetAcceptanceCriteria(ctx, dir, id, nil); err != nil {
+		t.Fatalf("SetAcceptanceCriteria(nil): %v", err)
+	}
+	if got := scan(t, dir).Tasks[0].AcceptanceCriteria; len(got) != 0 {
+		t.Errorf("criteria = %+v, want none left", got)
+	}
+}

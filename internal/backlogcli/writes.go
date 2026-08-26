@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -160,4 +161,131 @@ func (r *Runner) edit(ctx context.Context, dir, taskID string, args ...string) e
 	full := append([]string{"task", "edit", taskID}, args...)
 	_, err := r.Exec(ctx, dir, full...)
 	return err
+}
+
+// NewTask is everything the create form can set.
+//
+// Only Title is required; the CLI applies each project's own defaults for the
+// rest, which is why nothing here carries a default of its own.
+type NewTask struct {
+	Title       string
+	Description string
+	Status      string
+	Priority    string
+	Type        string
+	Milestone   string
+	Assignee    string
+	Labels      []string
+	// AcceptanceCriteria are added as individual items, in order.
+	AcceptanceCriteria []string
+	// Parent makes this a subtask of an existing task.
+	Parent string
+	// DependsOn are task ids in the same project.
+	DependsOn []string
+}
+
+// CreateTask creates a task and returns the id the CLI assigned.
+//
+// The id comes back from the CLI rather than being predicted: generation
+// handles collisions and zero-padding per project, and guessing it would be
+// the first step towards owning the format.
+func (r *Runner) CreateTask(ctx context.Context, dir string, task NewTask) (string, error) {
+	if strings.TrimSpace(task.Title) == "" {
+		return "", fmt.Errorf("a task needs a title")
+	}
+
+	args := []string{"task", "create", task.Title, "--plain"}
+	args = appendIf(args, "-d", task.Description)
+	args = appendIf(args, "-s", task.Status)
+	args = appendIf(args, "--priority", task.Priority)
+	args = appendIf(args, "--type", task.Type)
+	args = appendIf(args, "-m", task.Milestone)
+	args = appendIf(args, "-a", task.Assignee)
+	args = appendIf(args, "-p", task.Parent)
+	if len(task.Labels) > 0 {
+		args = append(args, "-l", strings.Join(task.Labels, ","))
+	}
+	if len(task.DependsOn) > 0 {
+		args = append(args, "--dep", strings.Join(task.DependsOn, ","))
+	}
+	for _, criterion := range task.AcceptanceCriteria {
+		if strings.TrimSpace(criterion) != "" {
+			args = append(args, "--ac", criterion)
+		}
+	}
+
+	out, err := r.Exec(ctx, dir, args...)
+	if err != nil {
+		return "", err
+	}
+	return taskIDFrom(out), nil
+}
+
+// SetTitle renames a task.
+func (r *Runner) SetTitle(ctx context.Context, dir, taskID, title string) error {
+	if strings.TrimSpace(title) == "" {
+		return fmt.Errorf("a task needs a title")
+	}
+	return r.edit(ctx, dir, taskID, "-t", title)
+}
+
+// SetDescription replaces a task's description.
+func (r *Runner) SetDescription(ctx context.Context, dir, taskID, text string) error {
+	return r.edit(ctx, dir, taskID, "-d", text)
+}
+
+// SetPlan replaces a task's implementation plan.
+func (r *Runner) SetPlan(ctx context.Context, dir, taskID, text string) error {
+	return r.edit(ctx, dir, taskID, "--plan", text)
+}
+
+// SetNotes replaces a task's implementation notes.
+func (r *Runner) SetNotes(ctx context.Context, dir, taskID, text string) error {
+	return r.edit(ctx, dir, taskID, "--notes", text)
+}
+
+// SetAcceptanceCriteria replaces the whole acceptance-criteria list.
+//
+// Replacing wholesale rather than patching item by item is what makes adding,
+// removing and reordering one operation, and it keeps the per-item indexes -
+// which the CLI renumbers on every insertion - out of the interface entirely.
+func (r *Runner) SetAcceptanceCriteria(ctx context.Context, dir, taskID string, items []string) error {
+	args := []string{"task", "edit", taskID}
+	kept := 0
+	for _, item := range items {
+		if strings.TrimSpace(item) == "" {
+			continue
+		}
+		args = append(args, "--acceptance-criteria", item)
+		kept++
+	}
+	if kept == 0 {
+		args = append(args, "--clear-ac")
+	}
+	_, err := r.Exec(ctx, dir, args...)
+	return err
+}
+
+// appendIf adds a flag only when its value is set, so an untouched field in a
+// form does not become an instruction to clear anything.
+func appendIf(args []string, flag, value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return args
+	}
+	return append(args, flag, value)
+}
+
+// idPattern matches a Backlog.md id. The prefix is per-project configuration,
+// so it is matched as any word rather than assumed to be TASK.
+var idPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*-\d+(?:\.\d+)*$`)
+
+// taskIDFrom picks the created id out of the CLI's plain output.
+func taskIDFrom(out string) string {
+	for _, field := range strings.Fields(out) {
+		candidate := strings.Trim(field, ":,.")
+		if idPattern.MatchString(candidate) {
+			return strings.ToUpper(candidate)
+		}
+	}
+	return ""
 }

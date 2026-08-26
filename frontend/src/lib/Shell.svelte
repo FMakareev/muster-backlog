@@ -2,9 +2,17 @@
   import type { Snippet } from "svelte";
   import { loading, problems, projects, registryPath } from "./board";
   import { screenFor, screens } from "./screens";
-  import { groupByProject, screen, toggleGrouping } from "./ui";
+  import {
+    cycleGrouping,
+    groupBy,
+    openNewTask,
+    screen,
+    showSettings,
+  } from "./ui";
   import { dismiss, notices } from "./notices";
   import ProjectRoll from "./ProjectRoll.svelte";
+  import NewTask from "./NewTask.svelte";
+  import Preferences from "./Preferences.svelte";
   import Problems from "./Problems.svelte";
   import StatusStrip from "./StatusStrip.svelte";
 
@@ -33,7 +41,17 @@
 
     if (event.key.toLowerCase() === "g") {
       event.preventDefault();
-      toggleGrouping();
+      void cycleGrouping();
+      return;
+    }
+    if (event.key.toLowerCase() === "n") {
+      event.preventDefault();
+      openNewTask();
+      return;
+    }
+    if (event.key === ",") {
+      event.preventDefault();
+      showSettings.set(!showSettings.get());
       return;
     }
 
@@ -86,15 +104,39 @@
     <button
       type="button"
       class="ml-auto flex items-baseline gap-1.5 rounded-sm px-2 py-1 text-body
-             {$groupByProject
+             text-chalk-dim hover:text-chalk"
+      title="Create a task"
+      onclick={openNewTask}
+    >
+      New task
+      <kbd class="font-mono text-micro text-chalk-faint">n</kbd>
+    </button>
+
+    <button
+      type="button"
+      class="flex items-baseline gap-1.5 rounded-sm px-2 py-1 text-body
+             {$groupBy
         ? 'bg-ink text-chalk'
         : 'text-chalk-dim hover:text-chalk'}"
-      aria-pressed={$groupByProject}
-      title="Keep each project's cards together inside a column"
-      onclick={toggleGrouping}
+      title="Keep cards of the same project or milestone together in a column"
+      onclick={() => void cycleGrouping()}
     >
-      Group by project
+      {$groupBy === "project"
+        ? "Grouped by project"
+        : $groupBy === "milestone"
+          ? "Grouped by milestone"
+          : "Not grouped"}
       <kbd class="font-mono text-micro text-chalk-faint">g</kbd>
+    </button>
+
+    <button
+      type="button"
+      class="rounded-sm px-2 py-1 text-body text-chalk-dim hover:text-chalk"
+      title="Preferences"
+      onclick={() => showSettings.set(!showSettings.get())}
+    >
+      Preferences
+      <kbd class="font-mono text-micro text-chalk-faint">,</kbd>
     </button>
 
     <span class="font-mono text-data text-chalk-faint tabular-nums">
@@ -166,6 +208,8 @@
     </main>
   </div>
 
+  <NewTask />
+  <Preferences />
   <Problems />
   <StatusStrip />
 </div>

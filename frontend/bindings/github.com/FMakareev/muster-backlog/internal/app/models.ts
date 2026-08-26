@@ -38,6 +38,49 @@ export interface ConflictView {
 }
 
 /**
+ * CreateResult reports what happened, including the id the CLI assigned so the
+ * interface can open the task it just made.
+ */
+export interface CreateResult {
+    "ok": boolean;
+    "taskId": string;
+    "problem": Problem | null;
+}
+
+/**
+ * MilestoneView is one milestone, with enough to show it by name and to see
+ * how far along it is.
+ */
+export interface MilestoneView {
+    "project": string;
+    "projectName": string;
+    "id": string;
+    "title": string;
+
+    /**
+     * Total and Done count the tasks assigned to it in that project.
+     */
+    "total": number;
+    "done": number;
+}
+
+/**
+ * NewTaskInput is the create form as the frontend sends it.
+ */
+export interface NewTaskInput {
+    "project": string;
+    "title": string;
+    "description": string;
+    "status": string;
+    "priority": string;
+    "type": string;
+    "milestone": string;
+    "assignee": string;
+    "labels": string[] | null;
+    "acceptanceCriteria": string[] | null;
+}
+
+/**
  * Problem is a failure the frontend can render.
  * 
  * Go errors cross the bridge as bare strings, which leaves the UI with nothing
@@ -73,12 +116,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -98,6 +135,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**

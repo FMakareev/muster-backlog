@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { KanbanCard } from "@svar-ui/svelte-kanban";
   import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
+  import { milestoneLabel, milestones } from "./board";
   import { projectColour } from "./colour";
 
   /** SVAR passes its own card through, with the task the board attached to it. */
@@ -51,8 +52,13 @@
     {#if task.entity.Milestone || (task.entity.Labels?.length ?? 0) > 0 || (task.entity.Assignee?.length ?? 0) > 0}
       <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         {#if task.entity.Milestone}
-          <span class="font-mono text-micro text-chalk-faint">
-            {task.entity.Milestone}
+          <!-- Named, and marked as a milestone: a bare id like m-1 reads
+               exactly like a task id and tells nobody anything. -->
+          <span
+            class="rounded-[2px] border border-rule px-1 text-micro text-chalk-dim"
+            title="Milestone"
+          >
+            ◇ {milestoneLabel(task.project, task.entity.Milestone, $milestones)}
           </span>
         {/if}
         {#each task.entity.Labels ?? [] as label (label)}

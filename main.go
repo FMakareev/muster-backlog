@@ -31,7 +31,8 @@ func main() {
 		},
 	})
 
-	a.Window.NewWithOptions(application.WebviewWindowOptions{
+	window := a.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:   app.MainWindowName,
 		Title:  "Muster",
 		Width:  1280,
 		Height: 800,
@@ -41,6 +42,11 @@ func main() {
 		BackgroundColour: application.NewRGB(15, 17, 21),
 		URL:              "/",
 	})
+
+	// Closing the window leaves the application resident when the tray
+	// preference is on. The handler reads the preference each time, so
+	// changing it in the interface takes effect without a restart.
+	app.InstallCloseBehaviour(window)
 
 	if err := a.Run(); err != nil {
 		log.Fatal(err)
