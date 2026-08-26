@@ -5,7 +5,7 @@ status: In Review
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 19:17'
+updated_date: '2026-08-26 19:29'
 labels: []
 milestone: m-1
 dependencies:
@@ -44,6 +44,14 @@ Fixed the nfpm package metadata, which still described 'A muster application' fr
 The checklist is doc-5, ten steps, and it was executed against a built artefact rather than written from memory. Nine of the ten were driven in a browser against a server-mode build of the same tree; the first, that the desktop binary opens a window and keeps it, was run against bin/muster directly. All pass: two projects in the roll with distinct colours and correct counts, columns as the union with Beta's extra status present, cards carrying their project, the panel opening and closing without disturbing the board, a drag then a keyboard press moving a task To Do to In Progress to Done with each step confirmed by reading the file, an impossible move refused with the reason while the file stayed unchanged, an external CLI edit appearing without interaction, both project configs byte-identical afterwards, and zero network requests.
 
 Running it improved it. Step 5 asked for markdown in the panel, but a task the CLI has just created has an empty body, so the step now says to use a task that has one. And a tenth step was added for the network, since that is the property most likely to be broken by a dependency upgrade and the least likely to be noticed.
+
+Follow-up after the user hit this: 'wails3 task package' failed for them with the gtk4 pkg-config errors, because every command in this repository needed EXTRA_TAGS=gtk3 passed by hand. I had been passing it all along and documented it in the README, which is not the same as it working. On a machine without GTK 4 the bare command has to work.
+
+The Taskfile now derives EXTRA_TAGS from what the machine actually has: on Linux it probes pkg-config for gtk4 and webkitgtk-6.0, falls back to gtk3 when only GTK 3 and WebKit2GTK 4.1 are present, and emits nothing anywhere else so macOS and Windows are untouched. Passing EXTRA_TAGS explicitly still overrides it.
+
+Verified bare, with no flags: build, test, lint, package and dev all work, and 'wails3 build DEV=true' - which is what dev mode runs internally - picks the tag up too, so 'wails3 task dev' starts and Vite comes up. The hardcoded -tags gtk3 in the test task and in the pre-push hook is gone; both now go through the task runner so the tag is detected rather than pinned to one machine's situation.
+
+README, CONTRIBUTING and the smoke checklist updated: they now say to install the GTK 3 development packages and that the build works the tag out itself.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

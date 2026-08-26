@@ -9,6 +9,19 @@ vars:
   # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
   # tasks below dispatch to the matching platform Taskfile via this variable.
   GOOS: '{{.GOOS | default OS}}'
+  # Wails v3 targets GTK 4 and WebKitGTK 6.0 on Linux, which several current
+  # distributions do not ship - Ubuntu 24.04 LTS among them, where WebKitGTK
+  # 6.0 only arrives in 24.10. Wails supports GTK 3 behind a build tag, so the
+  # tag is chosen from what the machine actually has rather than left as a flag
+  # every command has to remember. Passing EXTRA_TAGS explicitly still wins.
+  EXTRA_TAGS:
+    sh: |
+      if [ "$(uname -s)" != "Linux" ]; then echo ""
+      elif ! command -v pkg-config >/dev/null 2>&1; then echo ""
+      elif pkg-config --exists gtk4 webkitgtk-6.0 2>/dev/null; then echo ""
+      elif pkg-config --exists gtk+-3.0 webkit2gtk-4.1 2>/dev/null; then echo "gtk3"
+      else echo ""
+      fi
 
 includes:
   common: ./build/Taskfile.yml
@@ -28,7 +41,7 @@ tasks:
   test:
     summary: Runs every test in the repository
     cmds:
-      - go test -tags gtk3 ./...
+      - go test {{if .EXTRA_TAGS}}-tags {{.EXTRA_TAGS}} {{end}}./...
       - '{{.PACKAGE_MANAGER}} --dir frontend run test'
 
   lint:fix:

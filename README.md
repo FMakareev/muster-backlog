@@ -52,12 +52,13 @@ sudo dnf install gtk4-devel webkitgtk6.0-devel
 sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev
 ```
 
-Distributions that do not ship WebKitGTK 6.0 — **Ubuntu 24.04 LTS** among them — can build against GTK 3 and WebKit2GTK 4.1 instead by passing the `gtk3` build tag:
+Distributions that do not ship WebKitGTK 6.0 — **Ubuntu 24.04 LTS** among them, where it only arrives in 24.10 — can build against GTK 3 and WebKit2GTK 4.1 instead:
 
 ```sh
 sudo apt install libgtk-3-dev libwebkit2gtk-4.1-dev
-wails3 task build EXTRA_TAGS=gtk3
 ```
+
+Nothing else to do: the build detects what the machine has and picks the tag itself. `EXTRA_TAGS=gtk3` still works if you want to force it.
 
 ## Build and run
 
@@ -67,7 +68,7 @@ From a clean machine, after the prerequisites above:
 git clone https://github.com/FMakareev/muster-backlog
 cd muster-backlog
 pnpm install                        # workspace dependencies and the git hooks
-wails3 task build                   # add EXTRA_TAGS=gtk3 where WebKitGTK 6.0 is missing
+wails3 task build
 ./bin/muster
 ```
 

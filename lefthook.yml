@@ -38,11 +38,10 @@ commit-msg:
 
 pre-push:
   jobs:
-    - name: go test
-      run: go test -tags gtk3 ./...
+    - name: tests
+      # Through the task runner, so the Linux build tag is detected rather
+      # than hardcoded here and wrong on another machine.
+      run: wails3 task test
 
     - name: svelte-check
       run: pnpm --dir frontend run check
-
-    - name: frontend tests
-      run: pnpm --dir frontend run test

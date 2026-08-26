@@ -81,10 +81,10 @@ See the [README](README.md) for the full prerequisite table. In short: Go 1.25+,
 git clone <this repository>
 cd muster-backlog
 pnpm install                 # installs the workspace and the git hooks
-wails3 task build            # or: wails3 task build EXTRA_TAGS=gtk3
+wails3 task build
 ```
 
-On Ubuntu 24.04 LTS and anything else without WebKitGTK 6.0, build with `EXTRA_TAGS=gtk3`. The README explains why.
+On Ubuntu 24.04 LTS and anything else without WebKitGTK 6.0, install the GTK 3 development packages instead; the build detects which you have and picks the tag itself. The README lists both sets.
 
 ## Before you push
 

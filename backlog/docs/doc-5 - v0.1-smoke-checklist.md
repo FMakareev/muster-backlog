@@ -12,7 +12,7 @@ Run it against a built artefact, not against `wails3 task dev`: the point is to 
 ## Before you start
 
 ```sh
-wails3 task build EXTRA_TAGS=gtk3   # drop EXTRA_TAGS where WebKitGTK 6.0 exists
+wails3 task build
 ./bin/muster
 ```
 
