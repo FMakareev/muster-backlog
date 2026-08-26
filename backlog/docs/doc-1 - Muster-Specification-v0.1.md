@@ -3,7 +3,7 @@ id: doc-1
 title: Muster Specification v0.1
 type: specification
 created_date: '2026-08-26 14:57'
-updated_date: '2026-08-26 17:50'
+updated_date: '2026-08-26 19:45'
 ---
 > Muster every backlog. One application over every project.
 
@@ -133,7 +133,9 @@ The read surface plus the minimum of writing:
 
 Out of scope: list view, search, analytics, work-in-progress limits, documents viewer, inbox and capture, initialising projects from the UI, MCP.
 
-The MVP answers one question: **does a standalone application over several projects at once beat the per-repository tooling already in use?** The VSCode extension covers single-repo work well, so the honest comparison is against it. If the answer is no, the later milestones should not be built.
+The MVP answers one question: **does a standalone application over several projects at once beat the per-repository tooling already in use?** The VSCode extension covers single-repo work well, so the honest comparison is against it.
+
+First use says *not yet*: the multi-project view works and performs, but a viewer that can move cards is not a task manager. See the [verdict](doc-6%20-%20MVP-v0.1-verdict.md). The hypothesis is neither refuted nor confirmed, and m-2 now carries what stands between the two.
 
 ## 8. Open questions
 

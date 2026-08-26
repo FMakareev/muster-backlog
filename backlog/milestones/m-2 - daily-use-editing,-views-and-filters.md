@@ -1,6 +1,6 @@
 ---
 id: m-2
-title: "Views, filters and analytics"
+title: "Daily use: editing, views and filters"
 ---
 
 ## Description
