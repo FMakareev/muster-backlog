@@ -80,7 +80,7 @@ func (s *Store) Analytics(opts AnalyticsOptions) []Analytics {
 
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 

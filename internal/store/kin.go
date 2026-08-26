@@ -49,7 +49,7 @@ func (s *Store) KinIndex() map[Ref]Kin {
 
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 

@@ -2,13 +2,13 @@
 
 **A local-first desktop task manager over all your [Backlog.md](https://github.com/MrLesk/Backlog.md) projects at once.**
 
-> **Status: pre-alpha.** This is a project skeleton. It builds, opens a window and draws a placeholder board — it does not read your backlogs yet. Follow [the roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) if you want to know when it will.
+> **Status: pre-alpha.** It reads and writes real Backlog.md projects: board, list, search, filters, documents, figures, task editing, and adding or initialising projects from the interface. Not packaged, not released, and not yet used by anyone but its author. Follow [the roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) for what is still missing.
 
 ## Why
 
 Backlog.md keeps tasks as markdown inside the repository they belong to, which is the right place for them. The cost of that is one backlog per repository, and every tool for it works on one at a time: `backlog browser` is single-repo by design and pins the same port in every project, and the excellent [VSCode extension](https://github.com/ysamlan/vscode-backlog-md) switches between backlog folders rather than combining them.
 
-So there is no answer to *what is happening across everything I work on*. Nine repositories, a thousand task files, and no single view of them.
+So there is no answer to _what is happening across everything I work on_. Nine repositories, a thousand task files, and no single view of them.
 
 Muster is that view: one board, one list, one search, one set of numbers, over every project you register.
 
@@ -27,13 +27,13 @@ Where Backlog.md has a relationship, Muster shows it without inventing a shape f
 
 ## Prerequisites
 
-| Requirement | Version used |
-| :-- | :-- |
-| [Go](https://go.dev) | 1.25 or newer |
-| [Node.js](https://nodejs.org) | 24 or newer |
-| [pnpm](https://pnpm.io) | 11 or newer |
-| [Wails v3 CLI](https://v3.wails.io) | v3.0.0-beta.8 |
-| [golangci-lint](https://golangci-lint.run) | v2 (needed by the git hooks) |
+| Requirement                                            | Version used                      |
+| :----------------------------------------------------- | :-------------------------------- |
+| [Go](https://go.dev)                                   | 1.25 or newer                     |
+| [Node.js](https://nodejs.org)                          | 24 or newer                       |
+| [pnpm](https://pnpm.io)                                | 11 or newer                       |
+| [Wails v3 CLI](https://v3.wails.io)                    | v3.0.0-beta.8                     |
+| [golangci-lint](https://golangci-lint.run)             | v2 (needed by the git hooks)      |
 | [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 (at runtime, not to build) |
 
 The two Go tools install themselves:
@@ -97,16 +97,20 @@ Muster keeps one file of its own, at `$XDG_CONFIG_HOME/muster/projects.yml` — 
 
 ```yaml
 projects:
-  - path: ~/Dev/treeline          # a leading ~ is expanded
+  - path: ~/Dev/treeline # a leading ~ is expanded
   - path: /var/mnt/data/refloft
-    name: Refloft                 # optional; the folder name is used otherwise
-    color: "#7aa2f7"              # optional
+    name: Refloft # optional; the folder name is used otherwise
+    color: "#7aa2f7" # optional
 
-wip_limits:                       # optional, advisory only
+wip_limits: # optional, advisory only
   In Progress: 3
 ```
 
-Order in the file is the order on screen. How a project *works* — its statuses, priorities, types, labels, task prefix — is read from that project's own `config.yml` and is never copied here, because a copy would go stale the moment the project changed.
+Order in the file is the order on screen. How a project _works_ — its statuses, priorities, types, labels, task prefix — is read from that project's own `config.yml` and is never copied here, because a copy would go stale the moment the project changed.
+
+You do not have to write this file by hand. The **Projects** screen (`p`) adds folders, renames and recolours them, arranges the order, hides a project from the board without unregistering it, and turns a folder that has no backlog into one by running `backlog init` behind a form. Edits are written into the file in place: comments, key order and indentation survive, and only an entry that actually changes is rewritten. Unregistering a project removes the entry and leaves everything in the folder alone — nothing in Muster deletes a backlog.
+
+An entry may also carry `hidden: true`, which keeps a project registered and loaded but out of the board, the lists, search and the figures.
 
 Muster finds a project's data directory the way the Backlog.md CLI does: `backlog/`, then `.backlog/`, then a custom path named by `backlog_directory` in a root `backlog.config.yml`. A registered folder that holds no Backlog.md project is shown as such rather than dropped, and never prevents the others from loading.
 
@@ -159,12 +163,12 @@ backlog overview
 
 Documentation lives as Backlog.md documents and decisions, not in a separate tree — see [Documentation and decision conventions](backlog/docs/doc-4%20-%20Documentation-and-decision-conventions.md) for why and how to add to it.
 
-| | |
-| :-- | :-- |
-| [Specification v0.1](backlog/docs/doc-1%20-%20Muster-Specification-v0.1.md) | what is being built, and explicitly what is not |
-| [Roadmap to 1.0](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) | the five milestones and why they are ordered that way |
-| [Backlog.md Format Contract](backlog/docs/doc-3%20-%20Backlog.md-Format-Contract.md) | the on-disk format, measured against 1021 real files |
-| [Decisions](backlog/decisions/) | architecture decision records |
+|                                                                                      |                                                       |
+| :----------------------------------------------------------------------------------- | :---------------------------------------------------- |
+| [Specification v0.1](backlog/docs/doc-1%20-%20Muster-Specification-v0.1.md)          | what is being built, and explicitly what is not       |
+| [Roadmap to 1.0](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md)                         | the five milestones and why they are ordered that way |
+| [Backlog.md Format Contract](backlog/docs/doc-3%20-%20Backlog.md-Format-Contract.md) | the on-disk format, measured against 1021 real files  |
+| [Decisions](backlog/decisions/)                                                      | architecture decision records                         |
 
 ## Contributing
 

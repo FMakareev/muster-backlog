@@ -6,6 +6,7 @@
   import Board from "./lib/Board.svelte";
   import Docs from "./lib/Docs.svelte";
   import Stats from "./lib/Stats.svelte";
+  import Projects from "./lib/Projects.svelte";
   import TaskList from "./lib/TaskList.svelte";
   import TaskPanel from "./lib/TaskPanel.svelte";
 
@@ -20,6 +21,8 @@
       <Docs />
     {:else if $screen === "stats"}
       <Stats />
+    {:else if $screen === "projects"}
+      <Projects />
     {:else}
       <Board />
     {/if}

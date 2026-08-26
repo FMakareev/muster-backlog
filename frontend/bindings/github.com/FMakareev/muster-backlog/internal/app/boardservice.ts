@@ -26,6 +26,17 @@ export function AddLabel(projectPath: string, taskID: string, label: string): $C
 }
 
 /**
+ * AddProject registers an existing folder.
+ * 
+ * The folder must already hold a Backlog.md project: registering a folder that
+ * does not is how a board fills with entries that explain themselves as broken.
+ * Initialising is a separate, deliberate act.
+ */
+export function AddProject(path: string, edit: $models.ProjectEdit): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2556526182, path, edit);
+}
+
+/**
  * Analytics returns the cross-project overview.
  */
 export function Analytics(): $CancellablePromise<$models.AnalyticsView[] | null> {
@@ -87,6 +98,24 @@ export function FilterValues(field: string): $CancellablePromise<string[] | null
 }
 
 /**
+ * InitProject initialises a folder as a Backlog.md project and registers it.
+ * 
+ * The two halves are one action deliberately: a folder initialised and then
+ * not registered is work the person would have to repeat, and the CLI has
+ * already written to the folder by then.
+ */
+export function InitProject(form: $models.InitFolder): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2783514793, form);
+}
+
+/**
+ * InspectFolder reports what a folder is, before anything is written to it.
+ */
+export function InspectFolder(path: string): $CancellablePromise<$models.FolderView> {
+    return $Call.ByID(638733642, path);
+}
+
+/**
  * Layout returns the unified board columns.
  * 
  * Statuses are per-project configuration and projects do not agree, so the
@@ -105,6 +134,14 @@ export function Layout(): $CancellablePromise<$models.BoardLayout> {
  */
 export function Milestones(): $CancellablePromise<$models.MilestoneView[] | null> {
     return $Call.ByID(4122282057);
+}
+
+/**
+ * MoveProject puts a project at a position in the registry, which is the order
+ * it appears in everywhere.
+ */
+export function MoveProject(path: string, to: number): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1970489624, path, to);
 }
 
 /**
@@ -145,6 +182,22 @@ export function Reload(): $CancellablePromise<$models.Problem[] | null> {
  */
 export function RemoveLabel(projectPath: string, taskID: string, label: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(2631086464, projectPath, taskID, label);
+}
+
+/**
+ * RemoveProject unregisters a folder. Nothing on disk is touched: Muster does
+ * not delete backlogs, and a person who wanted the tasks gone would say so to
+ * the CLI.
+ */
+export function RemoveProject(path: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(4106624107, path);
+}
+
+/**
+ * SaveProject rewrites one project's entry.
+ */
+export function SaveProject(path: string, edit: $models.ProjectEdit): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(3301300712, path, edit);
 }
 
 /**

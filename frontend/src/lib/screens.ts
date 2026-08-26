@@ -6,7 +6,8 @@
  * nothing about where they are in it. Each one says plainly that it is not
  * built yet rather than pretending to be a working destination.
  */
-export type ScreenID = "board" | "list" | "inbox" | "docs" | "stats";
+export type ScreenID =
+  "board" | "list" | "inbox" | "docs" | "stats" | "projects";
 
 export interface Screen {
   id: ScreenID;
@@ -53,6 +54,13 @@ export const screens: Screen[] = [
     label: "Stats",
     key: "s",
     purpose: "Counts, stale tasks and what is blocked",
+    available: true,
+  },
+  {
+    id: "projects",
+    label: "Projects",
+    key: "p",
+    purpose: "The registry: add, arrange, hide and initialise projects",
     available: true,
   },
 ];

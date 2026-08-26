@@ -11,6 +11,10 @@
    * scrolls out of reach — if a project is registered, it is on screen.
    */
 
+  // Hidden projects are left out here, which is what hiding one means. They
+  // are still registered and still on the Projects screen.
+  const shown = $derived($projects.filter((p) => !p.hidden));
+
   // A project that cannot be read is drawn without hue: colour identifies a
   // project, and there is nothing here to identify.
   function rule(path: string, colour: string, ok: boolean): string {
@@ -29,7 +33,7 @@
   </h2>
 
   <ul class="flex flex-col">
-    {#each $projects as project (project.path)}
+    {#each shown as project (project.path)}
       {@const focused = $focusedProject === project.path}
       <li>
         <button
@@ -65,7 +69,9 @@
     {/each}
   </ul>
 
-  {#if $projects.length === 0}
-    <p class="px-3 py-2 text-body text-chalk-faint">None registered.</p>
+  {#if shown.length === 0}
+    <p class="px-3 py-2 text-body text-chalk-faint">
+      {$projects.length === 0 ? "None registered." : "All of them are hidden."}
+    </p>
   {/if}
 </nav>

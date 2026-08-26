@@ -87,6 +87,10 @@ type ProjectView struct {
 	Types      []string `json:"types"`
 	// Layout is how the project's data directory was found.
 	Layout string `json:"layout"`
+	// Hidden keeps the project out of the board, the lists, search and the
+	// figures without unregistering it. The Projects screen still shows it,
+	// with everything it holds.
+	Hidden bool `json:"hidden"`
 }
 
 // TaskView is one task together with where it came from.
@@ -309,6 +313,10 @@ func (s *BoardService) reload() {
 			})
 			continue
 		}
+		if p.Registry.Hidden {
+			// Hiding a project is saying you do not want to hear about it.
+			continue
+		}
 		problems = append(problems, Problem{
 			Kind:   ProblemProject,
 			Title:  fmt.Sprintf("%s could not be loaded", p.Registry.DisplayName),
@@ -406,6 +414,7 @@ func (s *BoardService) Projects() []ProjectView {
 			Name:   p.Registry.DisplayName,
 			Colour: p.Registry.Colour,
 			OK:     p.OK(),
+			Hidden: p.Registry.Hidden,
 		}
 		if p.Err != nil {
 			view.Problem = p.Err.Error()

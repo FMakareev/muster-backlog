@@ -119,6 +119,82 @@ export interface FamilyView {
 }
 
 /**
+ * FolderView is what is known about a folder before it is registered.
+ * 
+ * The answer decides what is offered rather than what is asked: a folder that
+ * already holds a backlog wants registering, one that does not wants
+ * initialising, and one that is not a repository wants the no-git path chosen
+ * for it instead of being asked a question it would fail on.
+ */
+export interface FolderView {
+    /**
+     * Path is the folder, resolved the way the registry would resolve it.
+     */
+    "path": string;
+
+    /**
+     * Name is what the project would be called if nothing overrode it.
+     */
+    "name": string;
+
+    /**
+     * Exists and IsDir are separate: a file is a different mistake from a
+     * path that is not there at all.
+     */
+    "exists": boolean;
+    "isDir": boolean;
+
+    /**
+     * IsGit reports a git repository at the folder itself.
+     */
+    "isGit": boolean;
+
+    /**
+     * HasBacklog reports a Backlog.md project already in place.
+     */
+    "hasBacklog": boolean;
+
+    /**
+     * Layout is how that project's data directory was found, when there is one.
+     */
+    "layout": string;
+
+    /**
+     * Registered reports that Muster already holds this folder.
+     */
+    "registered": boolean;
+
+    /**
+     * Problem explains a folder that cannot be used at all.
+     */
+    "problem": string;
+}
+
+/**
+ * InitFolder is the form behind `backlog init`.
+ * 
+ * Every field is optional: the CLI is run with --defaults, so anything left
+ * empty is answered by Backlog.md itself rather than by a default of Muster's
+ * own invention.
+ */
+export interface InitFolder {
+    "path": string;
+    "name": string;
+    "backlogDir": string;
+    "configLocation": string;
+    "taskPrefix": string;
+    "zeroPaddedIds": number;
+    "noGit": boolean;
+    "agentInstructions": string;
+    "integrationMode": string;
+
+    /**
+     * Colour is Muster's own, applied when the new project is registered.
+     */
+    "colour": string;
+}
+
+/**
  * MilestoneView is one milestone, with enough to show it by name and to see
  * how far along it is.
  */
@@ -187,12 +263,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -212,6 +282,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**
@@ -222,6 +298,18 @@ export interface ProjectChanged {
      * Project is the registered project path, matching ProjectView.Path.
      */
     "project": string;
+}
+
+/**
+ * ProjectEdit is the whole of what the registry holds about one project.
+ * 
+ * Sent complete rather than as a change, because the entry is rewritten as a
+ * whole: a partial edit would have to guess what the missing fields meant.
+ */
+export interface ProjectEdit {
+    "name": string;
+    "colour": string;
+    "hidden": boolean;
 }
 
 /**
@@ -254,6 +342,13 @@ export interface ProjectView {
      * Layout is how the project's data directory was found.
      */
     "layout": string;
+
+    /**
+     * Hidden keeps the project out of the board, the lists, search and the
+     * figures without unregistering it. The Projects screen still shows it,
+     * with everything it holds.
+     */
+    "hidden": boolean;
 }
 
 /**

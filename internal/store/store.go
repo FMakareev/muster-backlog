@@ -64,6 +64,15 @@ type ProjectState struct {
 // OK reports whether the project is loaded and queryable.
 func (p ProjectState) OK() bool { return p.Err == nil && p.Scanned != nil }
 
+// Visible reports whether this project takes part in the board, the lists,
+// search and the figures.
+//
+// A hidden project is loaded but left out of all of them. Loading it anyway is
+// deliberate: the Projects screen still shows what it holds, and unhiding is
+// then instant rather than a rescan. Hiding is a display choice, not an
+// unregistering - which is why it is a field on the entry and not a removal.
+func (p ProjectState) Visible() bool { return p.OK() && !p.Registry.Hidden }
+
 // Store is the aggregated view. It is safe for concurrent use: the watcher
 // reloads projects while the UI reads.
 type Store struct {
@@ -166,7 +175,7 @@ func (s *Store) StatusLists() [][]string {
 
 	var out [][]string
 	for _, path := range s.order {
-		if state, ok := s.projects[path]; ok && state.OK() {
+		if state, ok := s.projects[path]; ok && state.Visible() {
 			out = append(out, state.Scanned.Config.Statuses)
 		}
 	}
@@ -186,7 +195,7 @@ func (s *Store) Diagnostics() []backlog.Diagnostic {
 	var out []backlog.Diagnostic
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 		out = append(out, state.Scanned.Diagnostics...)
@@ -200,7 +209,7 @@ func (s *Store) Get(ref Ref) (Item, bool) {
 	defer s.mu.RUnlock()
 
 	state, ok := s.projects[ref.Project]
-	if !ok || !state.OK() {
+	if !ok || !state.Visible() {
 		return Item{}, false
 	}
 	for _, e := range entitiesOfKind(state.Scanned, ref.Kind) {
@@ -249,7 +258,7 @@ func (s *Store) Query(q Query) []Item {
 	var out []Item
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 		if len(q.Projects) > 0 && !matchesAny(path, q.Projects) &&
@@ -280,7 +289,7 @@ func (s *Store) CountByStatus(projectPath string) map[string]int {
 
 	counts := map[string]int{}
 	state, ok := s.projects[projectPath]
-	if !ok || !state.OK() {
+	if !ok || !state.Visible() {
 		return counts
 	}
 	for _, e := range state.Scanned.Tasks {
@@ -386,7 +395,7 @@ func (s *Store) Values(field string) []string {
 	seen := map[string]bool{}
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 		for _, e := range state.Scanned.Tasks {
@@ -460,7 +469,7 @@ func (s *Store) Search(text string, limit int) []Hit {
 
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 		for _, kind := range kinds {
@@ -531,7 +540,7 @@ func (s *Store) Entities(kind backlog.Kind) []Item {
 	var out []Item
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok || !state.OK() {
+		if !ok || !state.Visible() {
 			continue
 		}
 		for _, e := range entitiesOfKind(state.Scanned, kind) {

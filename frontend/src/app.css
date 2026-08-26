@@ -555,8 +555,14 @@ input:disabled {
   color: var(--color-chalk-faint);
 }
 
-input::placeholder {
+/* Italic, not merely dim. The dim tiers were lightened to clear the contrast
+   requirement, which left a placeholder looking enough like a value to be read
+   as one - a colour field showed #7aa2f7 to three projects that had no colour
+   set at all. */
+input::placeholder,
+textarea::placeholder {
   color: var(--color-chalk-faint);
+  font-style: italic;
 }
 
 /* Dragging a card must not sweep a text selection across the columns it passes

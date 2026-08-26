@@ -13,8 +13,15 @@
    * while the board is narrowed to one project would be a quietly wrong number
    * in the one place a person looks to check their bearings. */
 
-  const loadedProjects = $derived($projects.filter((p) => p.ok).length);
-  const brokenProjects = $derived($projects.length - loadedProjects);
+  // Loaded and not hidden: hiding a project takes it off the board, and a
+  // strip that counted it anyway would be a number disagreeing with the screen
+  // above it.
+  const loadedProjects = $derived(
+    $projects.filter((p) => p.ok && !p.hidden).length,
+  );
+  const brokenProjects = $derived(
+    $projects.filter((p) => !p.ok && !p.hidden).length,
+  );
   // Narrowed by anything at all: focusing a project or applying a filter.
   // The strip counts what is on screen, so it has to notice both.
   const narrowed = $derived($focusedProject !== "" || $filtersActive);

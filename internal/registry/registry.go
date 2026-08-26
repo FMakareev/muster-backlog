@@ -39,6 +39,14 @@ type Entry struct {
 	// Colour distinguishes the project on a shared board. Empty means the UI
 	// picks one.
 	Colour string `yaml:"color"`
+	// Hidden keeps a project out of the board, list, search and figures
+	// without removing it from the registry. It is still loaded, so the
+	// Projects screen can show what it holds and unhiding costs nothing.
+	//
+	// This is Muster's own file, so a field of its own is allowed here; the
+	// rule against inventing fields is about the Backlog.md format, which this
+	// is not.
+	Hidden bool `yaml:"hidden,omitempty"`
 }
 
 // File is the on-disk shape of projects.yml.
@@ -52,6 +60,12 @@ type File struct {
 // Project is a registry entry after resolution.
 type Project struct {
 	Entry
+	// Written is the path exactly as the file spells it, before the leading ~
+	// was expanded. Resolution overwrites Entry.Path with the absolute form,
+	// which is what everything else keys on; this is kept so that rewriting an
+	// entry does not quietly turn a person's ~/Dev/thing into an absolute
+	// path in their own file.
+	Written string
 	// DisplayName is Name, or the folder name when Name is empty.
 	DisplayName string
 	// Location is where the Backlog.md data was found. Zero when Err is set.
@@ -122,7 +136,7 @@ func LoadFrom(path string) (Registry, error) {
 
 // resolve turns one written entry into a Project, located or explained.
 func resolve(index int, entry Entry, seen map[string]int) Project {
-	p := Project{Entry: entry}
+	p := Project{Entry: entry, Written: entry.Path}
 
 	if strings.TrimSpace(entry.Path) == "" {
 		p.Err = fmt.Errorf("entry %d has no path", index+1)
@@ -151,6 +165,11 @@ func resolve(index int, entry Entry, seen map[string]int) Project {
 	p.Location = loc
 	return p
 }
+
+// Expand resolves a leading ~ and makes a path absolute, the same way the
+// registry does when it reads one. Exported so that anything checking a folder
+// before it is registered agrees with what registering it would mean.
+func Expand(path string) (string, error) { return expand(path) }
 
 // expand resolves a leading ~ and makes the path absolute, so the registry can
 // be written the way a person would write it by hand.
