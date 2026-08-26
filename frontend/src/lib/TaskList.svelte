@@ -11,6 +11,12 @@
    * remembered so a working view survives a restart.
    */
 
+  /** Blank for the zero time, which is what "no date" parses to. */
+  function shortDate(value: string): string {
+    if (!value || value.startsWith("0001-01-01")) return "";
+    return value.slice(0, 10);
+  }
+
   type Column = {
     key: string;
     label: string;
@@ -70,7 +76,9 @@
     {
       key: "updated",
       label: "Updated",
-      value: (t) => String(t.entity.Updated ?? "").slice(0, 10),
+      // A task with no updated_date has a zero time, which reads as
+      // 0001-01-01 and looks like a date somebody meant.
+      value: (t) => shortDate(String(t.entity.Updated ?? "")),
       mono: true,
       width: "w-24",
     },
@@ -127,6 +135,33 @@
     }
   }
 
+  type Task = (typeof $visibleTasks)[number];
+  type Row = { task: Task; depth: number };
+
+  /**
+   * Identity is the whole ref, never the id.
+   *
+   * Ids collide across projects, and archiving is a soft delete that lets one
+   * id name two different tasks inside a single project - so a key without the
+   * class silently folds an archived task into its live namesake and loses a
+   * row.
+   */
+  const refKey = (r: {
+    project: string;
+    kind: string;
+    class: string;
+    id: string;
+  }) => [r.project, r.kind, r.class, r.id].join("\u0000");
+
+  /**
+   * Subtasks sit under their parent rather than sorting away from it.
+   *
+   * The sort still decides the order of everything at the top level; a
+   * subtask simply follows the task it belongs to, and its siblings keep the
+   * same sort among themselves. A subtask whose parent is not in the list —
+   * filtered out, or archived — keeps its own place at the top level rather
+   * than disappearing with it.
+   */
   const rows = $derived.by(() => {
     const column = allColumns.find((c) => c.key === sortKey) ?? allColumns[0];
     const sorted = [...$visibleTasks].sort((a, b) =>
@@ -134,7 +169,51 @@
         .value(a)
         .localeCompare(column.value(b), undefined, { numeric: true }),
     );
-    return ascending ? sorted : sorted.reverse();
+    const ordered = ascending ? sorted : sorted.reverse();
+
+    const present = new Set(ordered.map(refKey));
+    const parentOf = (t: Task): string | null => {
+      const parent = t.family?.parent;
+      if (!parent) return null;
+      // The backend resolved the parent to where it actually lives, so this
+      // is an exact ref rather than an id to guess a class for.
+      const key = refKey(parent);
+      return present.has(key) ? key : null;
+    };
+
+    /* eslint-disable svelte/prefer-svelte-reactivity --
+       These are scratch values inside one computation, thrown away when it
+       ends. The reactive collections exist for state that outlives a render
+       and has to notify on mutation; neither is true here, and using them
+       would only mean tracking writes nothing ever reads. */
+    const children = new Map<string, Task[]>();
+    for (const task of ordered) {
+      const key = parentOf(task);
+      if (!key) continue;
+      const list = children.get(key);
+      if (list) list.push(task);
+      else children.set(key, [task]);
+    }
+
+    const out: Row[] = [];
+    const seen = new Set<string>();
+    const emit = (task: Task, depth: number): void => {
+      const key = refKey(task);
+      // A task cannot be its own ancestor, but a hand-edited file could say
+      // so, and an interface that hangs on one is worse than one that does
+      // not draw it twice.
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ task, depth });
+      for (const child of children.get(key) ?? []) emit(child, depth + 1);
+    };
+    for (const task of ordered) {
+      if (!parentOf(task)) emit(task, 0);
+    }
+    // Anything left is part of a cycle; it still belongs on screen.
+    for (const task of ordered) emit(task, 0);
+    /* eslint-enable svelte/prefer-svelte-reactivity */
+    return out;
   });
 </script>
 
@@ -202,7 +281,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each rows as task (task.project + task.kind + task.class + task.id)}
+        {#each rows as { task, depth } (task.project + task.kind + task.class + task.id)}
           <tr
             class="cursor-pointer border-b border-rule hover:bg-ink-raised"
             onclick={() =>
@@ -213,16 +292,22 @@
                 id: task.id,
               })}
           >
-            {#each columns as column (column.key)}
+            {#each columns as column, i (column.key)}
               <td
                 class="max-w-0 truncate px-2 py-1 {column.mono
                   ? 'font-mono text-data'
                   : ''} {column.key === 'title'
                   ? 'text-chalk'
                   : 'text-chalk-dim'}"
+                style={i === 0 && depth > 0
+                  ? `padding-left: ${0.5 + depth * 1.25}rem`
+                  : ""}
               >
                 {#if column.key === "project"}
                   <span class="flex items-baseline gap-1.5">
+                    {#if i === 0 && depth > 0}
+                      <span class="text-chalk-faint" aria-hidden="true">↳</span>
+                    {/if}
                     <span
                       class="h-2 w-2 shrink-0 self-center rounded-[1px]"
                       style="background-color: {projectColour(
@@ -232,6 +317,9 @@
                     ></span>
                     {column.value(task)}
                   </span>
+                {:else if i === 0 && depth > 0}
+                  <span class="text-chalk-faint" aria-hidden="true">↳</span>
+                  {column.value(task)}
                 {:else}
                   {column.value(task)}
                 {/if}
