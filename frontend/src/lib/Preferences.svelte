@@ -6,6 +6,7 @@
   } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
   import { settings } from "./board";
   import { notify } from "./notices";
+  import { dismissable } from "./overlay";
   import { showSettings } from "./ui";
 
   /**
@@ -28,13 +29,6 @@
     }
   }
 
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      showSettings.set(false);
-    }
-  }
-
   const row = "flex flex-col gap-1";
   const label =
     "text-micro font-medium uppercase tracking-[0.14em] text-chalk-faint";
@@ -43,6 +37,7 @@
 {#if $showSettings}
   <div
     class="absolute inset-0 z-20 flex items-start justify-center bg-ink/70 pt-16"
+    use:dismissable={() => showSettings.set(false)}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
     <section
@@ -50,7 +45,6 @@
       aria-label="Preferences"
       tabindex="-1"
       class="flex w-[32rem] flex-col gap-4 rounded-sm border border-rule bg-ink-sunken p-4"
-      onkeydown={onKeydown}
     >
       <header class="flex items-baseline gap-3">
         <h2 class="text-title font-semibold">Preferences</h2>

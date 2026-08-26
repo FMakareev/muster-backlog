@@ -1,5 +1,6 @@
 <script lang="ts">
   import { problems } from "./board";
+  import { dismissable } from "./overlay";
   import { showProblems } from "./ui";
 
   /**
@@ -17,13 +18,6 @@
     file: "Skipped file",
     cli: "Backlog.md CLI",
   };
-
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      showProblems.set(false);
-    }
-  }
 </script>
 
 {#if $showProblems}
@@ -33,7 +27,7 @@
     aria-label="Problems"
     tabindex="-1"
     class="flex max-h-[50%] shrink-0 flex-col overflow-y-auto border-t border-rule bg-ink-sunken"
-    onkeydown={onKeydown}
+    use:dismissable={() => showProblems.set(false)}
   >
     <header
       class="sticky top-0 flex items-baseline gap-2 border-b border-rule bg-ink-sunken px-3 py-1.5"

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-26 19:43'
-updated_date: '2026-08-26 20:15'
+updated_date: '2026-08-26 21:47'
 labels: []
 milestone: m-3
 dependencies: []
@@ -52,6 +52,10 @@ Verified what can be verified without a person looking at their tray:
 That verification found a real defect with nothing to do with the tray: reload rebuilt the whole problem list from scratch, silently discarding conditions of the machine rather than of the data - a missing CLI, unreadable preferences, an absent tray. Problems are now kept in two lists, standing and scan-derived, with the standing ones first because they are the ones a person has to act on. Covered by a test.
 
 Two criteria are left unchecked on purpose. Whether closing the window really leaves the application resident, and whether the tray menu shows and quits it, cannot be established from here: it needs someone looking at their own tray and clicking it. The code is there and the icon is created; the interaction is unproven.
+
+Follow-up from first use: the preferences window could not be closed from the keyboard. It listened for Escape on its own element and never moved focus into itself, so the key had nowhere to land - the same flaw the search and filter panels had in weaker forms, where a stray click was enough to make them unclosable.
+
+All five overlays now share one action. Escape is listened for on the window rather than on the overlay, so dismissal does not depend on where the caret went; overlays are kept in a stack so Escape over preferences opened above a task closes the preferences and leaves the task; and focus moves into an overlay that has not placed the caret somewhere better itself. Verified in the browser: preferences takes focus on opening and closes on Escape, all four of preferences, filters, search and new task close after focus is deliberately blurred, and Escape over a task panel closes the overlay above it without closing the task.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

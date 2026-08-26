@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dismissable } from "./overlay";
   import { milestoneLabel, milestones, tasks } from "./board";
   import {
     clearFilters,
@@ -46,13 +47,6 @@
     if ($showFilters) field?.focus();
   });
 
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      showFilters.set(false);
-    }
-  }
-
   const groups: [keyof Filters, string, () => string[]][] = [
     ["statuses", "Status", () => statuses],
     ["priorities", "Priority", () => priorities],
@@ -83,7 +77,7 @@
     tabindex="-1"
     class="flex max-h-64 shrink-0 flex-col gap-2 overflow-y-auto border-b border-rule
            bg-ink-sunken px-3 py-2"
-    onkeydown={onKeydown}
+    use:dismissable={() => showFilters.set(false)}
   >
     <div class="sticky top-0 flex items-baseline gap-3 bg-ink-sunken pb-1">
       <input

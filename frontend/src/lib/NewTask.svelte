@@ -1,6 +1,7 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import { columns, milestones, projects, refresh } from "./board";
+  import { dismissable } from "./overlay";
   import { notify } from "./notices";
   import { closeNewTask, focusedProject, openTask, showNewTask } from "./ui";
 
@@ -111,10 +112,6 @@
 
   function onKeydown(event: KeyboardEvent): void {
     event.stopPropagation();
-    if (event.key === "Escape") {
-      closeNewTask();
-      return;
-    }
     // The whole form submits from anywhere in it, since reaching for a button
     // with the mouse is exactly what this is meant to avoid.
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -131,6 +128,7 @@
 {#if open}
   <div
     class="absolute inset-0 z-20 flex items-start justify-center bg-ink/70 pt-16"
+    use:dismissable={closeNewTask}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
     <form
