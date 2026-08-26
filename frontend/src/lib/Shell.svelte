@@ -5,6 +5,7 @@
   import { groupByProject, screen, toggleGrouping } from "./ui";
   import { dismiss, notices } from "./notices";
   import ProjectRoll from "./ProjectRoll.svelte";
+  import Problems from "./Problems.svelte";
   import StatusStrip from "./StatusStrip.svelte";
 
   interface Props {
@@ -165,5 +166,6 @@
     </main>
   </div>
 
+  <Problems />
   <StatusStrip />
 </div>

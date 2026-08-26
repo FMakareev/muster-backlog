@@ -1,6 +1,6 @@
 <script lang="ts">
   import { problems, projects, registryPath, tasks } from "./board";
-  import { focusedProject, visibleTasks } from "./ui";
+  import { focusedProject, showProblems, visibleTasks } from "./ui";
 
   /** One line at the foot of the window: what is on screen, and what is wrong.
    *
@@ -24,9 +24,13 @@
 >
   <span class="tabular-nums">
     {#if narrowed}
-      {$visibleTasks.length} of {$tasks.length} tasks · 1 of {loadedProjects} projects
+      {$visibleTasks.length} of {$tasks.length}
+      {$tasks.length === 1 ? "task" : "tasks"} · 1 of {loadedProjects}
+      {loadedProjects === 1 ? "project" : "projects"}
     {:else}
-      {$tasks.length} tasks · {loadedProjects} projects
+      {$tasks.length}
+      {$tasks.length === 1 ? "task" : "tasks"} · {loadedProjects}
+      {loadedProjects === 1 ? "project" : "projects"}
     {/if}
   </span>
 
@@ -36,11 +40,18 @@
     </span>
   {/if}
 
-  {#if faults.length > 0}
-    <span class="text-chalk-dim">
-      {faults.length}
-      {faults.length === 1 ? "problem" : "problems"}
-    </span>
+  {#if $problems.length > 0}
+    <button
+      type="button"
+      class="text-chalk-dim underline decoration-chalk-faint underline-offset-2 hover:text-chalk"
+      title="Show what is wrong"
+      onclick={() => showProblems.set(!$showProblems)}
+    >
+      {faults.length > 0 ? faults.length : $problems.length}
+      {(faults.length > 0 ? faults.length : $problems.length) === 1
+        ? "problem"
+        : "problems"}
+    </button>
   {/if}
 
   <span class="ml-auto truncate" title={$registryPath}>{$registryPath}</span>

@@ -172,8 +172,12 @@ func (s *Store) StatusLists() [][]string {
 	return out
 }
 
-// Diagnostics returns every skipped file across every project, plus one entry
-// for each project that failed to load at all.
+// Diagnostics returns every file skipped during a scan.
+//
+// A project that failed to load entirely is not a diagnostic here: it is
+// already reported on its own ProjectState, and returning it in both places
+// makes one broken folder look like two problems, the second of them
+// mislabelled as a skipped file.
 func (s *Store) Diagnostics() []backlog.Diagnostic {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -181,16 +185,10 @@ func (s *Store) Diagnostics() []backlog.Diagnostic {
 	var out []backlog.Diagnostic
 	for _, path := range s.order {
 		state, ok := s.projects[path]
-		if !ok {
+		if !ok || !state.OK() {
 			continue
 		}
-		if state.Err != nil {
-			out = append(out, backlog.Diagnostic{Path: path, Reason: state.Err.Error()})
-			continue
-		}
-		if state.Scanned != nil {
-			out = append(out, state.Scanned.Diagnostics...)
-		}
+		out = append(out, state.Scanned.Diagnostics...)
 	}
 	return out
 }

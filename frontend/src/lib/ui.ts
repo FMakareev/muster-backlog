@@ -45,6 +45,9 @@ export function toggleGrouping(): void {
   groupByProject.set(!groupByProject.get());
 }
 
+/** Whether the problems panel is open. */
+export const showProblems = atom<boolean>(false);
+
 export const selected = atom<TaskRef | null>(null);
 
 export function openTask(ref: TaskRef): void {

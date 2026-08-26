@@ -307,8 +307,13 @@ func TestBrokenProjectIsReportedNotDropped(t *testing.T) {
 	if n := len(s.Query(store.Query{})); n != 1 {
 		t.Errorf("got %d items, want the good project's task", n)
 	}
-	if len(s.Diagnostics()) == 0 {
-		t.Error("the broken project should produce a diagnostic")
+	// A broken project is reported on its ProjectState, not as a skipped file.
+	// Reporting it in both places would make one broken folder look like two
+	// problems, the second of them mislabelled.
+	for _, d := range s.Diagnostics() {
+		if d.Path == missing {
+			t.Errorf("the broken project also appeared as a file diagnostic: %+v", d)
+		}
 	}
 }
 
