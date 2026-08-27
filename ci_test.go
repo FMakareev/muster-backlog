@@ -58,7 +58,9 @@ func TestContinuousIntegrationRunsWhereItMatters(t *testing.T) {
 	if !ok {
 		t.Fatal("the pipeline does not run on pushes to the default branch")
 	}
-	if !strings.Contains(strings.ToLower(toText(push)), "main") {
+	// The default branch here is master. Naming the wrong one is not an error
+	// GitHub reports — the workflow simply never runs.
+	if !strings.Contains(strings.ToLower(toText(push)), "master") {
 		t.Errorf("the push trigger does not name the default branch: %v", push)
 	}
 }
@@ -185,6 +187,20 @@ func TestTheContinuousIntegrationToolchainMatchesTheDocumentedOne(t *testing.T) 
 	}
 	if !strings.HasPrefix(manifest.PackageManager, "pnpm@") {
 		t.Error("package.json has no packageManager field, so pnpm/action-setup has no version to install")
+	}
+}
+
+// release-please only ever runs on a push to the branch it names, so naming
+// the wrong one means no release pull request is ever opened and nothing says
+// so. This is the check that would have caught it.
+func TestTheReleaseWorkflowRunsOnTheDefaultBranch(t *testing.T) {
+	w := readWorkflow(t, ".github/workflows/release-please.yml")
+	push, ok := w.On["push"]
+	if !ok {
+		t.Fatal("release-please does not run on a push at all")
+	}
+	if !strings.Contains(strings.ToLower(toText(push)), "master") {
+		t.Errorf("release-please does not run on the default branch: %v", push)
 	}
 }
 

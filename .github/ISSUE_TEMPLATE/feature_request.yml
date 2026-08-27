@@ -67,5 +67,5 @@ body:
       options:
         - label: This does not need Muster to store anything Backlog.md cannot.
           required: false
-        - label: I have looked at whether it is already on [the roadmap](https://github.com/FMakareev/muster-backlog/blob/main/backlog/docs/doc-2%20-%20Roadmap-to-1.0.md).
+        - label: I have looked at whether it is already on [the roadmap](https://github.com/FMakareev/muster-backlog/blob/HEAD/backlog/docs/doc-2%20-%20Roadmap-to-1.0.md).
           required: false

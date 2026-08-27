@@ -10,4 +10,8 @@ node_modules
 
 # Packaging downloads
 build/linux/appimage/build
+# The AppImage staging binary. It was tracked for a while: seventeen
+# megabytes of build output, several versions of it, in a repository
+# everyone clones.
+build/linux/appimage/muster
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
