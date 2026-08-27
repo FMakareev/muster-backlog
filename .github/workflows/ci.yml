@@ -92,10 +92,24 @@ jobs:
           path: ~/go/bin
           key: go-tools-${{ runner.os }}-${{ env.WAILS_VERSION }}-${{ env.GOLANGCI_VERSION }}
 
+      # The Wails CLI is itself a Wails program: building it runs pkg-config
+      # for GTK 4 and WebKitGTK 6.0 unless the gtk3 tag is set, so on a runner
+      # with the GTK 3 packages the plain `go install` fails before anything
+      # of this project is compiled. The tag is chosen the same way the build
+      # chooses it, from what the machine actually has, rather than hardcoded.
       - name: Install the Go tools
         if: steps.go-tools.outputs.cache-hit != 'true'
         run: |
-          go install "github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}"
+          if pkg-config --exists gtk4 webkitgtk-6.0; then
+            tags=""
+          elif pkg-config --exists gtk+-3.0 webkit2gtk-4.1; then
+            tags="gtk3"
+          else
+            echo "::error::neither GTK 4 nor GTK 3 development packages are present"
+            exit 1
+          fi
+          echo "building the Wails CLI with tags: ${tags:-none}"
+          go install ${tags:+-tags "$tags"} "github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}"
           go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_VERSION}"
 
       - name: Install the workspace

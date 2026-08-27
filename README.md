@@ -97,6 +97,14 @@ go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
 ```
 
+The Wails CLI is itself a Wails program, so building it runs `pkg-config` for GTK 4 and WebKitGTK 6.0. On a machine that has GTK 3 instead — Ubuntu 24.04 among them — that first line fails before anything of this project is involved, complaining that `gtk4` is not in the pkg-config search path. Install it with the tag instead:
+
+```sh
+go install -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
+```
+
+Only the CLI needs telling. Muster's own build detects what the machine has and picks the tag itself.
+
 ### Linux system libraries
 
 The default Linux build targets **GTK 4** and **WebKitGTK 6.0**:
