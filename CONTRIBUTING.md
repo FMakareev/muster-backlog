@@ -58,7 +58,9 @@ build(deps): pin svelte to 5.56.10 for SVAR compatibility
 
 ## How work is tracked
 
-**There are no GitHub Issues in this project.** Work is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) in the [`backlog/`](backlog/) directory of this repository — tasks are markdown files, versioned alongside the code they describe. Muster itself is a tool for working with exactly this format, so the project uses it on itself.
+**The work is not tracked in GitHub Issues.** It is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) in the [`backlog/`](backlog/) directory of this repository — tasks are markdown files, versioned alongside the code they describe. Muster itself is a tool for working with exactly this format, so the project uses it on itself.
+
+Issues are the way in from outside, not the list of work: a [bug report](../../issues/new?template=bug_report.yml) or a [feature request](../../issues/new?template=feature_request.yml) is read and, if it is going to be done, becomes a task in `backlog/` — which is then what the pull request references. Questions go to Discussions rather than Issues, because an issue tracker that fills with answered questions stops being a list of anything.
 
 ```sh
 backlog task list --plain          # what is open

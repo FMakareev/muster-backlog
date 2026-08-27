@@ -1,0 +1,103 @@
+name: Bug report
+description: Something Muster does that it should not, or does not do that it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Muster writes only through the `backlog` CLI, so the first question about
+        almost any misbehaviour is which two versions are involved. **Preferences
+        shows both and has a button that copies them** — that button exists for
+        this form. From a terminal it is `muster --version` and `backlog --version`.
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Paste what the copy button in Preferences gives you.
+      placeholder: |
+        Muster 0.1.0
+        Backlog.md CLI 1.50.1
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and desktop
+      description: >-
+        The distribution and version, the desktop environment, and whether the
+        session is X11 or Wayland. The last one matters more than it looks:
+        the tray and the global hotkey behave differently under each.
+      placeholder: Fedora 41, GNOME 47, Wayland
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The steps, in order, starting from a state someone else can reach.
+      placeholder: |
+        1. Open the list and tick four tasks
+        2. Choose a milestone
+        3. Press "Change 4 tasks"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+      description: >-
+        Both halves. What actually happened is usually clear from a screenshot;
+        what you expected almost never is, and it is where the disagreement
+        usually turns out to be.
+    validations:
+      required: true
+
+  - type: input
+    id: projects
+    attributes:
+      label: How many projects are registered
+      description: >-
+        Muster exists to span several at once, and a good deal of what can go
+        wrong only happens when there is more than one — ids collide across
+        projects, and statuses differ between them.
+      placeholder: "9"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: single-project
+    attributes:
+      label: Does it still happen with only one project registered?
+      description: >-
+        If you can check, this halves the search. Hiding the others in the
+        Projects screen is enough; nothing has to be unregistered.
+      options:
+        - Yes, with a single project too
+        - No, only with several
+        - I have not checked
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: What the files say
+      description: >-
+        Optional, and the most useful thing in a report about a write going
+        wrong. Muster's answer is always whatever is on disk, so the
+        frontmatter of the task involved often settles it outright. Remove
+        anything private first.
+      render: yaml
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: >-
+        Screenshots, what was in the notice, whether it happens every time or
+        once. Drag images straight in.

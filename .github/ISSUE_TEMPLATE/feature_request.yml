@@ -1,0 +1,71 @@
+name: Feature request
+description: Something Muster cannot do that gets in your way.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The problem first, on purpose. A request that arrives as a solution has
+        already thrown away the thing that would let someone find a better one —
+        and quite often the answer turns out to be something the application can
+        do already, which only the problem statement reveals.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What gets in your way
+      description: >-
+        The situation you are actually in, without a proposed fix in it. What
+        you were trying to get done, and what made that harder than it should
+        be.
+      placeholder: >-
+        I keep a label on everything waiting on someone else. To see what is
+        blocked across all nine projects I filter by that label in each one in
+        turn, and I lose track of which I have already looked at.
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What you do about it today
+      description: >-
+        The workaround, however ugly. This is the measure of how much the
+        problem costs, and it often shows the shape of the answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you think would help
+      description: >-
+        Optional, and deliberately after the two above. A suggestion is welcome;
+        it just should not be the only thing here.
+
+  - type: markdown
+    attributes:
+      value: |
+        ### One thing worth knowing before you write
+
+        **Muster adds no field of its own to the Backlog.md format.** It reads
+        that markdown directly and writes only through the `backlog` CLI, and it
+        stores nothing Backlog.md does not support natively — no sidecar file, no
+        label convention standing in for a field. That is a hard rule rather than
+        a current limitation, and it is why the review-budget planner from the
+        first draft of the specification no longer exists.
+
+        So a request that needs somewhere new to put data will be declined here
+        and belongs with [Backlog.md](https://github.com/MrLesk/Backlog.md)
+        instead. A request about what Muster *shows* you, or how it lets you work
+        with what is already in those files, is squarely in scope.
+
+  - type: checkboxes
+    id: acknowledged
+    attributes:
+      label: Before submitting
+      options:
+        - label: This does not need Muster to store anything Backlog.md cannot.
+          required: false
+        - label: I have looked at whether it is already on [the roadmap](https://github.com/FMakareev/muster-backlog/blob/main/backlog/docs/doc-2%20-%20Roadmap-to-1.0.md).
+          required: false

@@ -1,0 +1,18 @@
+# The chooser. Blank issues are off because the two forms exist to ask for the
+# things that make a report actionable, and a blank issue is how that gets
+# skipped. Questions go to Discussions: they are conversations, and an issue
+# tracker that fills with answered questions stops being a list of work.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Ask a question
+    url: https://github.com/FMakareev/muster-backlog/discussions/categories/q-a
+    about: How something works, whether it can do a thing, or help getting it running.
+
+  - name: Suggest an idea before it is a request
+    url: https://github.com/FMakareev/muster-backlog/discussions/categories/ideas
+    about: Somewhere to think out loud. Open a feature request once the problem is clear.
+
+  - name: A problem with Backlog.md itself
+    url: https://github.com/MrLesk/Backlog.md/issues
+    about: Muster reads and writes Backlog.md and adds nothing to it. If `backlog` does the same thing from a terminal, it belongs there.
