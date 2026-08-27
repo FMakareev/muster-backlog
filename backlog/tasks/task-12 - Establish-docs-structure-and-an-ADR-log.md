@@ -1,11 +1,11 @@
 ---
 id: TASK-12
 title: Establish docs structure and an ADR log
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:00'
-updated_date: '2026-08-26 16:06'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-0
 dependencies: []

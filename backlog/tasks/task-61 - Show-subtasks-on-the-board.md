@@ -1,11 +1,11 @@
 ---
 id: TASK-61
 title: Show subtasks on the board
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 19:43'
-updated_date: '2026-08-26 21:47'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-2
 dependencies: []

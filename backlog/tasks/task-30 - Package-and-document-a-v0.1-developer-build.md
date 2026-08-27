@@ -1,11 +1,11 @@
 ---
 id: TASK-30
 title: Package and document a v0.1 developer build
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 19:29'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies:

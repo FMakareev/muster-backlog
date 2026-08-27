@@ -1,11 +1,11 @@
 ---
 id: TASK-7
 title: Wire lefthook git hooks
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 17:50'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-0
 dependencies:

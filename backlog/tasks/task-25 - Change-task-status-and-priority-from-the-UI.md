@@ -1,11 +1,11 @@
 ---
 id: TASK-25
 title: Move tasks between statuses by drag and drop
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 18:04'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies:

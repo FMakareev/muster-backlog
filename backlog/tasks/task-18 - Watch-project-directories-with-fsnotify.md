@@ -1,11 +1,11 @@
 ---
 id: TASK-18
 title: Watch project directories with fsnotify
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:00'
-updated_date: '2026-08-26 16:35'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies:

@@ -1,11 +1,11 @@
 ---
 id: TASK-57
 title: Create tasks from the application
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 19:43'
-updated_date: '2026-08-26 21:59'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-2
 dependencies:

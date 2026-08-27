@@ -1,11 +1,11 @@
 ---
 id: TASK-72
 title: A note in the panel offers edits that cannot work
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-27 04:16'
-updated_date: '2026-08-27 04:18'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-5
 dependencies: []

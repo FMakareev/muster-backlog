@@ -1,11 +1,11 @@
 ---
 id: TASK-70
 title: Manage milestones from the application
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-27 00:38'
-updated_date: '2026-08-27 01:39'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-5
 dependencies: []

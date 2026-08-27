@@ -1,11 +1,11 @@
 ---
 id: TASK-55
 title: Initialise a Backlog.md project in any folder from the UI
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:28'
-updated_date: '2026-08-26 22:44'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies:

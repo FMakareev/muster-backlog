@@ -1,11 +1,11 @@
 ---
 id: TASK-16
 title: Parse Backlog.md task files into a domain model
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:00'
-updated_date: '2026-08-26 16:27'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies:

@@ -1,11 +1,11 @@
 ---
 id: TASK-23
 title: Build the task detail panel
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 17:51'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies:

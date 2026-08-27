@@ -1,11 +1,11 @@
 ---
 id: TASK-27
 title: Reconcile differing status sets into unified board columns
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 17:30'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-1
 dependencies: []

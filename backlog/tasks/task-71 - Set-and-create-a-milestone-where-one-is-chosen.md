@@ -1,11 +1,11 @@
 ---
 id: TASK-71
 title: Set and create a milestone where one is chosen
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-27 03:38'
-updated_date: '2026-08-27 03:48'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-5
 dependencies: []

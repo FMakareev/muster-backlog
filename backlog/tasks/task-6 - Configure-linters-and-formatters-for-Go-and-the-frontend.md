@@ -1,11 +1,11 @@
 ---
 id: TASK-6
 title: Configure linters and formatters for Go and the frontend
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 15:48'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-0
 dependencies:

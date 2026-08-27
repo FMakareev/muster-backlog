@@ -1,11 +1,11 @@
 ---
 id: TASK-44
 title: Build the Projects screen
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:03'
-updated_date: '2026-08-26 22:43'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies:

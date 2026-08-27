@@ -1,11 +1,11 @@
 ---
 id: TASK-51
 title: Build cross-project search
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:27'
-updated_date: '2026-08-26 21:14'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-2
 dependencies:

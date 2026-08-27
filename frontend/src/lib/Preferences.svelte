@@ -104,6 +104,25 @@
       </div>
 
       <div class={row}>
+        <span class={label}>Where the Backlog.md CLI is</span>
+        <input
+          class="w-full font-mono"
+          aria-label="Path to the Backlog.md CLI"
+          placeholder="found automatically"
+          value={$settings.backlogPath}
+          disabled={busy}
+          onchange={(e) =>
+            save({ ...$settings, backlogPath: e.currentTarget.value })}
+        />
+        <p class="text-body text-chalk-faint">
+          Leave this empty unless Muster cannot find it. An application started
+          from a desktop launcher does not inherit a shell's PATH, so a CLI
+          installed by pnpm, npm or bun can run in a terminal and still be
+          missing here.
+        </p>
+      </div>
+
+      <div class={row}>
         <span class={label}>Where a task opens</span>
         <select
           aria-label="Where a task opens"

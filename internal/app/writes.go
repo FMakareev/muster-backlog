@@ -176,25 +176,61 @@ func (s *BoardService) dataDirFor(projectPath string) string {
 
 // resolveCLI locates the CLI once, recording why if it cannot.
 func (s *BoardService) resolveCLI() {
-	cli, err := backlogcli.New()
+	s.mu.Lock()
+	explicit := s.prefs.BacklogPath
+	s.mu.Unlock()
+
+	s.forgetCLIProblems()
+	cli, err := backlogcli.NewAt(explicit)
 
 	s.mu.Lock()
 	s.cli, s.cliErr = cli, err
 	s.mu.Unlock()
 
-	if err != nil {
-		title := "Changes cannot be saved"
-		if errors.Is(err, backlogcli.ErrUnsupportedVersion) {
-			title = "The Backlog.md CLI is too old"
-		}
-		s.mu.Lock()
-		s.standingProblems = append(s.standingProblems, Problem{
-			Kind:   ProblemCLI,
-			Title:  title,
-			Detail: err.Error(),
-		})
-		s.mu.Unlock()
+	if err == nil {
+		return
 	}
+
+	title := "Changes cannot be saved"
+	detail := err.Error()
+	switch {
+	case errors.Is(err, backlogcli.ErrUnsupportedVersion):
+		title = "The Backlog.md CLI is too old"
+	case explicit != "":
+		title = "The Backlog.md CLI is not where the preferences say"
+	default:
+		// The message already names everywhere it looked, which is the useful
+		// half. This adds the part a list of paths cannot say: why a binary
+		// that works in a terminal can be invisible here.
+		detail += ". An application started from a desktop launcher does not " +
+			"inherit a shell's PATH, so a CLI installed by pnpm, npm or bun " +
+			"may run in a terminal and still be missing here. Set the path in " +
+			"Preferences if you know it."
+	}
+
+	s.mu.Lock()
+	s.standingProblems = append(s.standingProblems, Problem{
+		Kind: ProblemCLI, Title: title, Detail: detail,
+	})
+	s.mu.Unlock()
+}
+
+// forgetCLIProblems drops what a previous resolution reported.
+//
+// Standing problems are conditions of the machine rather than of the data, so
+// they survive a reload - but the machine can change. Someone who has just
+// told the preferences where the CLI is should not still be looking at the
+// message saying it could not be found.
+func (s *BoardService) forgetCLIProblems() {
+	s.mu.Lock()
+	kept := s.standingProblems[:0]
+	for _, problem := range s.standingProblems {
+		if problem.Kind != ProblemCLI {
+			kept = append(kept, problem)
+		}
+	}
+	s.standingProblems = kept
+	s.mu.Unlock()
 }
 
 // AddLabel adds a label to a task without touching the others.

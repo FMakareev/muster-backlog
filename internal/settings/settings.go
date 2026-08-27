@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/xdg"
 	"github.com/goccy/go-yaml"
@@ -63,6 +64,14 @@ type Settings struct {
 	// board over nine projects and suits nobody who needs larger type, so it
 	// is a choice rather than a constraint.
 	ScalePercent int `yaml:"scale_percent" json:"scalePercent"`
+	// BacklogPath is where the Backlog.md CLI is, when finding it fails.
+	//
+	// Empty means look for it, which is almost always right. It exists because
+	// an application started from a desktop launcher does not inherit a
+	// shell's PATH, and a CLI installed by a package manager into a directory
+	// only a shell rc file mentions is invisible to it - a real report from a
+	// packaged build, where the same binary ran fine in a terminal.
+	BacklogPath string `yaml:"backlog_path" json:"backlogPath"`
 }
 
 // Defaults are what a first run gets: ordinary window behaviour and the side
@@ -75,6 +84,7 @@ func Defaults() Settings {
 		WIPLimits:      map[string]int{},
 		StaleAfterDays: 30,
 		ScalePercent:   100,
+		BacklogPath:    "",
 	}
 }
 
@@ -148,6 +158,7 @@ func (s Settings) normalised() Settings {
 	if out.StaleAfterDays <= 0 {
 		out.StaleAfterDays = 30
 	}
+	out.BacklogPath = strings.TrimSpace(out.BacklogPath)
 	// Clamped rather than trusted: a hand-edited 5 or 5000 would leave an
 	// interface nobody could use to fix the setting.
 	if out.ScalePercent < 75 {

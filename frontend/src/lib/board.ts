@@ -68,6 +68,7 @@ export const settings = atom<Settings>({
   wipLimits: {},
   staleAfterDays: 30,
   scalePercent: 100,
+  backlogPath: "",
 });
 
 /**

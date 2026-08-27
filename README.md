@@ -50,6 +50,8 @@ Where Backlog.md has a relationship, Muster shows it without inventing a shape f
 | [golangci-lint](https://golangci-lint.run)             | v2 (needed by the git hooks)      |
 | [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 minimum, 1.50.1 recommended (at runtime, not to build) |
 
+Muster looks for the CLI on PATH first and then in the places package managers install it — pnpm, npm, bun, cargo, `~/.local/bin` — because an application started from a desktop launcher does not inherit a shell's PATH, and neither does the CLI it runs: the binary pnpm installs is a shell script ending in `exec node`, and node is usually installed the same way. Both are handled. If it still cannot be found, the message names every directory that was searched, and Preferences takes an explicit path.
+
 1.48.0 is the floor because that is the version the [format contract](<backlog/docs/doc-3 - Backlog.md-Format-Contract.md>) was measured against; 1.50.1 writes byte-identical files but reports two failures that 1.48.0 swallows, so it is what the author runs. Muster never relies on an exit code for a write whose result it can check.
 
 The two Go tools install themselves:

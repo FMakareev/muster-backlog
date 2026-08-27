@@ -684,8 +684,20 @@ func (s *BoardService) SaveSettings(next settings.Settings) []Problem {
 		}}
 	}
 	s.mu.Lock()
+	changedCLI := s.prefs.BacklogPath != next.BacklogPath
 	s.prefs = next
 	s.mu.Unlock()
+
+	// Saying where the CLI is has to take effect now: someone setting it is
+	// looking at a banner telling them writes are unavailable, and asking them
+	// to restart to find out whether they got it right is a poor answer.
+	if changedCLI {
+		s.resolveCLI()
+		emit(EventRegistryChanged, struct{}{})
+		if problem := s.cliProblem(); problem != nil {
+			return []Problem{*problem}
+		}
+	}
 
 	applyWindowBehaviour(next)
 

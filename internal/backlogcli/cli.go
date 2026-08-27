@@ -110,19 +110,41 @@ type Runner struct {
 // It is called once at startup so that a missing or unsupported CLI is one
 // clear report, rather than the same failure arriving again on every action a
 // user tries.
-func New() (*Runner, error) {
-	binary, err := exec.LookPath(BinaryName)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"%w: install it and make sure %q is on PATH", ErrNotInstalled, BinaryName)
-	}
-	return newAt(binary)
-}
+func New() (*Runner, error) { return NewAt("") }
 
-// NewAt is New for an explicit binary path, used by tests and by a future
-// setting for people whose CLI is not on PATH.
-func NewAt(binary string) (*Runner, error) {
-	return newAt(binary)
+// NewAt resolves the CLI, preferring an explicit path when one is given.
+//
+// An explicit path is a person telling us where it is, so it is not
+// second-guessed: if it is wrong, the error says so about that path rather
+// than quietly searching elsewhere and reporting something confusing about a
+// binary they did not name.
+func NewAt(explicit string) (*Runner, error) {
+	if explicit = strings.TrimSpace(explicit); explicit != "" {
+		if !executable(explicit) {
+			return nil, fmt.Errorf(
+				"%w: %s is not an executable file", ErrNotInstalled, explicit)
+		}
+		return newAt(explicit)
+	}
+
+	// Every candidate is tried, not just the first that exists. A binary can
+	// be there and still not run: the one pnpm installs is a shell script that
+	// execs node, and node may be no more visible than the CLI was.
+	found, searched := Find()
+	var last error
+	for _, candidate := range found {
+		runner, err := newAt(candidate)
+		if err == nil {
+			return runner, nil
+		}
+		last = err
+	}
+	if last != nil {
+		return nil, last
+	}
+	return nil, fmt.Errorf(
+		"%w: no %q found. Looked in: %s",
+		ErrNotInstalled, BinaryName, strings.Join(searched, ", "))
 }
 
 func newAt(binary string) (*Runner, error) {
@@ -180,6 +202,9 @@ func (r *Runner) run(ctx context.Context, dir string, args ...string) (string, e
 
 	cmd := exec.CommandContext(ctx, r.binary, args...)
 	cmd.Dir = dir
+	// The CLI needs to find its own interpreter, which a desktop launcher's
+	// environment may not offer.
+	cmd.Env = Environment()
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

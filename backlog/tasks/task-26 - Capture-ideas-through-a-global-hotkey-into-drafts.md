@@ -4,12 +4,12 @@ title: Capture into the drafts inbox by global hotkey
 status: To Do
 assignee: []
 created_date: '2026-08-26 15:01'
-updated_date: '2026-08-26 15:28'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies:
   - TASK-24
-priority: high
+priority: medium
 type: feature
 ordinal: 26000
 ---

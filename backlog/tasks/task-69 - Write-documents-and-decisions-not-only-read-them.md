@@ -1,11 +1,11 @@
 ---
 id: TASK-69
 title: 'Write documents and decisions, not only read them'
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-27 00:38'
-updated_date: '2026-08-27 01:32'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-5
 dependencies: []

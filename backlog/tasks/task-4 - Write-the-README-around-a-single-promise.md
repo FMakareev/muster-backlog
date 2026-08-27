@@ -1,11 +1,11 @@
 ---
 id: TASK-4
 title: Write the README around a single promise
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 14:59'
-updated_date: '2026-08-26 16:10'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-0
 dependencies: []

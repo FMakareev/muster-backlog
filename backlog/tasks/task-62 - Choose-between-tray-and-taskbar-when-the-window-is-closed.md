@@ -1,11 +1,11 @@
 ---
 id: TASK-62
 title: Choose between tray and taskbar when the window is closed
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 19:43'
-updated_date: '2026-08-26 21:47'
+updated_date: '2026-08-27 17:17'
 labels: []
 milestone: m-3
 dependencies: []
@@ -23,8 +23,8 @@ This is a tool to reach for several times an hour, so where it goes when the win
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 A preference chooses between minimising to the tray and behaving as an ordinary window
-- [ ] #2 With the tray chosen, closing the window leaves the application resident and the tray icon restores it
-- [ ] #3 The tray menu can show and quit the application
+- [x] #2 With the tray chosen, closing the window leaves the application resident and the tray icon restores it
+- [x] #3 The tray menu can show and quit the application
 - [x] #4 A desktop environment with no tray falls back to ordinary window behaviour and says so rather than vanishing
 - [x] #5 The preference is remembered across restarts
 <!-- AC:END -->
@@ -56,6 +56,8 @@ Two criteria are left unchecked on purpose. Whether closing the window really le
 Follow-up from first use: the preferences window could not be closed from the keyboard. It listened for Escape on its own element and never moved focus into itself, so the key had nowhere to land - the same flaw the search and filter panels had in weaker forms, where a stray click was enough to make them unclosable.
 
 All five overlays now share one action. Escape is listened for on the window rather than on the overlay, so dismissal does not depend on where the caret went; overlays are kept in a stack so Escape over preferences opened above a task closes the preferences and leaves the task; and focus moves into an overlay that has not placed the caret somewhere better itself. Verified in the browser: preferences takes focus on opening and closes on Escape, all four of preferences, filters, search and new task close after focus is deliberately blurred, and Escape over a task panel closes the overlay above it without closing the task.
+
+The two criteria that needed a person at the machine are confirmed by the author on their own desktop: with the tray chosen, closing the window leaves Muster resident and the icon brings it back, and the tray menu shows and quits it. Everything else here was verified earlier by other means - the fallback on a desktop with no status-notifier host, and the preference surviving a restart.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
@@ -67,3 +69,11 @@ created: 2026-08-26 20:15
 Two criteria need you rather than me: close the window with the tray preference on and check the icon appears, restores the window, and that its menu shows and quits. Everything around them is verified.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Closing the window either quits or leaves Muster in the tray, as a preference, and a desktop with no tray says so instead of making the window vanish with no way back.
+
+The tray half could only be confirmed by someone sitting at the machine, and the author has: the icon restores the window and the menu shows and quits. The rest was verified against a session bus with and without a status-notifier host.
+<!-- SECTION:FINAL_SUMMARY:END -->

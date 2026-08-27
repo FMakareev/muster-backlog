@@ -40,6 +40,17 @@ export interface Settings {
      * is a choice rather than a constraint.
      */
     "scalePercent": number;
+
+    /**
+     * BacklogPath is where the Backlog.md CLI is, when finding it fails.
+     * 
+     * Empty means look for it, which is almost always right. It exists because
+     * an application started from a desktop launcher does not inherit a
+     * shell's PATH, and a CLI installed by a package manager into a directory
+     * only a shell rc file mentions is invisible to it - a real report from a
+     * packaged build, where the same binary ran fine in a terminal.
+     */
+    "backlogPath": string;
 }
 
 /**

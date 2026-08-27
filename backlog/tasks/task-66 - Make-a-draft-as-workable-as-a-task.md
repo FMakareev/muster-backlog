@@ -1,11 +1,11 @@
 ---
 id: TASK-66
 title: Make a draft as workable as a task
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 23:40'
-updated_date: '2026-08-27 00:06'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies: []

@@ -1,11 +1,11 @@
 ---
 id: TASK-42
 title: Build the drafts inbox and triage view
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 15:02'
-updated_date: '2026-08-26 23:32'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies:

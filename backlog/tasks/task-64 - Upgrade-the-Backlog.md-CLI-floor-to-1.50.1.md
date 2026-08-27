@@ -1,11 +1,11 @@
 ---
 id: TASK-64
 title: Upgrade the Backlog.md CLI floor to 1.50.1
-status: In Review
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-26 23:40'
-updated_date: '2026-08-26 23:45'
+updated_date: '2026-08-27 17:16'
 labels: []
 milestone: m-3
 dependencies: []
