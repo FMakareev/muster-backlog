@@ -142,3 +142,45 @@ func TestReassigningTasksToAnotherMilestone(t *testing.T) {
 		t.Errorf("the task points at %q, want the milestone it was moved to", got)
 	}
 }
+
+// A task's milestone is ordinary work, not a decision taken once at creation.
+func TestATasksMilestoneCanBeChangedAndCleared(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := initialised(t, "one")
+	s := startService(t, withRegistry(t, one))
+	for _, name := range []string{"First", "Second"} {
+		if result := s.AddMilestone(one, name, ""); !result.OK {
+			t.Fatalf("AddMilestone(%s): %+v", name, result.Problem)
+		}
+	}
+	create := exec.Command("backlog", "task", "create", "Moves about")
+	create.Dir = one
+	if out, err := create.CombinedOutput(); err != nil {
+		t.Fatalf("task create: %v\n%s", err, out)
+	}
+	s.Reload()
+
+	if result := s.SetMilestone(one, "TASK-1", "m-0"); !result.OK {
+		t.Fatalf("SetMilestone: %+v", result.Problem)
+	}
+	if got := milestoneOf(t, s, one, "TASK-1"); got != "m-0" {
+		t.Errorf("milestone is %q", got)
+	}
+
+	if result := s.SetMilestone(one, "TASK-1", "m-1"); !result.OK {
+		t.Fatalf("moving it: %+v", result.Problem)
+	}
+	if got := milestoneOf(t, s, one, "TASK-1"); got != "m-1" {
+		t.Errorf("after moving, milestone is %q", got)
+	}
+
+	// Empty clears it, which is a different command behind the same control.
+	if result := s.SetMilestone(one, "TASK-1", ""); !result.OK {
+		t.Fatalf("clearing it: %+v", result.Problem)
+	}
+	if got := milestoneOf(t, s, one, "TASK-1"); got != "" {
+		t.Errorf("after clearing, milestone is %q", got)
+	}
+}

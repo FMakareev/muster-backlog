@@ -2,6 +2,7 @@
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
   import { applyWrite, canMove, columns, projectConfig } from "./board";
+  import MilestonePicker from "./MilestonePicker.svelte";
   import { notify } from "./notices";
 
   interface Props {
@@ -104,6 +105,15 @@
         )}
     />
   </label>
+
+  <MilestonePicker
+    inline
+    project={task.project}
+    value={task.entity.Milestone ?? ""}
+    disabled={busy}
+    onChange={(next) =>
+      run(() => BoardService.SetMilestone(task.project, task.id, next))}
+  />
 
   <span class="flex flex-wrap items-center gap-1">
     <span class="text-micro tracking-[0.14em] text-chalk-faint uppercase"

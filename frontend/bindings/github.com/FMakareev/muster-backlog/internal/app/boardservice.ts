@@ -434,6 +434,16 @@ export function SetDocumentation(projectPath: string, taskID: string, docs: stri
 }
 
 /**
+ * SetMilestone moves a task to a milestone, or clears it when empty.
+ * 
+ * A milestone is the axis a backlog is planned on, so moving a task between
+ * them is ordinary work rather than something to be decided once at creation.
+ */
+export function SetMilestone(projectPath: string, taskID: string, milestone: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1310419688, projectPath, taskID, milestone);
+}
+
+/**
  * SetModifiedFiles replaces a task's modified-file list.
  * 
  * The list can be changed but not emptied, because Backlog.md has no way to

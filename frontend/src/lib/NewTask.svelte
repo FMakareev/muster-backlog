@@ -1,7 +1,8 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
-  import { columns, milestones, projects, refresh } from "./board";
+  import { columns, projects, refresh } from "./board";
   import { dismissable } from "./overlay";
+  import MilestonePicker from "./MilestonePicker.svelte";
   import { notify } from "./notices";
   import { closeNewTask, defaultProject, openTask, showNewTask } from "./ui";
 
@@ -56,9 +57,6 @@
   const statuses = $derived(config?.statuses ?? []);
   const priorities = $derived(config?.priorities ?? []);
   const types = $derived(config?.types ?? []);
-  const projectMilestones = $derived(
-    $milestones.filter((m) => m.project === project),
-  );
 
   function reset(): void {
     title = "";
@@ -264,15 +262,12 @@
           </select>
         </label>
 
-        <label class="flex flex-col gap-1">
-          <span class={label}>Milestone</span>
-          <select class={field} bind:value={milestone} disabled={busy}>
-            <option value="">none</option>
-            {#each projectMilestones as m (m.id)}
-              <option value={m.id}>{m.title}</option>
-            {/each}
-          </select>
-        </label>
+        <MilestonePicker
+          {project}
+          value={milestone}
+          disabled={busy}
+          onChange={(next) => (milestone = next)}
+        />
 
         <label class="flex flex-col gap-1">
           <span class={label}>Assignee</span>

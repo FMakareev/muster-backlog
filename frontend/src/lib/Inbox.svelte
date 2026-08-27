@@ -4,9 +4,10 @@
     DraftView,
     WriteResult,
   } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
-  import { drafts, milestones, projects, refresh } from "./board";
+  import { drafts, projects, refresh } from "./board";
   import { projectColour } from "./colour";
   import Markdown from "./Markdown.svelte";
+  import MilestonePicker from "./MilestonePicker.svelte";
   import { notify } from "./notices";
   import { focusedProject, openTask } from "./ui";
 
@@ -39,9 +40,6 @@
   // The target project's own configuration, since priorities and types are
   // per-project and a fixed list would be wrong the first time one changed.
   const config = $derived($projects.find((p) => p.path === target));
-  const projectMilestones = $derived(
-    $milestones.filter((m) => m.project === target),
-  );
 
   const healthy = $derived($projects.filter((p) => p.ok && !p.hidden));
   const shown = $derived(
@@ -340,15 +338,12 @@
                   {/each}
                 </select>
               </label>
-              <label class="flex flex-col gap-1">
-                <span class={label}>Milestone</span>
-                <select bind:value={milestone} aria-label="Draft milestone">
-                  <option value="">none</option>
-                  {#each projectMilestones as m (m.id)}
-                    <option value={m.id}>{m.title}</option>
-                  {/each}
-                </select>
-              </label>
+              <MilestonePicker
+                project={target}
+                value={milestone}
+                label="Draft milestone"
+                onChange={(next) => (milestone = next)}
+              />
               <label class="flex flex-col gap-1">
                 <span class={label}>Project</span>
                 <select bind:value={target} aria-label="Project for this draft">

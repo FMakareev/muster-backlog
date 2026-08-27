@@ -124,6 +124,8 @@ Order in the file is the order on screen. How a project _works_ — its statuses
 
 You do not have to write this file by hand. The **Projects** screen (`p`) adds folders — typed, pasted, or chosen with the desktop's own directory picker — renames and recolours them, arranges the order, hides a project from the board without unregistering it, and turns a folder that has no backlog into one by running `backlog init` behind a form. Edits are written into the file in place: comments, key order and indentation survive, and only an entry that actually changes is rewritten. Unregistering a project removes the entry and leaves everything in the folder alone — nothing in Muster deletes a backlog.
 
+A milestone can also be made wherever one is chosen — the create form, the task panel, the inbox — because the moment you find you need one is the moment you are assigning a task, not the moment you are on the Projects screen. A task's milestone can be changed and cleared from the panel like any other field.
+
 Milestones are managed from the same screen: added, renamed, and retired. Retiring one is where the care goes, because whichever command does it the file ends up in `archive/milestones` — the real choice is what becomes of the tasks that named it, and leaving them alone, clearing them and moving them elsewhere are three different things to a plan. The form says how many tasks are affected and makes the choice explicit.
 
 An entry may also carry `hidden: true`, which keeps a project registered and loaded but out of the board, the lists, search and the figures.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
-  import { milestoneLabel, milestones, refresh, settings } from "./board";
+  import { refresh, settings } from "./board";
   import { projectColour } from "./colour";
   import { notify } from "./notices";
   import CriteriaEditor from "./CriteriaEditor.svelte";
@@ -274,16 +274,10 @@
             <dd class="text-chalk-dim">{value}</dd>
           {/if}
         {/snippet}
-        <!-- Status, priority, assignee and labels are not repeated here: the
-             controls above already show them, and showing a value twice a few
-             pixels apart only invites the two to disagree. -->
+        <!-- Status, priority, assignee, milestone and labels are not repeated
+             here: the controls above already show them, and showing a value
+             twice a few pixels apart only invites the two to disagree. -->
         {@render field("Type", entity.Type)}
-        {@render field(
-          "Milestone",
-          entity.Milestone
-            ? milestoneLabel(task.project, entity.Milestone, $milestones)
-            : "",
-        )}
         {@render field("Updated", shortDate(String(entity.Updated ?? "")))}
         {@render field("Created", shortDate(String(entity.Created ?? "")))}
       </dl>

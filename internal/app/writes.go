@@ -251,6 +251,18 @@ func (s *BoardService) CreateTask(input NewTaskInput) CreateResult {
 	return CreateResult{OK: true, TaskID: id}
 }
 
+// SetMilestone moves a task to a milestone, or clears it when empty.
+//
+// A milestone is the axis a backlog is planned on, so moving a task between
+// them is ordinary work rather than something to be decided once at creation.
+func (s *BoardService) SetMilestone(projectPath, taskID, milestone string) WriteResult {
+	return s.write(projectPath, fmt.Sprintf("%s could not be moved", taskID),
+		func(cli *backlogcli.Runner) error {
+			return cli.SetMilestone(context.Background(),
+				s.dataDirFor(projectPath), taskID, milestone)
+		})
+}
+
 // SetTitle renames a task.
 func (s *BoardService) SetTitle(projectPath, taskID, title string) WriteResult {
 	return s.write(projectPath, fmt.Sprintf("%s could not be renamed", taskID),
