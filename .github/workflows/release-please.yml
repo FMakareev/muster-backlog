@@ -14,10 +14,10 @@ name: release-please
 on:
   push:
     branches:
-      # The default branch here is master. A workflow naming the wrong branch
-      # does not fail: it never runs, and no release pull request ever appears.
+      # The default branch. release-please only runs on a push to the branch
+      # it names: get this wrong and no release pull request ever appears, and
+      # nothing says why.
       - master
-      - main
 
 permissions:
   contents: read

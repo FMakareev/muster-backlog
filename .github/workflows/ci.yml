@@ -15,10 +15,9 @@ on:
   pull_request:
   push:
     branches:
-      # Both, because the default branch here is master and a workflow that
-      # names the wrong one does not fail — it silently never runs.
+      # The default branch. Naming the wrong one does not fail — the workflow
+      # silently never runs — so this has to match the repository.
       - master
-      - main
 
 permissions:
   contents: read
@@ -27,8 +26,7 @@ permissions:
 # Releases are exempt: `main` is where a release commit lands.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: >-
-    ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 env:
   # Pinned, all three. An unpinned tool turns a pipeline red on somebody
