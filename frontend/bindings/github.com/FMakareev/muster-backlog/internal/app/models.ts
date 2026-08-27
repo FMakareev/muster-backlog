@@ -416,12 +416,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -441,6 +435,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**
@@ -470,6 +470,17 @@ export interface ProjectEdit {
  */
 export interface ProjectView {
     "path": string;
+
+    /**
+     * DisplayPath is Path with a home directory written as ~, for showing.
+     * 
+     * Separate from Path on purpose: Path is the identity every write, filter
+     * and selection is keyed on, and abbreviating that would send a write to a
+     * literal ~ no filesystem expands. This one is only ever printed - and it
+     * is printed on a screen people screenshot, where the full form carries a
+     * username for no reason.
+     */
+    "displayPath": string;
     "name": string;
     "colour": string;
     "ok": boolean;

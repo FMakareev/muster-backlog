@@ -197,3 +197,23 @@ func displayName(name, path string) string {
 	}
 	return filepath.Base(path)
 }
+
+// Abbreviate is expand's inverse, for showing a path rather than using one.
+//
+// The registry path sits in the status bar of every screenshot anybody takes,
+// and under a home directory it carries a username there for no reason. `~`
+// is how a person writes the path anyway, and it still pastes into a shell.
+func Abbreviate(path string) string {
+	path = strings.TrimSpace(path)
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" || path == "" {
+		return path
+	}
+	if path == home {
+		return "~"
+	}
+	if rest, ok := strings.CutPrefix(path, home+string(filepath.Separator)); ok {
+		return "~" + string(filepath.Separator) + rest
+	}
+	return path
+}

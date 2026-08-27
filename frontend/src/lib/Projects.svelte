@@ -158,11 +158,14 @@
             }}
           />
 
+          <!-- Shown abbreviated, with the whole path in the tooltip: this
+               screen gets screenshotted, and a home directory spelled out
+               carries a username for no reason. -->
           <span
             class="min-w-0 flex-1 truncate font-mono text-data text-chalk-faint"
             title={project.path}
           >
-            {project.path}
+            {project.displayPath || project.path}
           </span>
 
           <span

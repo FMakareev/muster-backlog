@@ -12,11 +12,23 @@ So there is no answer to _what is happening across everything I work on_. Nine r
 
 Muster is that view: one board, one list, one search, one set of numbers, over every project you register.
 
+![The Muster board over five projects at once](.github/media/board.png)
+
+_Five projects in one set of columns. The colour on a card says which project it came from, `In Review` exists because one of the five declares it, and three different tasks are called TASK-1 — ids collide across projects, which is why nothing here is addressed by id alone._
+
 ## What it will be
 
 An ordinary task manager — kanban with drag-and-drop, a sortable list, filters, cross-project search, a drafts inbox, a reader for project documents and decisions, and analytics. Nothing about that is novel. The only thing that is: all of it spans every registered project at once, and any folder on your disk can become one from inside the application.
 
 The documents viewer writes as well as reads. A document can be created in any project with its type and body, and edited afterwards — `doc update --content` replaces a document wholesale, so the editor holds the whole file and sends it as it stands. A decision can be created with its status, and there it stops: Backlog.md writes a skeleton with Context, Decision and Consequences headings and has no command that fills them in, so the viewer says the decision itself is written in the file rather than pretending to be an editor for it.
+
+The **list** (`l`) is the mode for scanning rather than moving: sortable on every column, with the visible column set remembered, and subtasks kept under the task they belong to instead of sorting away from it. Ticking rows changes many at once.
+
+![The task list across every project](.github/media/list.png)
+
+The **figures** (`s`) are the ones the format already supports: how much is open, how much has no priority, how old it is, what is waiting on unfinished work, and what nobody has touched in a month — per project and across all of them.
+
+![Figures across every project](.github/media/stats.png)
 
 The **Inbox** (`i`) is the drafts folder made visible. Backlog.md keeps drafts off the board by design, which is what makes capture cheap and also what makes an unread drafts folder the pile nobody looks at — so notes are listed oldest first, across every project, each saying how long it has waited, with the depth on the navigation itself. From there a note is promoted into a task, rewritten, moved to another project, or discarded into the archive.
 
@@ -41,6 +53,20 @@ Comments are a conversation rather than a field, and the panel writes them as we
 A task ends somewhere too. When one reaches its project's own last status it can be filed into `completed/`, where Backlog.md keeps finished work; any task can be archived, which is a soft delete rather than a delete; and any task can be sent back to the inbox as a note. Archived and completed tasks are off the board, the list, search and the figures — asking for nothing in particular means asking for the live ones.
 
 Where Backlog.md has a relationship, Muster shows it without inventing a shape for it. Subtasks are the case that tempts a redesign: a parent card says how many of its subtasks are finished and a subtask card says whose it is, but the board stays flat and the links live in the task panel. Nesting cards inside cards would cost more legibility across nine projects than the relationship is worth.
+
+Everything above, screen by screen, is in [Using Muster](backlog/docs/doc-7%20-%20Using-Muster.md).
+
+## How it relates to the other tools
+
+Fairly, and with the differences measured rather than asserted.
+
+**[Backlog.md](https://github.com/MrLesk/Backlog.md) itself** is the format and the CLI, and Muster is a view onto it — not a replacement and not a fork. It reads that markdown directly and writes only through the `backlog` CLI, so there is exactly one writer and it is not this one. It adds no field, no label convention and no sidecar file of its own: if Backlog.md does not support something natively, Muster does not store it.
+
+**`backlog browser`** is the CLI's own web interface, and it is good at what it does. It serves the project it is run in: started in one of the five projects above, its API returns that project's tasks and none of the others. It also defaults to port 6420 in every project, so a second one asks for another port. That is not a flaw — it is a single-project tool being a single-project tool, and if one repository is all you have, it is the simpler answer and needs nothing installed beyond the CLI you already have.
+
+**The [VSCode extension](https://github.com/ysamlan/vscode-backlog-md)** puts the same backlog inside the editor, which is where a lot of this work actually happens, and it switches between backlog folders rather than combining them into one view.
+
+Muster is worth having when the answer to _what is happening across everything I work on_ has to come from more than one repository at a time. With a single project it is a heavier way to get less.
 
 ## What it is not
 

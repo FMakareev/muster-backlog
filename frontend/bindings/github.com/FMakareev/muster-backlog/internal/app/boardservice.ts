@@ -373,6 +373,20 @@ export function PromoteDraft(projectPath: string, draftID: string): $Cancellable
 }
 
 /**
+ * RegistryDisplayPath is the same path, for showing rather than for using.
+ * 
+ * It is a separate method on purpose. RegistryPath is what every write opens,
+ * so abbreviating it there would send registry.Add to a literal ~ that no
+ * filesystem expands - which is exactly what the first attempt at this did.
+ * This one is only ever printed: it sits in the status bar permanently, and
+ * under a home directory the full form puts a username into every screenshot
+ * anyone takes.
+ */
+export function RegistryDisplayPath(): $CancellablePromise<string> {
+    return $Call.ByID(1434667310);
+}
+
+/**
  * RegistryPath reports where the registry is read from, so the UI can name it.
  */
 export function RegistryPath(): $CancellablePromise<string> {

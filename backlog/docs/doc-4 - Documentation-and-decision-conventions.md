@@ -3,7 +3,7 @@ id: doc-4
 title: Documentation and decision conventions
 type: guide
 created_date: '2026-08-26 16:05'
-updated_date: '2026-08-26 16:05'
+updated_date: '2026-08-27 21:54'
 ---
 Where documentation and decisions live in this repository, and how to add to them.
 
@@ -41,6 +41,9 @@ Current documents:
 | [Roadmap to 1.0](doc-2%20-%20Roadmap-to-1.0.md) | the five milestones and why they are ordered that way |
 | [Backlog.md Format Contract](doc-3%20-%20Backlog.md-Format-Contract.md) | the on-disk format, measured against 1021 real files |
 | Documentation and decision conventions | this document |
+| [v0.1 smoke checklist](doc-5%20-%20v0.1-smoke-checklist.md) | what a build has to survive before it counts as working |
+| [MVP v0.1 verdict](doc-6%20-%20MVP-v0.1-verdict.md) | what the first build did against the real corpus |
+| [Using Muster](doc-7%20-%20Using-Muster.md) | the user guide: every screen, with screenshots |
 
 ## Decisions
 

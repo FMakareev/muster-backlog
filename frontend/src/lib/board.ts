@@ -182,7 +182,9 @@ export function connect(): () => void {
     void refresh();
   });
 
-  void BoardService.RegistryPath().then((path) => registryPath.set(path));
+  void BoardService.RegistryDisplayPath().then((path) =>
+    registryPath.set(path),
+  );
   void BoardService.Settings().then((prefs) => settings.set(prefs));
   void refresh();
 

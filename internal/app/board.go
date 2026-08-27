@@ -71,13 +71,21 @@ type Problem struct {
 
 // ProjectView is one registered project as the frontend sees it.
 type ProjectView struct {
-	Path       string `json:"path"`
-	Name       string `json:"name"`
-	Colour     string `json:"colour"`
-	OK         bool   `json:"ok"`
-	Problem    string `json:"problem"`
-	TaskCount  int    `json:"taskCount"`
-	DraftCount int    `json:"draftCount"`
+	Path string `json:"path"`
+	// DisplayPath is Path with a home directory written as ~, for showing.
+	//
+	// Separate from Path on purpose: Path is the identity every write, filter
+	// and selection is keyed on, and abbreviating that would send a write to a
+	// literal ~ no filesystem expands. This one is only ever printed - and it
+	// is printed on a screen people screenshot, where the full form carries a
+	// username for no reason.
+	DisplayPath string `json:"displayPath"`
+	Name        string `json:"name"`
+	Colour      string `json:"colour"`
+	OK          bool   `json:"ok"`
+	Problem     string `json:"problem"`
+	TaskCount   int    `json:"taskCount"`
+	DraftCount  int    `json:"draftCount"`
 	// Statuses is what this project declares, in its own order. The board's
 	// columns are the union of these across projects.
 	Statuses []string `json:"statuses"`
@@ -417,6 +425,18 @@ func (s *BoardService) RegistryPath() string {
 	return s.registryPath
 }
 
+// RegistryDisplayPath is the same path, for showing rather than for using.
+//
+// It is a separate method on purpose. RegistryPath is what every write opens,
+// so abbreviating it there would send registry.Add to a literal ~ that no
+// filesystem expands - which is exactly what the first attempt at this did.
+// This one is only ever printed: it sits in the status bar permanently, and
+// under a home directory the full form puts a username into every screenshot
+// anyone takes.
+func (s *BoardService) RegistryDisplayPath() string {
+	return registry.Abbreviate(s.RegistryPath())
+}
+
 // Problems returns everything currently wrong.
 //
 // Standing conditions come first: a missing CLI matters more than a stray file
@@ -437,11 +457,12 @@ func (s *BoardService) Projects() []ProjectView {
 	out := make([]ProjectView, 0, len(states))
 	for _, p := range states {
 		view := ProjectView{
-			Path:   p.Registry.Path,
-			Name:   p.Registry.DisplayName,
-			Colour: p.Registry.Colour,
-			OK:     p.OK(),
-			Hidden: p.Registry.Hidden,
+			Path:        p.Registry.Path,
+			DisplayPath: registry.Abbreviate(p.Registry.Path),
+			Name:        p.Registry.DisplayName,
+			Colour:      p.Registry.Colour,
+			OK:          p.OK(),
+			Hidden:      p.Registry.Hidden,
 		}
 		if p.Err != nil {
 			view.Problem = p.Err.Error()

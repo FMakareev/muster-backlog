@@ -225,3 +225,36 @@ func TestDefaultPathIsUnderTheXDGConfigHome(t *testing.T) {
 		t.Errorf("DefaultPath = %q, want an absolute path", got)
 	}
 }
+
+// The path in the status bar is shown, not used. Under a home directory the
+// full form carries a username into every screenshot anybody takes.
+func TestAPathIsAbbreviatedForShowing(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Skip("no home directory")
+	}
+
+	under := filepath.Join(home, ".config", "muster", "projects.yml")
+	if got, want := registry.Abbreviate(under), filepath.Join("~", ".config", "muster", "projects.yml"); got != want {
+		t.Errorf("Abbreviate(%q) = %q, want %q", under, got, want)
+	}
+	if got := registry.Abbreviate(home); got != "~" {
+		t.Errorf("the home directory itself abbreviates to %q", got)
+	}
+
+	// Anything outside is left exactly as it is: shortening it would be
+	// inventing a path rather than shortening one.
+	outside := filepath.Join("/etc", "muster", "projects.yml")
+	if got := registry.Abbreviate(outside); got != outside {
+		t.Errorf("Abbreviate(%q) = %q, want it untouched", outside, got)
+	}
+	if got := registry.Abbreviate(""); got != "" {
+		t.Errorf("Abbreviate(\"\") = %q", got)
+	}
+
+	// A prefix that merely looks like the home directory is not one.
+	sibling := home + "-backup/projects.yml"
+	if got := registry.Abbreviate(sibling); got != sibling {
+		t.Errorf("Abbreviate(%q) = %q, want it untouched", sibling, got)
+	}
+}

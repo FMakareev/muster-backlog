@@ -53,6 +53,24 @@
 
   const heading =
     "text-micro font-medium uppercase tracking-[0.14em] text-chalk-faint";
+
+  /**
+   * The date this task was last touched, the way the figure behind it counts.
+   *
+   * A task nobody has edited has no updated_date at all, which parses to the
+   * zero time and printed as 0001-01-01 — a date that looks like one somebody
+   * meant. The backend already falls back to the creation date when deciding
+   * whether something is stale; this shows the same date it used.
+   */
+  function lastTouched(task: {
+    entity: { Updated?: unknown; Created?: unknown };
+  }): string {
+    for (const value of [task.entity.Updated, task.entity.Created]) {
+      const text = String(value ?? "");
+      if (text && !text.startsWith("0001-01-01")) return text.slice(0, 10);
+    }
+    return "no date";
+  }
 </script>
 
 <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
@@ -246,7 +264,7 @@
                     {task.entity.Title}
                   </span>
                   <span class="shrink-0 font-mono text-data text-chalk-faint">
-                    {String(task.entity.Updated ?? "").slice(0, 10)}
+                    {lastTouched(task)}
                   </span>
                 </button>
               </li>
