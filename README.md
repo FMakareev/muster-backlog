@@ -57,7 +57,7 @@ Where Backlog.md has a relationship, Muster shows it without inventing a shape f
 | [Node.js](https://nodejs.org)                          | 24 or newer                       |
 | [pnpm](https://pnpm.io)                                | 11 or newer                       |
 | [Wails v3 CLI](https://v3.wails.io)                    | v3.0.0-beta.8                     |
-| [golangci-lint](https://golangci-lint.run)             | v2 (needed by the git hooks)      |
+| [golangci-lint](https://golangci-lint.run)             | v2.13.1 (needed by the git hooks) |
 | [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 minimum, 1.50.1 recommended (at runtime, not to build) |
 
 Muster looks for the CLI on PATH first and then in the places package managers install it — pnpm, npm, bun, cargo, `~/.local/bin` — because an application started from a desktop launcher does not inherit a shell's PATH, and neither does the CLI it runs: the binary pnpm installs is a shell script ending in `exec node`, and node is usually installed the same way. Both are handled. If it still cannot be found, the message names every directory that was searched, and Preferences takes an explicit path.
@@ -68,7 +68,7 @@ The two Go tools install themselves:
 
 ```sh
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
 ```
 
 ### Linux system libraries
@@ -197,6 +197,12 @@ Muster finds a project's data directory the way the Backlog.md CLI does: `backlo
 There is no registry file until you create one, and that is not an error — the application will offer to add the first project.
 
 Everything is held in memory and reloaded from disk rather than cached in a database. Measured over nine real projects and 884 tasks: a full load takes about 100 ms, reloading a single project after a file change costs about 11 ms, and a filtered query over the whole corpus takes under a millisecond. The startup budget is 2 seconds, enforced by a test.
+
+## Continuous integration
+
+The pipeline runs the same three commands as the section above — `wails3 task lint`, `test`, `build` — on every pull request and on the default branch, rather than a separate list that can drift from them. It also installs the Backlog.md CLI and refuses to let the tests that need it skip: thirty-eight of them exercise real writes against real projects, and without the CLI they would quietly pass over the most valuable half of the suite.
+
+Its **time budget is ten minutes** with the caches warm. Measured on one machine, the three commands themselves take about a minute together — fourteen seconds to lint, forty to test from a cold test cache, two to build incrementally — so most of a run is setup: the GTK 3 packages, the Go modules, the pnpm store, and two Go tools compiled from source. All four are cached; the tools are keyed on the versions pinned in the workflow, which are the versions in the table above. A run that consistently exceeds the budget means a cache is not being hit, and that is the thing to look at first.
 
 ## Versions and releases
 

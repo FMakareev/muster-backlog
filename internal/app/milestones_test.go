@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 func milestoneOf(t *testing.T, s *app.BoardService, project, taskID string) string {
@@ -30,9 +31,7 @@ func milestoneTitles(s *app.BoardService, project string) []string {
 }
 
 func TestAddingAndRenamingAMilestone(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 
@@ -66,9 +65,7 @@ func TestAddingAndRenamingAMilestone(t *testing.T) {
 // Retiring a milestone archives the file either way. What the caller is really
 // choosing is what happens to the tasks, so all three answers are tested.
 func TestRetiringAMilestoneDecidesWhatBecomesOfItsTasks(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 
 	cases := []struct {
 		handling string
@@ -110,9 +107,7 @@ func TestRetiringAMilestoneDecidesWhatBecomesOfItsTasks(t *testing.T) {
 }
 
 func TestReassigningTasksToAnotherMilestone(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 	for _, name := range []string{"Leaving", "Staying"} {
@@ -145,9 +140,7 @@ func TestReassigningTasksToAnotherMilestone(t *testing.T) {
 
 // A task's milestone is ordinary work, not a decision taken once at creation.
 func TestATasksMilestoneCanBeChangedAndCleared(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 	for _, name := range []string{"First", "Second"} {

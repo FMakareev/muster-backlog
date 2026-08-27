@@ -9,6 +9,7 @@ import (
 
 	"github.com/FMakareev/muster-backlog/internal/app"
 	"github.com/FMakareev/muster-backlog/internal/settings"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 func commentsOn(t *testing.T, s *app.BoardService, project, id string) []struct {
@@ -34,9 +35,7 @@ func commentsOn(t *testing.T, s *app.BoardService, project, id string) []struct 
 }
 
 func TestACommentIsWrittenAndReadBack(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Something to discuss", "To Do"),
 	})
@@ -71,9 +70,7 @@ func TestACommentIsWrittenAndReadBack(t *testing.T) {
 // The name comes from the person, not from a constant. A preference first,
 // then git, then nothing at all.
 func TestWhoACommentIsSignedBy(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Something to discuss", "To Do"),
 	})
@@ -139,9 +136,7 @@ func TestTheGitIdentityIsUsedWhenNothingIsSet(t *testing.T) {
 // than signed with something invented. The format has that state and the CLI
 // produces it: the author line is simply absent.
 func TestACommentIsUnsignedWhenNobodyKnowsTheName(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	// git answers for a folder that is not a repository by falling back to the
 	// global configuration, which is usually right - it is still the person.
 	// Silence both so the last fallback is the one under test.

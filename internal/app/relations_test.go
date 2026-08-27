@@ -2,12 +2,12 @@ package app_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 func taskWith(id, title, status string, extra string) string {
@@ -28,9 +28,7 @@ func ordinalsIn(t *testing.T, s *app.BoardService, project string) map[string]in
 }
 
 func TestDependenciesCanBeSetAndCleared(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "First", "To Do"),
 		"task-2 - b.md": task("TASK-2", "Second", "To Do"),
@@ -62,9 +60,7 @@ func TestDependenciesCanBeSetAndCleared(t *testing.T) {
 // pointing at a task that exists somewhere else. It is caught before the CLI
 // is asked, with a message that says why.
 func TestADependencyThatCannotResolveIsRefusedBeforeWriting(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Here", "To Do"),
 	})
@@ -92,9 +88,7 @@ func TestADependencyThatCannotResolveIsRefusedBeforeWriting(t *testing.T) {
 }
 
 func TestReferencesDocumentationAndFilesRoundTrip(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Subject", "To Do"),
 	})
@@ -134,9 +128,7 @@ func TestReferencesDocumentationAndFilesRoundTrip(t *testing.T) {
 // Dragging a card is what manual order means, so the ordinal is computed from
 // where it landed rather than typed.
 func TestReorderingPlacesATaskWhereItWasDropped(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": taskWith("TASK-1", "First", "To Do", "ordinal: 1000\n"),
 		"task-2 - b.md": taskWith("TASK-2", "Second", "To Do", "ordinal: 2000\n"),
@@ -168,9 +160,7 @@ func TestReorderingPlacesATaskWhereItWasDropped(t *testing.T) {
 // Ordinals are neither unique nor mandatory, so a column can run out of room.
 // It is restacked rather than refusing to reorder.
 func TestReorderingRestacksAColumnWithNoRoomLeft(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": taskWith("TASK-1", "First", "To Do", "ordinal: 1000\n"),
 		"task-2 - b.md": taskWith("TASK-2", "Second", "To Do", "ordinal: 1001\n"),
@@ -198,9 +188,7 @@ func TestReorderingRestacksAColumnWithNoRoomLeft(t *testing.T) {
 // A task with no ordinal at all sorts after those that have one; dropping it
 // among them has to give it one.
 func TestReorderingATaskWithNoOrdinal(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": taskWith("TASK-1", "First", "To Do", "ordinal: 1000\n"),
 		"task-2 - b.md": taskWith("TASK-2", "Second", "To Do", "ordinal: 2000\n"),
@@ -231,9 +219,7 @@ var _ = filepath.Join
 // --clear-modified-files, and --modified-file "" exits 0 having done nothing.
 // A control that silently does nothing is worse than one that says why.
 func TestModifiedFilesCanBeSetButNotEmptied(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Subject", "To Do"),
 	})

@@ -12,6 +12,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/FMakareev/muster-backlog/internal/mcpserver"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 // bench builds two real projects and a registry over them, and returns a
@@ -19,9 +20,7 @@ import (
 // files say, and a real client because the schemas are half the contract.
 func bench(t *testing.T) (*mcp.ClientSession, string) {
 	t.Helper()
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 
 	root := t.TempDir()
 	var paths []string

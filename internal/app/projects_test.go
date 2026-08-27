@@ -2,12 +2,12 @@ package app_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 func task(id, title, status string) string {
@@ -240,9 +240,7 @@ func TestRegistryEditsKeepTheFileAsWritten(t *testing.T) {
 // The whole path, through the real CLI: an ordinary folder that is not a git
 // repository becomes a registered project on the board.
 func TestInitialiseAFolderAndRegisterIt(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	s := startService(t, withRegistry(t))
 	folder := t.TempDir()
 
@@ -346,9 +344,7 @@ func TestEditingKeepsThePathAsWritten(t *testing.T) {
 // When init fails, what the CLI printed is what the person needs: it writes
 // files, and a half-written folder needs the real reason rather than a summary.
 func TestInitFailureCarriesTheCLIsOwnWords(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	s := startService(t, withRegistry(t))
 
 	// The CLI requires a prefix of letters only.
@@ -374,9 +370,7 @@ func TestInitFailureCarriesTheCLIsOwnWords(t *testing.T) {
 // Asking for agent instruction files with AI integration off is a combination
 // the CLI refuses, and it is caught before anything is written.
 func TestInitRefusesTheImpossibleCombinationBeforeWriting(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	s := startService(t, withRegistry(t))
 	folder := t.TempDir()
 
@@ -395,9 +389,7 @@ func TestInitRefusesTheImpossibleCombinationBeforeWriting(t *testing.T) {
 // and without one the CLI prompts for it and then exits 0 having created
 // nothing. Leaving the name empty in the form must still produce a project.
 func TestInitWithNoNameStillCreatesAProject(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	s := startService(t, withRegistry(t))
 	folder := t.TempDir()
 

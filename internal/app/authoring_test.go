@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 // initialised builds a project through the CLI itself, so it has the whole
@@ -56,9 +57,7 @@ func read(t *testing.T, dir, match string) string {
 // Creating a document with a body is two CLI calls - the create command takes
 // no content - and one act to the person doing it.
 func TestCreatingADocumentWithItsBody(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 
@@ -105,9 +104,7 @@ func TestCreatingADocumentWithItsBody(t *testing.T) {
 // doc update --content takes nothing smaller than the whole body, so editing
 // sends the entire document back.
 func TestEditingADocumentReplacesTheWholeBody(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 
@@ -143,9 +140,7 @@ func TestEditingADocumentReplacesTheWholeBody(t *testing.T) {
 // A decision can be created but not written: the CLI has no decision update,
 // so what arrives is a skeleton with its headings.
 func TestCreatingADecisionWritesTheSkeleton(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := initialised(t, "one")
 	s := startService(t, withRegistry(t, one))
 

@@ -2,12 +2,12 @@ package app_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 func ptr(s string) *string { return &s }
@@ -29,9 +29,7 @@ func frontmatter(t *testing.T, project, file string) string {
 
 // One change, many tasks, one project.
 func TestManyTasksTakeOneChange(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "First", "To Do"),
 		"task-2 - b.md": task("TASK-2", "Second", "To Do"),
@@ -73,9 +71,7 @@ func TestManyTasksTakeOneChange(t *testing.T) {
 
 // A run of twenty writes can partly fail, and saying "done" would be a lie.
 func TestAFailedTaskIsNamedAndTheRestStillChange(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "First", "To Do"),
 		"task-2 - b.md": task("TASK-2", "Second", "To Do"),
@@ -116,9 +112,7 @@ func TestAFailedTaskIsNamedAndTheRestStillChange(t *testing.T) {
 
 // Status and labels cross projects perfectly well.
 func TestAChangeSpanningProjectsIsApplied(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "First", "To Do"),
 	})

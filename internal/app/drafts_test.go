@@ -2,13 +2,13 @@ package app_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 // draft writes one draft file directly, so the list and its ordering can be
@@ -75,9 +75,7 @@ func TestDraftsAreListedOldestFirstAcrossProjects(t *testing.T) {
 // A discarded draft is archived, not deleted, and must not come back in the
 // inbox afterwards.
 func TestDiscardedDraftsLeaveTheInbox(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "A passing thought", time.Now().AddDate(0, 0, -1))
 	s := startService(t, withRegistry(t, one))
@@ -99,9 +97,7 @@ func TestDiscardedDraftsLeaveTheInbox(t *testing.T) {
 }
 
 func TestPromotingADraftMakesItATask(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "Worth doing", time.Now().AddDate(0, 0, -2))
 	s := startService(t, withRegistry(t, one))
@@ -131,9 +127,7 @@ func TestPromotingADraftMakesItATask(t *testing.T) {
 // Backlog.md has no draft edit, so revising is capture-and-discard. The note
 // must survive that whether or not it stays in the same project.
 func TestRevisingADraftRewritesItInPlace(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "vaguely worded thing", time.Now().AddDate(0, 0, -5))
 	s := startService(t, withRegistry(t, one))
@@ -167,9 +161,7 @@ func TestRevisingADraftRewritesItInPlace(t *testing.T) {
 }
 
 func TestRevisingADraftCanMoveItToAnotherProject(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	two := newProject(t, "two", nil)
 	draft(t, one, "DRAFT-1", "Belongs elsewhere", time.Now().AddDate(0, 0, -1))
@@ -191,9 +183,7 @@ func TestRevisingADraftCanMoveItToAnotherProject(t *testing.T) {
 }
 
 func TestRevisingRefusesWhatCannotWork(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "Something", time.Now())
 	s := startService(t, withRegistry(t, one))
@@ -215,9 +205,7 @@ func TestRevisingRefusesWhatCannotWork(t *testing.T) {
 // A write whose outcome can be checked is checked, because a zero exit is not
 // proof: on 1.48.0 both promote and archive exit 0 for an id they cannot find.
 func TestDraftWritesAreConfirmedByOutcome(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "Still here", time.Now())
 	s := startService(t, withRegistry(t, one))
@@ -239,9 +227,7 @@ func TestDraftWritesAreConfirmedByOutcome(t *testing.T) {
 // Capture is the other half of a usable inbox, and a captured note may carry
 // everything the CLI lets a draft hold.
 func TestCaptureNoteCarriesTheWholeFieldSurface(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	s := startService(t, withRegistry(t, one))
 
@@ -285,9 +271,7 @@ func TestCaptureNoteCarriesTheWholeFieldSurface(t *testing.T) {
 // Rewriting keeps the fields a draft can hold, which is the point of doing it
 // through task create --draft rather than draft create.
 func TestRevisingKeepsEveryFieldADraftCanHold(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", nil)
 	draft(t, one, "DRAFT-1", "Rough", time.Now().AddDate(0, 0, -2))
 	s := startService(t, withRegistry(t, one))
@@ -318,9 +302,7 @@ func TestRevisingKeepsEveryFieldADraftCanHold(t *testing.T) {
 // no way to edit a draft. The interface no longer offers them; this is the
 // floor under that.
 func TestTaskEditsAreRefusedOnANote(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := newProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "A real task", "To Do"),
 	})

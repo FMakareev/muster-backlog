@@ -2,12 +2,12 @@ package app_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/testcli"
 )
 
 // project builds a project whose statuses end in something other than "Done",
@@ -42,9 +42,7 @@ func liveTitles(views []app.TaskView) []string {
 }
 
 func TestCompletingMovesAFinishedTaskOutOfTheWay(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := shippedProject(t, "one", map[string]string{
 		"task-1 - done.md": task("TASK-1", "Finished", "Shipped"),
 		"task-2 - open.md": task("TASK-2", "Open", "To Do"),
@@ -78,9 +76,7 @@ func TestCompletingMovesAFinishedTaskOutOfTheWay(t *testing.T) {
 }
 
 func TestArchivingTakesATaskOffTheBoardWithoutDeletingIt(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := shippedProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Never mind", "To Do"),
 	})
@@ -100,9 +96,7 @@ func TestArchivingTakesATaskOffTheBoardWithoutDeletingIt(t *testing.T) {
 
 // The other half of the inbox: a note promoted a moment too early goes back.
 func TestDemotingReturnsATaskToTheInbox(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := shippedProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Not ready after all", "To Do"),
 	})
@@ -133,9 +127,7 @@ func TestDemotingReturnsATaskToTheInbox(t *testing.T) {
 
 // None of the three is taken on the strength of an exit code.
 func TestLifecycleWritesAreConfirmedByOutcome(t *testing.T) {
-	if _, err := exec.LookPath("backlog"); err != nil {
-		t.Skip("the backlog CLI is not installed")
-	}
+	testcli.Require(t)
 	one := shippedProject(t, "one", map[string]string{
 		"task-1 - a.md": task("TASK-1", "Still here", "To Do"),
 	})
