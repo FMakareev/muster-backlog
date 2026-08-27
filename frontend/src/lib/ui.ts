@@ -34,10 +34,34 @@ export function toggleProject(path: string): void {
  * decide again.
  */
 export function defaultProject(): string {
-  const focused = focusedProject.get();
   const healthy = projects.get().filter((p) => p.ok);
-  if (focused && healthy.some((p) => p.path === focused)) return focused;
+  const usable = (path: string) =>
+    path !== "" && healthy.some((p) => p.path === path);
+
+  const focused = focusedProject.get();
+  if (usable(focused)) return focused;
+
+  // Then wherever the last note went. Capture only pays if it costs nothing,
+  // and choosing the same project again is part of that - but it sits below
+  // the focused one, because someone looking at a project means that one.
+  const last = settingsStore.get().lastProject;
+  if (usable(last)) return last;
+
   return healthy[0]?.path ?? "";
+}
+
+/**
+ * Remember where a note was captured, for the next one.
+ *
+ * Written to the preferences rather than held in memory: this is a tool that
+ * gets restarted, and a habit that resets every morning is not a habit.
+ */
+export async function rememberProject(path: string): Promise<void> {
+  const current = settingsStore.get();
+  if (!path || current.lastProject === path) return;
+  const next = { ...current, lastProject: path };
+  settingsStore.set(next);
+  await BoardService.SaveSettings(next);
 }
 
 /**

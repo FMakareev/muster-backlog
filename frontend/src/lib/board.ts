@@ -69,6 +69,7 @@ export const settings = atom<Settings>({
   staleAfterDays: 30,
   scalePercent: 100,
   backlogPath: "",
+  lastProject: "",
 });
 
 /**

@@ -64,6 +64,12 @@ type Settings struct {
 	// board over nine projects and suits nobody who needs larger type, so it
 	// is a choice rather than a constraint.
 	ScalePercent int `yaml:"scale_percent" json:"scalePercent"`
+	// LastProject is the project a note was last captured into.
+	//
+	// Capture is meant to cost nothing, and choosing the same project again is
+	// part of that. It sits below the focused project rather than above it: if
+	// someone is looking at one, that is the one they mean.
+	LastProject string `yaml:"last_project" json:"lastProject"`
 	// BacklogPath is where the Backlog.md CLI is, when finding it fails.
 	//
 	// Empty means look for it, which is almost always right. It exists because
@@ -85,6 +91,7 @@ func Defaults() Settings {
 		StaleAfterDays: 30,
 		ScalePercent:   100,
 		BacklogPath:    "",
+		LastProject:    "",
 	}
 }
 
@@ -159,6 +166,7 @@ func (s Settings) normalised() Settings {
 		out.StaleAfterDays = 30
 	}
 	out.BacklogPath = strings.TrimSpace(out.BacklogPath)
+	out.LastProject = strings.TrimSpace(out.LastProject)
 	// Clamped rather than trusted: a hand-edited 5 or 5000 would leave an
 	// interface nobody could use to fix the setting.
 	if out.ScalePercent < 75 {

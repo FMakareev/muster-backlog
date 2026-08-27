@@ -4,7 +4,13 @@
   import { dismissable } from "./overlay";
   import MilestonePicker from "./MilestonePicker.svelte";
   import { notify } from "./notices";
-  import { closeNewTask, defaultProject, openTask, showNewTask } from "./ui";
+  import {
+    closeNewTask,
+    defaultProject,
+    openTask,
+    rememberProject,
+    showNewTask,
+  } from "./ui";
 
   /**
    * Creating a task.
@@ -139,12 +145,46 @@
     if (created) {
       openTask({ project, kind: "task", class: "active", id: created });
     }
+
+    if (asNote) {
+      // Confirmed where the eye already is, and the form clears itself rather
+      // than closing: capture is worth nothing if the next thought has to
+      // reopen it. Nothing takes focus away from the field.
+      const name = healthy.find((p) => p.path === project)?.name ?? "the inbox";
+      notify(`Captured into ${name}.`, 3000);
+      await rememberProject(project);
+      reset();
+      titleField?.focus();
+      return;
+    }
+
     reset();
     closeNewTask();
   }
 
+  /**
+   * Switch project without leaving the text.
+   *
+   * Reaching for a select with the mouse is exactly what a capture form is
+   * for avoiding, and tabbing to it loses the caret.
+   */
+  function cycleProject(by: number): void {
+    if (healthy.length < 2) return;
+    const at = healthy.findIndex((p) => p.path === project);
+    const next = (at + by + healthy.length) % healthy.length;
+    project = healthy[next].path;
+  }
+
   function onKeydown(event: KeyboardEvent): void {
     event.stopPropagation();
+
+    // Alt with a bracket moves between projects from anywhere in the form,
+    // including the middle of a sentence.
+    if (event.altKey && (event.key === "[" || event.key === "]")) {
+      event.preventDefault();
+      cycleProject(event.key === "]" ? 1 : -1);
+      return;
+    }
     // The whole form submits from anywhere in it, since reaching for a button
     // with the mouse is exactly what this is meant to avoid.
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -183,16 +223,20 @@
           <input type="checkbox" bind:checked={asNote} disabled={busy} />
           capture into the inbox
         </label>
-        <select
-          class="ml-auto"
-          aria-label="Project this task belongs to"
-          bind:value={project}
-          disabled={busy}
-        >
-          {#each healthy as p (p.path)}
-            <option value={p.path}>{p.name}</option>
-          {/each}
-        </select>
+        <span class="ml-auto flex items-center gap-2">
+          {#if healthy.length > 1}
+            <kbd class="font-mono text-micro text-chalk-faint">alt+[ ]</kbd>
+          {/if}
+          <select
+            aria-label="Project this task belongs to"
+            bind:value={project}
+            disabled={busy}
+          >
+            {#each healthy as p (p.path)}
+              <option value={p.path}>{p.name}</option>
+            {/each}
+          </select>
+        </span>
       </header>
 
       <label class="flex flex-col gap-1">

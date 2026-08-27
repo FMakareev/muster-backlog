@@ -42,6 +42,15 @@ export interface Settings {
     "scalePercent": number;
 
     /**
+     * LastProject is the project a note was last captured into.
+     * 
+     * Capture is meant to cost nothing, and choosing the same project again is
+     * part of that. It sits below the focused project rather than above it: if
+     * someone is looking at one, that is the one they mean.
+     */
+    "lastProject": string;
+
+    /**
      * BacklogPath is where the Backlog.md CLI is, when finding it fails.
      * 
      * Empty means look for it, which is almost always right. It exists because
