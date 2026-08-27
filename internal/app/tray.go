@@ -26,6 +26,15 @@ var (
 	// markPNG is the application's own icon, handed in from main so the
 	// picture lives with the build assets rather than being duplicated here.
 	// Empty in tests and in server mode, where nothing draws it.
+	//
+	// It has a lock of its own, and that is the whole point. It used to share
+	// trayMu, which deadlocked at startup: applyWindowBehaviour takes trayMu
+	// and, still holding it, calls newTray - so a second Lock in there hung
+	// the goroutine forever with the lock held. The asset server was already
+	// up, the window was never created, and nothing was logged. It only
+	// happened with the tray preference on, which is why every test and every
+	// demo run missed it.
+	markMu  sync.Mutex
 	markPNG []byte
 )
 
@@ -35,9 +44,17 @@ var (
 // exactly what this was until the mark existed. Called once from main, before
 // anything can create a tray.
 func SetMark(png []byte) {
-	trayMu.Lock()
+	markMu.Lock()
 	markPNG = png
-	trayMu.Unlock()
+	markMu.Unlock()
+}
+
+// trayIcon reads the mark. Safe to call while trayMu is held, which is the
+// only way newTray is ever reached.
+func trayIcon() []byte {
+	markMu.Lock()
+	defer markMu.Unlock()
+	return markPNG
 }
 
 // applyWindowBehaviour turns the tray on or off to match the preference.
@@ -95,9 +112,7 @@ func newTray(app *application.App) *application.SystemTray {
 	// The size a tray actually draws is the reason the mark is a letter built
 	// from blocks rather than an arrangement of small parts: it is about
 	// twenty-two pixels here.
-	trayMu.Lock()
-	mark := markPNG
-	trayMu.Unlock()
+	mark := trayIcon()
 	if len(mark) > 0 {
 		t.SetIcon(mark)
 	}

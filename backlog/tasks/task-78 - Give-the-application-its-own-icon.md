@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-27 20:13'
-updated_date: '2026-08-27 20:28'
+updated_date: '2026-08-27 22:30'
 labels: []
 milestone: m-4
 dependencies: []
@@ -68,6 +68,14 @@ Two files keep Wails in their names and stay: build/windows/nsis/wails_tools.nsh
 Verified: the .ico carries six members including the 16px one a taskbar draws, both .icns carry eight PNGs, all of them unpacked and looked at; the mark holds at 48, 32, 22 and 16 on all three grounds in every file that ships, read from those files and not from the design-time vector. wails3 task lint clean, the whole suite green.
 
 Left for TASK-13 rather than done here: build/linux/appimage/muster is a 14MB compiled binary committed to the repository. It should not be tracked, and the history needs reviewing before the first public push, which is that task's first acceptance criterion.
+
+Regression found after the fact, and worth recording where the cause lives.
+
+Giving the tray an icon added a read of the mark through trayMu, inside newTray. applyWindowBehaviour takes trayMu and, still holding it, calls newTray. A sync.Mutex is not reentrant, so that second Lock hung the goroutine forever with the lock held: the asset server was already up and the window was never created. The symptom is 'the server starts but no window opens', with nothing logged, and it only happens when the window-close preference is tray and the desktop has a StatusNotifierWatcher - which is why every test, every browser verification and the demo runs missed it. All of those run with default settings, where the tray is never built.
+
+The mark has its own mutex now. Not a lock-ordering rule to remember, but a separate lock that cannot be taken twice by the same path. A test reproduces the exact ordering - take trayMu, then read the mark - and it hung for the full timeout against the old code before passing against the new one. A second test runs setter and reader concurrently under -race.
+
+Also worth noting for anyone chasing something like it again: a bare Xvfb with no window manager is not an oracle for 'does a window appear'. It maps nothing and the webview never requests the page, which looks exactly like the failure. What settled it was SIGQUIT and reading the goroutine dump: no goroutine blocked on a mutex, the watcher running, and goroutine 1 in the GTK main loop.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
