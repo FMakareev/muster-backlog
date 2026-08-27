@@ -106,8 +106,14 @@ func TestPromotingADraftMakesItATask(t *testing.T) {
 	draft(t, one, "DRAFT-1", "Worth doing", time.Now().AddDate(0, 0, -2))
 	s := startService(t, withRegistry(t, one))
 
-	if result := s.PromoteDraft(one, "DRAFT-1"); !result.OK {
+	result := s.PromoteDraft(one, "DRAFT-1")
+	if !result.OK {
 		t.Fatalf("PromoteDraft: %+v", result.Problem)
+	}
+	// The note has to say what it became, or promoting it means going to look
+	// for it.
+	if result.TaskID == "" {
+		t.Error("promotion did not report the task it produced")
 	}
 	if got := s.Drafts(); len(got) != 0 {
 		t.Errorf("the draft is still in the inbox: %v", titles(got))
@@ -216,17 +222,93 @@ func TestDraftWritesAreConfirmedByOutcome(t *testing.T) {
 	draft(t, one, "DRAFT-1", "Still here", time.Now())
 	s := startService(t, withRegistry(t, one))
 
-	for name, act := range map[string]func() app.WriteResult{
-		"promote": func() app.WriteResult { return s.PromoteDraft(one, "DRAFT-404") },
-		"discard": func() app.WriteResult { return s.DiscardDraft(one, "DRAFT-404") },
+	for name, ok := range map[string]bool{
+		"promote": s.PromoteDraft(one, "DRAFT-404").OK,
+		"discard": s.DiscardDraft(one, "DRAFT-404").OK,
 	} {
-		result := act()
-		if result.OK {
+		if ok {
 			t.Errorf("%s of an id that does not resolve reported success", name)
 		}
 	}
 	// And the real note is untouched by any of it.
 	if got := s.Drafts(); len(got) != 1 || got[0].Entity.Title != "Still here" {
 		t.Errorf("the inbox changed: %v", titles(got))
+	}
+}
+
+// Capture is the other half of a usable inbox, and a captured note may carry
+// everything the CLI lets a draft hold.
+func TestCaptureNoteCarriesTheWholeFieldSurface(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	s := startService(t, withRegistry(t, one))
+
+	result := s.CaptureNote(one, app.DraftEdit{
+		Title:              "A thought with detail",
+		Description:        "The context, written down while it was fresh.",
+		Labels:             []string{"idea", "later"},
+		Assignee:           "@me",
+		Priority:           "high",
+		AcceptanceCriteria: []string{"It is testable", "It is finishable"},
+	})
+	if !result.OK {
+		t.Fatalf("CaptureNote: %+v", result.Problem)
+	}
+
+	got := s.Drafts()
+	if len(got) != 1 {
+		t.Fatalf("got %d drafts", len(got))
+	}
+	note := got[0].Entity
+	switch {
+	case note.Title != "A thought with detail":
+		t.Errorf("title is %q", note.Title)
+	case note.Status != "Draft":
+		t.Errorf("status is %q, want Draft", note.Status)
+	case note.Priority != "high":
+		t.Errorf("priority is %q - the field a draft could not hold before", note.Priority)
+	case strings.Join(note.Labels, ",") != "idea,later":
+		t.Errorf("labels are %v", note.Labels)
+	case len(note.AcceptanceCriteria) != 2:
+		t.Errorf("got %d acceptance criteria", len(note.AcceptanceCriteria))
+	case !strings.Contains(note.Sections["description"], "while it was fresh"):
+		t.Errorf("body is %q", note.Sections["description"])
+	}
+
+	if result := s.CaptureNote(one, app.DraftEdit{Title: "   "}); result.OK {
+		t.Error("a note with no title was accepted")
+	}
+}
+
+// Rewriting keeps the fields a draft can hold, which is the point of doing it
+// through task create --draft rather than draft create.
+func TestRevisingKeepsEveryFieldADraftCanHold(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", nil)
+	draft(t, one, "DRAFT-1", "Rough", time.Now().AddDate(0, 0, -2))
+	s := startService(t, withRegistry(t, one))
+
+	result := s.ReviseDraft(one, "DRAFT-1", app.DraftEdit{
+		Title:              "Sharpened",
+		Description:        "Now with reasons.",
+		Priority:           "medium",
+		Labels:             []string{"kept"},
+		AcceptanceCriteria: []string{"Still true afterwards"},
+	})
+	if !result.OK {
+		t.Fatalf("ReviseDraft: %+v", result.Problem)
+	}
+	got := s.Drafts()
+	if len(got) != 1 {
+		t.Fatalf("got %d drafts: %v", len(got), titles(got))
+	}
+	note := got[0].Entity
+	if note.Priority != "medium" || len(note.AcceptanceCriteria) != 1 {
+		t.Errorf("the rewrite dropped fields: priority %q, %d criteria",
+			note.Priority, len(note.AcceptanceCriteria))
 	}
 }

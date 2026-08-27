@@ -83,13 +83,25 @@ export interface CreateResult {
 }
 
 /**
- * DraftEdit is a draft's editable content, as the CLI defines it.
+ * DraftEdit is everything a draft can carry.
+ * 
+ * The whole field surface `task create --draft` accepts, not the four that
+ * `draft create` does: a note that cannot be given a priority or a milestone
+ * until it stops being a note is a note nobody triages.
  */
 export interface DraftEdit {
     "title": string;
     "description": string;
     "labels": string[] | null;
     "assignee": string;
+    "priority": string;
+    "type": string;
+    "milestone": string;
+
+    /**
+     * AcceptanceCriteria are added in order, as items.
+     */
+    "acceptanceCriteria": string[] | null;
 
     /**
      * Project is where the draft should end up. Empty means where it is.
@@ -308,6 +320,12 @@ export enum ProblemKind {
     $zero = "",
 
     /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
+
+    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -327,12 +345,6 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
-
-    /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
 };
 
 /**

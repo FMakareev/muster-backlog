@@ -4,11 +4,11 @@
     DraftView,
     WriteResult,
   } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
-  import { drafts, projects, refresh } from "./board";
+  import { drafts, milestones, projects, refresh } from "./board";
   import { projectColour } from "./colour";
   import Markdown from "./Markdown.svelte";
   import { notify } from "./notices";
-  import { focusedProject } from "./ui";
+  import { focusedProject, openTask } from "./ui";
 
   /**
    * The inbox.
@@ -30,7 +30,18 @@
   let description = $state("");
   let labels = $state("");
   let assignee = $state("");
+  let priority = $state("");
+  let type = $state("");
+  let milestone = $state("");
+  let criteria = $state("");
   let target = $state("");
+
+  // The target project's own configuration, since priorities and types are
+  // per-project and a fixed list would be wrong the first time one changed.
+  const config = $derived($projects.find((p) => p.path === target));
+  const projectMilestones = $derived(
+    $milestones.filter((m) => m.project === target),
+  );
 
   const healthy = $derived($projects.filter((p) => p.ok && !p.hidden));
   const shown = $derived(
@@ -56,6 +67,12 @@
     description = draft.entity.Sections?.description ?? "";
     labels = (draft.entity.Labels ?? []).join(", ");
     assignee = (draft.entity.Assignee ?? []).join(", ");
+    priority = draft.entity.Priority ?? "";
+    type = draft.entity.Type ?? "";
+    milestone = draft.entity.Milestone ?? "";
+    criteria = (draft.entity.AcceptanceCriteria ?? [])
+      .map((c) => c.Text)
+      .join("\n");
     target = draft.project;
   }
 
@@ -78,10 +95,35 @@
     await refresh();
   }
 
-  const promote = (draft: DraftView) =>
-    run(draft, "The draft could not be promoted", () =>
-      BoardService.PromoteDraft(draft.project, draft.id),
-    );
+  /**
+   * Promote, and open what it became.
+   *
+   * A promoted note is an ordinary task and the panel edits those completely,
+   * so this is the other half of working on a draft: the alternative is
+   * promoting it and then going to look for it on the board.
+   */
+  async function promote(draft: DraftView): Promise<void> {
+    busy = key(draft);
+    const result = await BoardService.PromoteDraft(draft.project, draft.id);
+    busy = "";
+    if (!result.ok) {
+      notify(
+        result.problem
+          ? `${result.problem.title}: ${result.problem.detail}`
+          : "The draft could not be promoted.",
+      );
+      return;
+    }
+    await refresh();
+    if (result.taskId) {
+      openTask({
+        project: draft.project,
+        kind: "task",
+        class: "active",
+        id: result.taskId,
+      });
+    }
+  }
 
   const discard = (draft: DraftView) => {
     confirming = "";
@@ -100,6 +142,13 @@
           .map((l) => l.trim())
           .filter(Boolean),
         assignee,
+        priority,
+        type,
+        milestone,
+        acceptanceCriteria: criteria
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean),
         project: target,
       }),
     );
@@ -150,9 +199,21 @@
           <span class="shrink-0 font-mono text-micro text-chalk-faint">
             {item.id}
           </span>
-          <span class="min-w-0 flex-1 truncate text-body text-chalk">
+          <button
+            type="button"
+            class="min-w-0 flex-1 truncate text-left text-body text-chalk
+                   hover:underline decoration-chalk-faint underline-offset-4"
+            title="Read the whole note"
+            onclick={() =>
+              openTask({
+                project: item.project,
+                kind: item.kind,
+                class: item.class,
+                id: item.id,
+              })}
+          >
             {item.entity.Title}
-          </span>
+          </button>
           <span
             class="shrink-0 font-mono text-data tabular-nums
                    {item.waitingDays >= 30 ? 'text-chalk' : 'text-chalk-faint'}"
@@ -262,6 +323,33 @@
                 />
               </label>
               <label class="flex flex-col gap-1">
+                <span class={label}>Priority</span>
+                <select bind:value={priority} aria-label="Draft priority">
+                  <option value="">none</option>
+                  {#each config?.priorities ?? [] as value (value)}
+                    <option {value}>{value}</option>
+                  {/each}
+                </select>
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class={label}>Type</span>
+                <select bind:value={type} aria-label="Draft type">
+                  <option value="">none</option>
+                  {#each config?.types ?? [] as value (value)}
+                    <option {value}>{value}</option>
+                  {/each}
+                </select>
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class={label}>Milestone</span>
+                <select bind:value={milestone} aria-label="Draft milestone">
+                  <option value="">none</option>
+                  {#each projectMilestones as m (m.id)}
+                    <option value={m.id}>{m.title}</option>
+                  {/each}
+                </select>
+              </label>
+              <label class="flex flex-col gap-1">
                 <span class={label}>Project</span>
                 <select bind:value={target} aria-label="Project for this draft">
                   {#each healthy as project (project.path)}
@@ -271,10 +359,19 @@
               </label>
             </div>
 
+            <label class="flex flex-col gap-1">
+              <span class={label}>Acceptance criteria — one per line</span>
+              <textarea
+                class="min-h-16 w-full font-mono"
+                bind:value={criteria}
+                aria-label="Draft acceptance criteria"></textarea>
+            </label>
+
             <p class="text-body text-chalk-faint">
               Backlog.md has no way to edit a draft, so this captures a new note
               and discards this one. The rewritten note is captured now, so its
-              wait starts again from today.
+              wait starts again from today. A note keeps everything above; only
+              a status is out of reach, because a draft's status is Draft.
             </p>
 
             <div class="flex items-baseline gap-3">

@@ -1,7 +1,7 @@
 import { atom, computed } from "nanostores";
 import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
 import { TaskView as TaskViewMode } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
-import { projects, settings as settingsStore, tasks } from "./board";
+import { drafts, projects, settings as settingsStore, tasks } from "./board";
 import type { ScreenID } from "./screens";
 
 /** Which screen is showing. */
@@ -155,18 +155,22 @@ export async function toggleTaskView(): Promise<void> {
 }
 
 /** The open task, or null. Derived, so it follows a reload. */
-export const selectedTask = computed([tasks, selected], (all, ref) => {
-  if (!ref) return null;
-  return (
-    all.find(
+export const selectedTask = computed(
+  [tasks, drafts, selected],
+  (all, waiting, ref) => {
+    if (!ref) return null;
+    // Drafts are searched too, so a note opens in the panel and can be read
+    // whole rather than as the two lines the inbox has room for.
+    const found = [...all, ...waiting].find(
       (task) =>
         task.project === ref.project &&
         task.kind === ref.kind &&
         task.class === ref.class &&
         task.id === ref.id,
-    ) ?? null
-  );
-});
+    );
+    return found ?? null;
+  },
+);
 
 /**
  * Find a task by id inside one project.

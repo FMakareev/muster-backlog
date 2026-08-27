@@ -79,6 +79,17 @@ export function CaptureDraft(projectPath: string, title: string, description: st
 }
 
 /**
+ * CaptureNote writes a new draft into a project.
+ * 
+ * The other half of a usable inbox: until now a note could only be triaged,
+ * never made, so the inbox could only ever be as full as something else had
+ * filled it.
+ */
+export function CaptureNote(projectPath: string, edit: $models.DraftEdit): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2826179784, projectPath, edit);
+}
+
+/**
  * CheckCriterion ticks or unticks an acceptance criterion by its 1-based index.
  */
 export function CheckCriterion(projectPath: string, taskID: string, index: number, checked: boolean): $CancellablePromise<$models.WriteResult> {
@@ -206,9 +217,15 @@ export function Projects(): $CancellablePromise<$models.ProjectView[] | null> {
 }
 
 /**
- * PromoteDraft turns a draft into a task in its own project.
+ * PromoteDraft turns a draft into a task in its own project, and says which
+ * task it became.
+ * 
+ * The CLI does not print the new id - only "Promoted draft DRAFT-1" - so it is
+ * found by seeing which task id was not there a moment ago. That is exact:
+ * promotion is the only thing happening between the two readings, and both are
+ * taken under the same store.
  */
-export function PromoteDraft(projectPath: string, draftID: string): $CancellablePromise<$models.WriteResult> {
+export function PromoteDraft(projectPath: string, draftID: string): $CancellablePromise<$models.CreateResult> {
     return $Call.ByID(222884257, projectPath, draftID);
 }
 

@@ -23,6 +23,10 @@
   let assignee = $state("");
   let labels = $state("");
   let criteria = $state("");
+  // Capture into the inbox instead of onto the board. Same form, because the
+  // decision of whether a note is ready to be a task is exactly what triage is
+  // for - it should not also decide how much you are allowed to write down.
+  let asNote = $state(false);
   let busy = $state(false);
   let titleField: HTMLInputElement | undefined = $state();
 
@@ -79,11 +83,9 @@
     if (!project || !title.trim() || busy) return;
     busy = true;
 
-    const result = await BoardService.CreateTask({
-      project,
+    const common = {
       title: title.trim(),
       description,
-      status,
       priority,
       type,
       milestone,
@@ -93,28 +95,51 @@
         .map((l) => l.trim())
         .filter(Boolean),
       acceptanceCriteria: splitLines(criteria),
-    });
+    };
+
+    // A draft's status is Draft and the CLI takes no other, so the one field
+    // that does not cross over is left behind rather than sent and refused.
+    // The two calls are kept apart rather than merged: only one of them
+    // answers with the id of what it made.
+    let ok: boolean;
+    let problem: { title: string; detail: string } | null | undefined;
+    let created = "";
+
+    if (asNote) {
+      const result = await BoardService.CaptureNote(project, {
+        ...common,
+        project: "",
+      });
+      ok = result.ok;
+      problem = result.problem;
+    } else {
+      const result = await BoardService.CreateTask({
+        ...common,
+        project,
+        status,
+      });
+      ok = result.ok;
+      problem = result.problem;
+      created = result.taskId;
+    }
     busy = false;
 
-    if (!result.ok) {
+    if (!ok) {
       // Nothing typed is thrown away: the form stays as it was so the person
       // can fix whatever the CLI objected to.
       notify(
-        result.problem
-          ? `${result.problem.title}: ${result.problem.detail}`
-          : "The task could not be created.",
+        problem
+          ? `${problem.title}: ${problem.detail}`
+          : asNote
+            ? "The note could not be captured."
+            : "The task could not be created.",
       );
       return;
     }
 
     await refresh();
-    if (result.taskId) {
-      openTask({
-        project,
-        kind: "task",
-        class: "active",
-        id: result.taskId,
-      });
+    if (created) {
+      openTask({ project, kind: "task", class: "active", id: created });
     }
     reset();
     closeNewTask();
@@ -153,7 +178,13 @@
       }}
     >
       <header class="flex items-baseline gap-3">
-        <h2 class="text-title font-semibold">New task</h2>
+        <h2 class="text-title font-semibold">
+          {asNote ? "New note" : "New task"}
+        </h2>
+        <label class="flex items-center gap-2 text-body text-chalk-dim">
+          <input type="checkbox" bind:checked={asNote} disabled={busy} />
+          capture into the inbox
+        </label>
         <select
           class="ml-auto"
           aria-label="Project this task belongs to"
@@ -197,12 +228,20 @@
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1">
           <span class={label}>Status</span>
-          <select class={field} bind:value={status} disabled={busy}>
-            <option value="">project default</option>
-            {#each statuses as s (s)}
-              <option value={s}>{s}</option>
-            {/each}
-          </select>
+          {#if asNote}
+            <!-- Said rather than silently dropped: a draft's status is Draft
+                 and Backlog.md accepts no other for one. -->
+            <span class="text-body text-chalk-faint">
+              A note is a draft until it is promoted.
+            </span>
+          {:else}
+            <select class={field} bind:value={status} disabled={busy}>
+              <option value="">project default</option>
+              {#each statuses as s (s)}
+                <option value={s}>{s}</option>
+              {/each}
+            </select>
+          {/if}
         </label>
 
         <label class="flex flex-col gap-1">

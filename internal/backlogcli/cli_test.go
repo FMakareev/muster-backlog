@@ -294,7 +294,7 @@ func TestDraftsAndPromotion(t *testing.T) {
 	dir := newProject(t, r)
 	ctx := context.Background()
 
-	if err := r.CreateDraft(ctx, dir, backlogcli.NewDraft{
+	if _, err := r.CreateDraft(ctx, dir, backlogcli.NewTask{
 		Title: "An idea worth keeping", Description: "Some context.",
 	}); err != nil {
 		t.Fatalf("CreateDraft: %v", err)

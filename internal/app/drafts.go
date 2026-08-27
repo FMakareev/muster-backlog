@@ -76,13 +76,44 @@ func sortDrafts(drafts []DraftView) {
 	})
 }
 
-// PromoteDraft turns a draft into a task in its own project.
-func (s *BoardService) PromoteDraft(projectPath, draftID string) WriteResult {
+// PromoteDraft turns a draft into a task in its own project, and says which
+// task it became.
+//
+// The CLI does not print the new id - only "Promoted draft DRAFT-1" - so it is
+// found by seeing which task id was not there a moment ago. That is exact:
+// promotion is the only thing happening between the two readings, and both are
+// taken under the same store.
+func (s *BoardService) PromoteDraft(projectPath, draftID string) CreateResult {
+	before := s.taskIDs(projectPath)
+
 	result := s.write(projectPath, fmt.Sprintf("%s could not be promoted", draftID),
 		func(cli *backlogcli.Runner) error {
 			return cli.PromoteDraft(context.Background(), s.dataDirFor(projectPath), draftID)
 		})
-	return s.confirmDraftLeft(result, projectPath, draftID, "promoted")
+	result = s.confirmDraftLeft(result, projectPath, draftID, "promoted")
+	if !result.OK {
+		return CreateResult{Problem: result.Problem}
+	}
+
+	out := CreateResult{OK: true}
+	for id := range s.taskIDs(projectPath) {
+		if !before[id] {
+			out.TaskID = id
+			break
+		}
+	}
+	return out
+}
+
+// taskIDs is the set of live task ids in one project.
+func (s *BoardService) taskIDs(projectPath string) map[string]bool {
+	ids := map[string]bool{}
+	for _, item := range s.store.Entities(backlog.KindTask) {
+		if item.Ref.Project == projectPath && item.Ref.Class == backlog.ClassActive {
+			ids[item.Ref.ID] = true
+		}
+	}
+	return ids
 }
 
 // DiscardDraft archives a draft.
@@ -134,14 +165,58 @@ func (s *BoardService) draftPresent(projectPath, draftID string) bool {
 	return false
 }
 
-// DraftEdit is a draft's editable content, as the CLI defines it.
+// DraftEdit is everything a draft can carry.
+//
+// The whole field surface `task create --draft` accepts, not the four that
+// `draft create` does: a note that cannot be given a priority or a milestone
+// until it stops being a note is a note nobody triages.
 type DraftEdit struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Labels      []string `json:"labels"`
 	Assignee    string   `json:"assignee"`
+	Priority    string   `json:"priority"`
+	Type        string   `json:"type"`
+	Milestone   string   `json:"milestone"`
+	// AcceptanceCriteria are added in order, as items.
+	AcceptanceCriteria []string `json:"acceptanceCriteria"`
 	// Project is where the draft should end up. Empty means where it is.
 	Project string `json:"project"`
+}
+
+// asNewTask maps an edit onto what the CLI takes.
+func (e DraftEdit) asNewTask() backlogcli.NewTask {
+	return backlogcli.NewTask{
+		Title:              strings.TrimSpace(e.Title),
+		Description:        e.Description,
+		Priority:           strings.TrimSpace(e.Priority),
+		Type:               strings.TrimSpace(e.Type),
+		Milestone:          strings.TrimSpace(e.Milestone),
+		Assignee:           strings.TrimSpace(e.Assignee),
+		Labels:             e.Labels,
+		AcceptanceCriteria: e.AcceptanceCriteria,
+	}
+}
+
+// CaptureNote writes a new draft into a project.
+//
+// The other half of a usable inbox: until now a note could only be triaged,
+// never made, so the inbox could only ever be as full as something else had
+// filled it.
+func (s *BoardService) CaptureNote(projectPath string, edit DraftEdit) WriteResult {
+	if strings.TrimSpace(edit.Title) == "" {
+		return WriteResult{Problem: &Problem{
+			Kind: ProblemCLI, Title: "A note needs a title",
+			Detail: "Backlog.md captures a note by its title; it cannot be empty.",
+			Path:   projectPath,
+		}}
+	}
+	return s.write(projectPath, "The note could not be captured",
+		func(cli *backlogcli.Runner) error {
+			_, err := cli.CreateDraft(context.Background(),
+				s.dataDirFor(projectPath), edit.asNewTask())
+			return err
+		})
 }
 
 // ReviseDraft rewrites a draft, in its own project or another one.
@@ -179,13 +254,9 @@ func (s *BoardService) ReviseDraft(projectPath, draftID string, edit DraftEdit) 
 
 	created := s.write(target, fmt.Sprintf("%s could not be rewritten", draftID),
 		func(cli *backlogcli.Runner) error {
-			return cli.CreateDraft(context.Background(), s.dataDirFor(target),
-				backlogcli.NewDraft{
-					Title:       strings.TrimSpace(edit.Title),
-					Description: edit.Description,
-					Labels:      edit.Labels,
-					Assignee:    strings.TrimSpace(edit.Assignee),
-				})
+			_, err := cli.CreateDraft(context.Background(),
+				s.dataDirFor(target), edit.asNewTask())
+			return err
 		})
 	if !created.OK {
 		return created

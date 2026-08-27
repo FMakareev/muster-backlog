@@ -61,50 +61,19 @@ func (r *Runner) UncheckAcceptanceCriterion(ctx context.Context, dir, taskID str
 	return r.edit(ctx, dir, taskID, "--uncheck-ac", fmt.Sprint(index))
 }
 
-// NewDraft is everything `backlog draft create` accepts.
-//
-// Deliberately short, because the command is: a draft holds a title, a body,
-// labels and an assignee, and nothing else. Priority, type and milestone are
-// not fields a draft has - they arrive when it becomes a task.
-type NewDraft struct {
-	Title       string
-	Description string
-	Labels      []string
-	Assignee    string
-}
-
 // CreateDraft captures a note into a project's drafts.
 //
 // Drafts stay off the board by design, which is what makes capture cheap.
-func (r *Runner) CreateDraft(ctx context.Context, dir string, draft NewDraft) error {
-	title := strings.TrimSpace(draft.Title)
-	if title == "" {
-		return fmt.Errorf("a draft needs a title")
-	}
-
-	args := []string{"draft", "create", title}
-	if body := strings.TrimSpace(draft.Description); body != "" {
-		args = append(args, "-d", body)
-	}
-	if labels := joinLabels(draft.Labels); labels != "" {
-		args = append(args, "-l", labels)
-	}
-	if who := strings.TrimSpace(draft.Assignee); who != "" {
-		args = append(args, "-a", who)
-	}
-	_, err := r.Exec(ctx, dir, args...)
-	return err
-}
-
-// joinLabels renders a label list the way the CLI takes one.
-func joinLabels(labels []string) string {
-	var kept []string
-	for _, label := range labels {
-		if trimmed := strings.TrimSpace(label); trimmed != "" {
-			kept = append(kept, trimmed)
-		}
-	}
-	return strings.Join(kept, ",")
+//
+// It goes through `task create --draft` rather than `draft create`, because
+// the two commands do not take the same fields: `draft create` knows title,
+// body, labels and assignee, while `task create --draft` also takes priority,
+// type, milestone, acceptance criteria, a parent and dependencies, and writes
+// the same file. Using one path means a draft can hold everything the format
+// allows it to.
+func (r *Runner) CreateDraft(ctx context.Context, dir string, draft NewTask) (string, error) {
+	draft.Draft = true
+	return r.CreateTask(ctx, dir, draft)
 }
 
 // PromoteDraft turns a draft into a task: the file moves into tasks/, the id
@@ -229,6 +198,14 @@ type NewTask struct {
 	Parent string
 	// DependsOn are task ids in the same project.
 	DependsOn []string
+	// Draft writes the file into drafts/ instead of tasks/, with a DRAFT id
+	// and status Draft.
+	//
+	// `task create --draft` takes the whole field surface below, which
+	// `draft create` does not: that command knows only title, body, labels
+	// and assignee. Everything a draft is allowed to carry is therefore
+	// created through here.
+	Draft bool
 }
 
 // CreateTask creates a task and returns the id the CLI assigned.
@@ -242,8 +219,15 @@ func (r *Runner) CreateTask(ctx context.Context, dir string, task NewTask) (stri
 	}
 
 	args := []string{"task", "create", task.Title, "--plain"}
+	if task.Draft {
+		args = append(args, "--draft")
+	}
 	args = appendIf(args, "-d", task.Description)
-	args = appendIf(args, "-s", task.Status)
+	// A draft's status is Draft and the CLI rejects any other, so it is not
+	// passed for one at all.
+	if !task.Draft {
+		args = appendIf(args, "-s", task.Status)
+	}
 	args = appendIf(args, "--priority", task.Priority)
 	args = appendIf(args, "--type", task.Type)
 	args = appendIf(args, "-m", task.Milestone)
