@@ -254,6 +254,14 @@ func (s *Store) Query(q Query) []Item {
 	if len(kinds) == 0 {
 		kinds = []backlog.Kind{backlog.KindTask}
 	}
+	// No class filter means the live ones. Archiving is a soft delete and
+	// completed/ is where finished work is filed, so neither belongs in an
+	// unqualified answer - the board carried archived tasks as though they
+	// were live until this was noticed. Anything that wants them says so.
+	classes := q.Classes
+	if len(classes) == 0 {
+		classes = []backlog.Class{backlog.ClassActive}
+	}
 
 	var out []Item
 	for _, path := range s.order {
@@ -267,7 +275,7 @@ func (s *Store) Query(q Query) []Item {
 		}
 		for _, kind := range kinds {
 			for _, e := range entitiesOfKind(state.Scanned, kind) {
-				if q.matches(e) {
+				if matchesAnyClass(e.Class, classes) && q.matches(e) {
 					out = append(out, item(state, e))
 				}
 			}

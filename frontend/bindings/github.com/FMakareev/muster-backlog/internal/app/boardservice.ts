@@ -44,6 +44,13 @@ export function Analytics(): $CancellablePromise<$models.AnalyticsView[] | null>
 }
 
 /**
+ * ArchiveTask moves a task into archive/tasks.
+ */
+export function ArchiveTask(projectPath: string, taskID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(989419913, projectPath, taskID);
+}
+
+/**
  * CLIVersion reports the CLI version in use, empty when there is none.
  */
 export function CLIVersion(): $CancellablePromise<string> {
@@ -109,10 +116,30 @@ export function ChooseFolder(): $CancellablePromise<string> {
 }
 
 /**
+ * CompleteTask moves a finished task into completed/.
+ * 
+ * This is the ordinary end of a task rather than a destructive act, which is
+ * why it asks nothing: the file moves to where Backlog.md keeps finished work
+ * and the board stops carrying it. Across the author's nine projects, 591 of
+ * 875 live task files are already finished and none has ever been moved, which
+ * is what the absence of this button costs.
+ */
+export function CompleteTask(projectPath: string, taskID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1246510092, projectPath, taskID);
+}
+
+/**
  * CreateTask writes a new task into a project.
  */
 export function CreateTask(input: $models.NewTaskInput): $CancellablePromise<$models.CreateResult> {
     return $Call.ByID(2184482871, input);
+}
+
+/**
+ * DemoteTask sends a task back to the drafts inbox.
+ */
+export function DemoteTask(projectPath: string, taskID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(4194801475, projectPath, taskID);
 }
 
 /**

@@ -52,6 +52,16 @@ Capture (TASK-26, TASK-41) and the inbox triage view (TASK-42) close the loop th
 
 Exit condition: a new project is added, initialised and captured into without leaving the application.
 
+## m-5 — Task lifecycle and authoring (4 tasks)
+
+Added after m-3, and before the release, because the application turned out to be a good viewer and editor of what already exists and a poor place to change what a task *is*.
+
+The evidence is in the files rather than in taste. 591 of the 875 live task files across the nine projects are already at their project's terminal status, and `completed/` is empty in all nine — finished work sits mixed in with the work because nothing in the application can move it (TASK-67). 317 of those tasks carry dependencies, and the analytics screen reports which tasks are blocked while the relationship it reports can only be edited in a terminal (TASK-68). The documents viewer renders decisions and offers no way to write one, in a project whose own conventions say when to write them (TASK-69). And milestones — the axis this backlog is planned on, 49 of them — cannot be created, renamed or retired (TASK-70).
+
+None of this is new format. Every one of them is a CLI command Muster simply never wrapped.
+
+Exit condition: nothing routine sends you to a terminal.
+
 ## m-4 — Packaging and 1.0 release (5 tasks)
 
 What turns a working tool into something another person installs.

@@ -84,6 +84,37 @@ func (r *Runner) PromoteDraft(ctx context.Context, dir, draftID string) error {
 	return err
 }
 
+// CompleteTask moves a finished task into completed/.
+//
+// The CLI refuses anything that is not at its project's own last declared
+// status - not the literal word "Done", which was worth checking: a project
+// whose statuses end in "Shipped" completes a Shipped task and refuses the
+// others. So the interface can offer this exactly when it will work.
+func (r *Runner) CompleteTask(ctx context.Context, dir, taskID string) error {
+	_, err := r.Exec(ctx, dir, "task", "complete", taskID)
+	return err
+}
+
+// ArchiveTask moves a task into archive/tasks.
+//
+// Archiving is Backlog.md's soft delete: the file stays, the board stops
+// showing it, and the id becomes free for reuse - which is why archived ids
+// collide with live ones and identity is never the id alone.
+func (r *Runner) ArchiveTask(ctx context.Context, dir, taskID string) error {
+	_, err := r.Exec(ctx, dir, "task", "archive", taskID)
+	return err
+}
+
+// DemoteTask sends a task back to drafts.
+//
+// The only way back: `task edit -s Draft` is refused, because Draft is not one
+// of a project's configured statuses. This is a separate command precisely
+// because it moves the file.
+func (r *Runner) DemoteTask(ctx context.Context, dir, taskID string) error {
+	_, err := r.Exec(ctx, dir, "task", "demote", taskID)
+	return err
+}
+
 // ArchiveDraft moves a draft into archive/drafts.
 //
 // This is what discarding is: Backlog.md has no delete, and inventing one by

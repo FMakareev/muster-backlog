@@ -486,6 +486,8 @@ Four behavioural differences matter to a program driving the CLI, none of them t
 
 The first is why Muster checks that a promoted or discarded note actually left the inbox instead of trusting the exit code, and the third is why the project name is always passed to `init` rather than left to the CLI's own default.
 
+**`task demote` is the only way back from a task to a draft**, and it does less than its name suggests. Measured on 1.50.1: it renames the id to `DRAFT-<n>` and moves the file into `drafts/`, and leaves `status` and `ordinal` exactly as they were. A task demoted from `In Progress` arrives in the inbox still saying `status: In Progress`, carrying `ordinal: 1000`. So the earlier claim in section 1 that a draft has `status: Draft` and no ordinal holds only for drafts the CLI created — a demoted one has neither property, and anything reading drafts must key on the directory rather than on the status.
+
 **Still absent in 1.50.1: any way to edit a draft.** There is no `draft edit`, and `task edit` refuses a `DRAFT-` id. A draft can be created with the full task field surface through `task create --draft`, and it can be promoted or archived, but between those two points it cannot be changed. Anything calling itself draft editing is capture-and-discard.
 
 ---

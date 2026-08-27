@@ -320,12 +320,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -345,6 +339,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**

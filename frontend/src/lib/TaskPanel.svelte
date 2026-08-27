@@ -8,6 +8,7 @@
   import Markdown from "./Markdown.svelte";
   import SectionEditor from "./SectionEditor.svelte";
   import TaskControls from "./TaskControls.svelte";
+  import TaskLifecycle from "./TaskLifecycle.svelte";
   import {
     closeTask,
     findInProject,
@@ -383,6 +384,12 @@
             />
           </div>
         </section>
+      {/if}
+
+      {#if task.kind === "task" && task.class === "active"}
+        <!-- Last, because it is what happens at the end and because two of
+             the three take the task off the board. -->
+        <TaskLifecycle {task} />
       {/if}
 
       {#if (entity.Comments?.length ?? 0) > 0}

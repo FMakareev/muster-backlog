@@ -359,3 +359,51 @@ func TestQueryKinds(t *testing.T) {
 		t.Errorf("got %d tasks, want 4", n)
 	}
 }
+
+// Archiving is a soft delete and completed/ is where finished work is filed.
+// A query that names no class means the live ones; the board carried archived
+// tasks as though they were live until this was noticed.
+func TestAnUnqualifiedQueryReturnsOnlyLiveTasks(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "solo")
+	write(t, filepath.Join(dir, "backlog", "config.yml"),
+		"project_name: \"Solo\"\nstatuses: [\"To Do\", \"Done\"]\n")
+
+	body := func(id, title string) string {
+		return "---\nid: " + id + "\ntitle: " + title + "\nstatus: To Do\n---\n\n" +
+			"## Description\n\n<!-- SECTION:DESCRIPTION:BEGIN -->\nx\n" +
+			"<!-- SECTION:DESCRIPTION:END -->\n"
+	}
+	write(t, filepath.Join(dir, "backlog", "tasks", "task-1 - a.md"), body("TASK-1", "Live"))
+	write(t, filepath.Join(dir, "backlog", "completed", "task-2 - b.md"), body("TASK-2", "Filed"))
+	write(t, filepath.Join(dir, "backlog", "archive", "tasks", "task-3 - c.md"), body("TASK-3", "Gone"))
+
+	regFile := filepath.Join(root, "projects.yml")
+	write(t, regFile, "projects:\n  - path: "+dir+"\n")
+	reg, err := registry.LoadFrom(regFile)
+	if err != nil {
+		t.Fatalf("LoadFrom: %v", err)
+	}
+	s := store.New()
+	s.Load(reg)
+
+	got := s.Query(store.Query{})
+	if len(got) != 1 || got[0].Entity.Title != "Live" {
+		var titles []string
+		for _, item := range got {
+			titles = append(titles, item.Entity.Title)
+		}
+		t.Fatalf("an unqualified query returned %v, want only the live task", titles)
+	}
+	if n := s.Count(store.Query{}); n != 1 {
+		t.Errorf("Count returned %d, want 1", n)
+	}
+
+	// Asking for them explicitly still works.
+	all := s.Query(store.Query{Classes: []backlog.Class{
+		backlog.ClassActive, backlog.ClassCompleted, backlog.ClassArchived,
+	}})
+	if len(all) != 3 {
+		t.Errorf("asking for every class returned %d, want 3", len(all))
+	}
+}
