@@ -319,3 +319,51 @@ export const visibleTasks = computed(
     });
   },
 );
+
+/**
+ * The reference to a task as one string, for use as a key.
+ *
+ * Ids collide across projects, and archiving is a soft delete that lets one id
+ * name two files inside a single project, so the whole ref is the identity.
+ */
+export const refKey = (r: TaskRef): string =>
+  [r.project, r.kind, r.class, r.id].join("\u0000");
+
+/**
+ * Which tasks are ticked in the list, by ref.
+ *
+ * Held as keys rather than as tasks so it survives a reload: the tasks
+ * themselves are replaced wholesale when a project is re-read, and a set of
+ * stale objects would quietly stop matching anything.
+ */
+export const chosen = atom<string[]>([]);
+
+export function toggleChosen(ref: TaskRef): void {
+  const key = refKey(ref);
+  const current = chosen.get();
+  chosen.set(
+    current.includes(key)
+      ? current.filter((k) => k !== key)
+      : [...current, key],
+  );
+}
+
+export function chooseAll(refs: TaskRef[]): void {
+  chosen.set(refs.map(refKey));
+}
+
+export function clearChosen(): void {
+  chosen.set([]);
+}
+
+/**
+ * The chosen tasks that are actually on screen.
+ *
+ * Everything acts on this rather than on the raw set of keys, so narrowing a
+ * filter cannot leave tasks in the selection that nobody can see. A bulk
+ * change is only trustworthy if what it will touch is what is in front of you.
+ */
+export const chosenTasks = computed([visibleTasks, chosen], (visible, keys) => {
+  const wanted = new Set(keys);
+  return visible.filter((task) => wanted.has(refKey(task)));
+});

@@ -36,6 +36,7 @@ type ProjectChanged struct {
 func init() {
 	application.RegisterEvent[ProjectChanged](EventProjectChanged)
 	application.RegisterEvent[struct{}](EventRegistryChanged)
+	application.RegisterEvent[BulkProgress](EventBulkProgress)
 }
 
 // ProblemKind classifies a failure so the UI can decide how loudly to show it.

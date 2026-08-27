@@ -147,6 +147,19 @@ export function CaptureNote(projectPath: string, edit: $models.DraftEdit): $Canc
 }
 
 /**
+ * ChangeMany applies one change to many tasks.
+ * 
+ * Every write still goes through the CLI, one task at a time, because that is
+ * the only writer there is. What is bulk about it is the choosing: the set is
+ * picked once and the change described once. Each task gets a single `task
+ * edit` carrying the whole change, which is also what makes a task either take
+ * all of it or none of it - the CLI validates every field before writing.
+ */
+export function ChangeMany(change: $models.BulkChange): $CancellablePromise<$models.BulkResult> {
+    return $Call.ByID(3551259725, change);
+}
+
+/**
  * CheckCriterion ticks or unticks an acceptance criterion by its 1-based index.
  */
 export function CheckCriterion(projectPath: string, taskID: string, index: number, checked: boolean): $CancellablePromise<$models.WriteResult> {

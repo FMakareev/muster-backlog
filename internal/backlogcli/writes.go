@@ -610,3 +610,65 @@ func taskIDFrom(out string) string {
 	}
 	return ""
 }
+
+// TaskChange is a set of fields to change on one task in a single command.
+//
+// A pointer means "the caller said something about this field"; nil means
+// leave it alone. That distinction only matters for the milestone, where a set
+// empty string is a real instruction - clear it - rather than the absence of
+// one, but status and priority follow the same shape so the struct reads the
+// same way throughout.
+//
+// The point of the type is that `task edit` takes all of these at once and
+// validates them all before writing anything: an edit carrying a good status
+// and a bad priority exits 1 and leaves the file untouched. So one change to
+// one task is one command, and it either lands whole or not at all.
+type TaskChange struct {
+	Status    *string
+	Priority  *string
+	Milestone *string
+	// AddLabels and RemoveLabels combine in one command, and neither
+	// disturbs the labels it does not name.
+	AddLabels    []string
+	RemoveLabels []string
+}
+
+// Empty reports whether the change asks for nothing.
+func (c TaskChange) Empty() bool {
+	return c.Status == nil && c.Priority == nil && c.Milestone == nil &&
+		len(c.AddLabels) == 0 && len(c.RemoveLabels) == 0
+}
+
+// EditTask applies a whole change to one task in one command.
+//
+// It refuses an empty change rather than running one: an edit that asks for
+// nothing still rewrites the file's updated_date, which would make a mistaken
+// bulk run look like work.
+func (r *Runner) EditTask(ctx context.Context, dir, taskID string, change TaskChange) error {
+	if change.Empty() {
+		return fmt.Errorf("nothing to change")
+	}
+
+	var args []string
+	if change.Status != nil {
+		args = append(args, "-s", *change.Status)
+	}
+	if change.Priority != nil {
+		args = append(args, "--priority", *change.Priority)
+	}
+	if change.Milestone != nil {
+		if strings.TrimSpace(*change.Milestone) == "" {
+			args = append(args, "--clear-milestone")
+		} else {
+			args = append(args, "-m", *change.Milestone)
+		}
+	}
+	for _, label := range change.AddLabels {
+		args = appendIf(args, "--add-label", label)
+	}
+	for _, label := range change.RemoveLabels {
+		args = appendIf(args, "--remove-label", label)
+	}
+
+	return r.edit(ctx, dir, taskID, args...)
+}

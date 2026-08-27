@@ -12,6 +12,7 @@ import type * as app$0 from "../../../../FMakareev/muster-backlog/internal/app/m
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "muster:bulk:progress": app$0.BulkProgress;
             "muster:project:changed": app$0.ProjectChanged;
             "muster:registry:changed": {};
         }

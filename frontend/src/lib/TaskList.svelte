@@ -1,7 +1,17 @@
 <script lang="ts">
   import { milestoneLabel, milestones } from "./board";
+  import BulkBar from "./BulkBar.svelte";
   import { projectColour } from "./colour";
-  import { openTask, visibleTasks } from "./ui";
+  import {
+    chosen,
+    chosenTasks,
+    chooseAll,
+    clearChosen,
+    openTask,
+    refKey,
+    toggleChosen,
+    visibleTasks,
+  } from "./ui";
 
   /**
    * The task list.
@@ -139,21 +149,6 @@
   type Row = { task: Task; depth: number };
 
   /**
-   * Identity is the whole ref, never the id.
-   *
-   * Ids collide across projects, and archiving is a soft delete that lets one
-   * id name two different tasks inside a single project - so a key without the
-   * class silently folds an archived task into its live namesake and loses a
-   * row.
-   */
-  const refKey = (r: {
-    project: string;
-    kind: string;
-    class: string;
-    id: string;
-  }) => [r.project, r.kind, r.class, r.id].join("\u0000");
-
-  /**
    * Subtasks sit under their parent rather than sorting away from it.
    *
    * The sort still decides the order of everything at the top level; a
@@ -215,6 +210,39 @@
     /* eslint-enable svelte/prefer-svelte-reactivity */
     return out;
   });
+
+  /**
+   * Ticking tasks to change together.
+   *
+   * The box is the only thing that selects; a click on the row still opens the
+   * task, because the list is read far more often than it is edited.
+   *
+   * Shift extends from the last box clicked rather than from the top of the
+   * table, which is what makes choosing forty tasks one action instead of
+   * forty. It only ever adds: a range that unticked whatever it crossed would
+   * make a mis-aimed shift-click destroy a selection that took work to build.
+   */
+  let anchor = $state(-1);
+
+  function pick(index: number, event: MouseEvent | KeyboardEvent): void {
+    if (event.shiftKey && anchor >= 0 && anchor < rows.length) {
+      const [from, to] = anchor < index ? [anchor, index] : [index, anchor];
+      /* eslint-disable-next-line svelte/prefer-svelte-reactivity --
+         A scratch value inside one call, thrown away when it returns. The
+         reactive collections are for state that outlives a render; this
+         never reaches one. */
+      const keys = new Set($chosen);
+      for (const row of rows.slice(from, to + 1)) keys.add(refKey(row.task));
+      chosen.set([...keys]);
+    } else {
+      toggleChosen(rows[index].task);
+    }
+    anchor = index;
+  }
+
+  const allChosen = $derived(
+    rows.length > 0 && $chosenTasks.length === rows.length,
+  );
 </script>
 
 <div class="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -254,10 +282,25 @@
     </div>
   {/if}
 
+  {#if $chosenTasks.length > 0}
+    <BulkBar />
+  {/if}
+
   <div class="min-h-0 flex-1 overflow-auto">
     <table class="w-full border-collapse text-body">
       <thead class="sticky top-0 bg-ink-raised">
         <tr>
+          <th class="w-8 border-b border-rule px-2 py-1">
+            <input
+              type="checkbox"
+              class="align-middle"
+              checked={allChosen}
+              indeterminate={$chosenTasks.length > 0 && !allChosen}
+              aria-label="Choose every task shown"
+              onchange={() =>
+                allChosen ? clearChosen() : chooseAll(rows.map((r) => r.task))}
+            />
+          </th>
           {#each columns as column (column.key)}
             <th
               class="border-b border-rule px-2 py-1 text-left text-micro font-medium
@@ -281,9 +324,10 @@
         </tr>
       </thead>
       <tbody>
-        {#each rows as { task, depth } (task.project + task.kind + task.class + task.id)}
+        {#each rows as { task, depth }, index (task.project + task.kind + task.class + task.id)}
           <tr
-            class="cursor-pointer border-b border-rule hover:bg-ink-raised"
+            class="cursor-pointer border-b border-rule hover:bg-ink-raised
+                   {$chosen.includes(refKey(task)) ? 'bg-ink-raised' : ''}"
             onclick={() =>
               openTask({
                 project: task.project,
@@ -292,6 +336,18 @@
                 id: task.id,
               })}
           >
+            <td class="w-8 px-2 py-1">
+              <input
+                type="checkbox"
+                class="align-middle"
+                checked={$chosen.includes(refKey(task))}
+                aria-label="Choose {task.id} in {task.projectName}"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  pick(index, e);
+                }}
+              />
+            </td>
             {#each columns as column, i (column.key)}
               <td
                 class="max-w-0 truncate px-2 py-1 {column.mono

@@ -41,6 +41,73 @@ export interface BoardLayout {
 }
 
 /**
+ * BulkChange is a set of tasks and one change to make to all of them.
+ * 
+ * The three single-valued fields are pointers because leaving a field alone
+ * and clearing it are different instructions, and a bulk form has to be able
+ * to say both. Null means the form said nothing about it.
+ */
+export interface BulkChange {
+    "tasks": BulkTarget[] | null;
+    "status": string | null;
+    "priority": string | null;
+    "milestone": string | null;
+    "addLabels": string[] | null;
+    "removeLabels": string[] | null;
+}
+
+/**
+ * BulkFailure is one task that did not take the change, in the CLI's own words.
+ */
+export interface BulkFailure {
+    "project": string;
+    "projectName": string;
+    "taskId": string;
+    "detail": string;
+}
+
+/**
+ * BulkProgress is the payload of EventBulkProgress.
+ */
+export interface BulkProgress {
+    "done": number;
+    "total": number;
+}
+
+/**
+ * BulkResult is what happened, task by task.
+ * 
+ * A run of twenty writes can partly fail, and there is no transaction to hide
+ * behind: this reports the count that landed and names every one that did not,
+ * because a summary that only said "done" would be wrong more often than it
+ * was useful.
+ */
+export interface BulkResult {
+    /**
+     * Changed is how many tasks took the change.
+     */
+    "changed": number;
+
+    /**
+     * Failures names the ones that did not, with the reason each gave.
+     */
+    "failures": BulkFailure[] | null;
+
+    /**
+     * Problem is set when nothing was attempted at all.
+     */
+    "problem": Problem | null;
+}
+
+/**
+ * BulkTarget names one task to change.
+ */
+export interface BulkTarget {
+    "project": string;
+    "taskId": string;
+}
+
+/**
  * ColumnView is one column of the unified board.
  */
 export interface ColumnView {
@@ -349,12 +416,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -374,6 +435,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**
