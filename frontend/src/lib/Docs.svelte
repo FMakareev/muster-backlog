@@ -1,8 +1,11 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { TaskView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
+  import { projects, refresh } from "./board";
   import { projectColour } from "./colour";
   import Markdown from "./Markdown.svelte";
+  import NewDocument from "./NewDocument.svelte";
+  import { notify } from "./notices";
   import {
     findInProject,
     focusedProject,
@@ -94,6 +97,54 @@
     );
   }
 
+  /**
+   * Editing a document sends the whole body back, because `doc update
+   * --content` takes nothing smaller. What is shown in the editor is exactly
+   * what is in the file.
+   */
+  let editing = $state(false);
+  let draftTitle = $state("");
+  let draftType = $state("");
+  let draftBody = $state("");
+  let saving = $state(false);
+  let creating = $state(false);
+
+  const types = ["readme", "guide", "specification", "other"];
+
+  function startEditing(): void {
+    if (!current) return;
+    editing = true;
+    draftTitle = current.entity.Title;
+    draftType = current.entity.Type ?? "";
+    draftBody = current.entity.Body;
+  }
+
+  async function saveDocument(): Promise<void> {
+    if (!current || saving) return;
+    saving = true;
+    const result = await BoardService.UpdateDocument(
+      current.project,
+      current.id,
+      {
+        title: draftTitle.trim(),
+        type: draftType,
+        content: draftBody,
+      },
+    );
+    saving = false;
+    if (!result.ok) {
+      notify(
+        result.problem
+          ? `${result.problem.title}: ${result.problem.detail}`
+          : "The document could not be saved.",
+      );
+      return;
+    }
+    editing = false;
+    await load();
+    await refresh();
+  }
+
   function onTaskRef(id: string, project: string): void {
     const found = findInProject(project, id);
     if (found) {
@@ -112,6 +163,31 @@
     class="flex w-72 shrink-0 flex-col overflow-y-auto border-r border-rule"
     aria-label="Documents and decisions"
   >
+    <div
+      class="flex shrink-0 items-baseline gap-3 border-b border-rule px-3 py-1.5"
+    >
+      <button
+        type="button"
+        class="font-mono text-data text-chalk-faint hover:text-chalk"
+        aria-expanded={creating}
+        onclick={() => (creating = !creating)}
+      >
+        write something
+      </button>
+    </div>
+
+    {#if creating}
+      <NewDocument
+        projects={$projects.filter((p) => p.ok && !p.hidden)}
+        {types}
+        onDone={async (ref) => {
+          creating = false;
+          await load();
+          if (ref) selectedDoc.set(ref);
+        }}
+      />
+    {/if}
+
     {#if loading}
       <p class="px-3 py-2 text-body text-chalk-faint">Reading…</p>
     {:else if visible.length === 0}
@@ -167,19 +243,97 @@
           {current.projectName} · {current.id}
           {#if current.entity.Status}· {current.entity.Status}{/if}
         </p>
-        <h1 class="mt-1 text-title font-semibold text-chalk">
-          {current.entity.Title}
-        </h1>
-        <div class="mt-3">
-          <Markdown
-            source={current.entity.Body}
-            project={current.project}
-            {onTaskRef}
-          />
-        </div>
-        <p class="mt-6 font-mono text-micro text-chalk-faint">
-          {current.entity.Path}
-        </p>
+        {#if editing}
+          <div class="flex flex-col gap-2">
+            <label class="flex flex-col gap-1">
+              <span
+                class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+                >Title</span
+              >
+              <input
+                class="w-full"
+                bind:value={draftTitle}
+                aria-label="Document title"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span
+                class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+                >Type</span
+              >
+              <select bind:value={draftType} aria-label="Document type">
+                <option value="">unchanged</option>
+                {#each types as value (value)}
+                  <option {value}>{value}</option>
+                {/each}
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span
+                class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+                >Markdown</span
+              >
+              <textarea
+                class="min-h-96 w-full font-mono"
+                bind:value={draftBody}
+                aria-label="Document markdown"></textarea>
+            </label>
+            <p class="text-body text-chalk-faint">
+              Backlog.md replaces a document wholesale, so this is the entire
+              file and it is sent as it stands.
+            </p>
+            <div class="flex items-baseline gap-3">
+              <button
+                type="button"
+                class="border-b border-chalk-faint text-body text-chalk hover:border-chalk"
+                disabled={saving}
+                onclick={saveDocument}
+              >
+                {saving ? "saving…" : "save"}
+              </button>
+              <button
+                type="button"
+                class="font-mono text-data text-chalk-faint hover:text-chalk"
+                onclick={() => (editing = false)}
+              >
+                cancel
+              </button>
+            </div>
+          </div>
+        {:else}
+          <div class="flex items-baseline gap-3">
+            <h1 class="mt-1 text-title font-semibold text-chalk">
+              {current.entity.Title}
+            </h1>
+            {#if current.kind === "document"}
+              <button
+                type="button"
+                class="ml-auto font-mono text-data text-chalk-faint hover:text-chalk"
+                onclick={startEditing}
+              >
+                edit
+              </button>
+            {/if}
+          </div>
+          <div class="mt-3">
+            <Markdown
+              source={current.entity.Body}
+              project={current.project}
+              {onTaskRef}
+            />
+          </div>
+          {#if current.kind === "decision"}
+            <!-- Backlog.md creates a decision and has no command that fills
+                 one in, so this is where the writing happens. -->
+            <p class="mt-4 text-body text-chalk-faint">
+              Backlog.md has no way to edit a decision, so this one is written
+              in the file itself.
+            </p>
+          {/if}
+          <p class="mt-6 font-mono text-micro text-chalk-faint">
+            {current.entity.Path}
+          </p>
+        {/if}
       </div>
     {:else if !loading}
       <p class="text-body text-chalk-faint">Choose something on the left.</p>

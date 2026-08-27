@@ -129,6 +129,24 @@ export function CompleteTask(projectPath: string, taskID: string): $CancellableP
 }
 
 /**
+ * CreateDecision writes a decision.
+ * 
+ * Only its title and status: the CLI writes a skeleton with Context, Decision
+ * and Consequences headings and has no command that fills them. What the
+ * interface can do is make the act cheap and then say where the file is.
+ */
+export function CreateDecision(projectPath: string, title: string, status: string): $CancellablePromise<$models.CreateResult> {
+    return $Call.ByID(3115109120, projectPath, title, status);
+}
+
+/**
+ * CreateDocument writes a document, with its body if one was given.
+ */
+export function CreateDocument(input: $models.NewDocumentInput): $CancellablePromise<$models.CreateResult> {
+    return $Call.ByID(3370091943, input);
+}
+
+/**
  * CreateTask writes a new task into a project.
  */
 export function CreateTask(input: $models.NewTaskInput): $CancellablePromise<$models.CreateResult> {
@@ -150,6 +168,14 @@ export function DemoteTask(projectPath: string, taskID: string): $CancellablePro
  */
 export function DiscardDraft(projectPath: string, draftID: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(2408719147, projectPath, draftID);
+}
+
+/**
+ * DocumentTypes are what the CLI accepts. Read from its help rather than
+ * guessed, and offered as a list so a typo cannot reach it.
+ */
+export function DocumentTypes(): $CancellablePromise<string[] | null> {
+    return $Call.ByID(1989157560);
 }
 
 /**
@@ -469,6 +495,13 @@ export function Task(projectPath: string, kind: string, $class: string, id: stri
  */
 export function Tasks(q: $models.QueryInput): $CancellablePromise<$models.TaskView[] | null> {
     return $Call.ByID(386771504, q);
+}
+
+/**
+ * UpdateDocument rewrites a document.
+ */
+export function UpdateDocument(projectPath: string, docID: string, edit: $models.DocumentUpdate): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1658526594, projectPath, docID, edit);
 }
 
 /**

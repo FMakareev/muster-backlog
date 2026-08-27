@@ -83,6 +83,20 @@ export interface CreateResult {
 }
 
 /**
+ * DocumentUpdate is what the viewer can change about a document.
+ */
+export interface DocumentUpdate {
+    "title": string;
+    "type": string;
+
+    /**
+     * Content replaces the whole body. `doc update --content` takes nothing
+     * smaller, so the editor sends the entire document back.
+     */
+    "content": string;
+}
+
+/**
  * DraftEdit is everything a draft can carry.
  * 
  * The whole field surface `task create --draft` accepts, not the four that
@@ -269,6 +283,21 @@ export interface MilestoneView {
 }
 
 /**
+ * NewDocumentInput is a document as the form fills it in.
+ * 
+ * Content is here even though `doc create` cannot take it: a document created
+ * empty and then filled is one act to the person doing it, and making them
+ * press two buttons for it would be an implementation detail leaking upwards.
+ */
+export interface NewDocumentInput {
+    "project": string;
+    "title": string;
+    "type": string;
+    "path": string;
+    "content": string;
+}
+
+/**
  * NewTaskInput is the create form as the frontend sends it.
  */
 export interface NewTaskInput {
@@ -320,12 +349,6 @@ export enum ProblemKind {
     $zero = "",
 
     /**
-     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
-     * recorded once at startup rather than raised again on every action.
-     */
-    ProblemCLI = "cli",
-
-    /**
      * ProblemNoRegistry means there is no registry yet. This is first run, not
      * a fault, and the UI offers to add a project rather than showing an error.
      */
@@ -345,6 +368,12 @@ export enum ProblemKind {
      * ProblemFile means one file was skipped during a scan.
      */
     ProblemFile = "file",
+
+    /**
+     * ProblemCLI reports that the backlog CLI is missing or unusable. It is
+     * recorded once at startup rather than raised again on every action.
+     */
+    ProblemCLI = "cli",
 };
 
 /**

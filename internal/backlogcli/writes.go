@@ -84,6 +84,102 @@ func (r *Runner) PromoteDraft(ctx context.Context, dir, draftID string) error {
 	return err
 }
 
+// NewDocument is what `backlog doc create` accepts.
+//
+// No content: the command does not take any. A document is created empty and
+// filled by a second call, which is why CreateDocument returns the id.
+type NewDocument struct {
+	Title string
+	// Type is readme, guide, specification or other. Empty lets the CLI
+	// choose its own default rather than Muster inventing one.
+	Type string
+	// Path is a docs-relative sub-path. Absolute paths and .. are rejected by
+	// the CLI itself.
+	Path string
+}
+
+// CreateDocument creates an empty document and returns its id.
+func (r *Runner) CreateDocument(ctx context.Context, dir string, doc NewDocument) (string, error) {
+	title := strings.TrimSpace(doc.Title)
+	if title == "" {
+		return "", fmt.Errorf("a document needs a title")
+	}
+	args := []string{"doc", "create", title, "--plain"}
+	args = appendIf(args, "-t", doc.Type)
+	args = appendIf(args, "-p", doc.Path)
+
+	out, err := r.Exec(ctx, dir, args...)
+	if err != nil {
+		return "", err
+	}
+	return documentIDFrom(out), nil
+}
+
+// documentID finds a doc id in the CLI's own output.
+var documentID = regexp.MustCompile(`(?i)\bdoc-[0-9]+`)
+
+func documentIDFrom(out string) string {
+	return documentID.FindString(out)
+}
+
+// DocumentEdit is what `backlog doc update` changes. Empty fields are left
+// alone; Content replaces the whole body, which is the only form the command
+// takes.
+type DocumentEdit struct {
+	Title   string
+	Type    string
+	Tags    []string
+	Content string
+	// SetContent distinguishes "leave the body alone" from "make it empty".
+	SetContent bool
+}
+
+// UpdateDocument changes a document.
+func (r *Runner) UpdateDocument(ctx context.Context, dir, docID string, edit DocumentEdit) error {
+	if strings.TrimSpace(docID) == "" {
+		return fmt.Errorf("no document id given")
+	}
+	args := []string{"doc", "update", docID}
+	args = appendIf(args, "--title", edit.Title)
+	args = appendIf(args, "-t", edit.Type)
+	if tags := joinValues(edit.Tags); tags != "" {
+		args = append(args, "--tags", tags)
+	}
+	if edit.SetContent {
+		args = append(args, "--content", edit.Content)
+	}
+	if len(args) == 3 {
+		return fmt.Errorf("nothing to change")
+	}
+	_, err := r.Exec(ctx, dir, args...)
+	return err
+}
+
+// CreateDecision creates a decision and returns its id.
+//
+// The status is free-form and defaults to proposed. The body cannot be set:
+// the CLI writes a skeleton with Context, Decision and Consequences headings
+// and offers no command to fill them - there is no `decision update`.
+func (r *Runner) CreateDecision(ctx context.Context, dir, title, status string) (string, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return "", fmt.Errorf("a decision needs a title")
+	}
+	args := []string{"decision", "create", title, "--plain"}
+	args = appendIf(args, "-s", status)
+
+	out, err := r.Exec(ctx, dir, args...)
+	if err != nil {
+		return "", err
+	}
+	return decisionID.FindString(out), nil
+}
+
+var decisionID = regexp.MustCompile(`(?i)\bdecision-[0-9]+`)
+
+// joinValues renders a list the way the CLI takes one.
+func joinValues(values []string) string { return strings.Join(trimmed(values), ",") }
+
 // SetDependencies replaces a task's dependency list.
 //
 // The CLI checks that each id exists in the project and refuses the whole
