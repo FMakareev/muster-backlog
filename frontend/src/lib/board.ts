@@ -70,6 +70,7 @@ export const settings = atom<Settings>({
   scalePercent: 100,
   backlogPath: "",
   lastProject: "",
+  author: "",
 });
 
 /**

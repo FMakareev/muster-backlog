@@ -42,6 +42,16 @@ export interface Settings {
     "scalePercent": number;
 
     /**
+     * Author is the name a comment is signed with.
+     * 
+     * Empty means ask git, which is where a person's name already is and what
+     * the assignees in these files already agree with. A name is not something
+     * to invent: with neither this nor git, a comment is written unsigned,
+     * which is a state the format has.
+     */
+    "author": string;
+
+    /**
      * LastProject is the project a note was last captured into.
      * 
      * Capture is meant to cost nothing, and choosing the same project again is

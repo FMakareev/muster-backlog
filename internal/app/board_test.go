@@ -58,7 +58,11 @@ func newProject(t *testing.T, name string, tasks map[string]string) string {
 
 func startService(t *testing.T, registryPath string) *app.BoardService {
 	t.Helper()
-	s := app.NewBoardServiceAt(registryPath)
+	// Preferences go beside the registry the test wrote, never into the
+	// developer's own configuration: a test that saved one wrote an author
+	// into the real settings file before this was injectable.
+	settingsPath := filepath.Join(filepath.Dir(registryPath), "settings.yml")
+	s := app.NewBoardServiceWith(registryPath, settingsPath)
 	if err := s.ServiceStartup(t.Context(), serviceOptions()); err != nil {
 		t.Fatalf("ServiceStartup: %v", err)
 	}

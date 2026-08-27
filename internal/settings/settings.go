@@ -64,6 +64,13 @@ type Settings struct {
 	// board over nine projects and suits nobody who needs larger type, so it
 	// is a choice rather than a constraint.
 	ScalePercent int `yaml:"scale_percent" json:"scalePercent"`
+	// Author is the name a comment is signed with.
+	//
+	// Empty means ask git, which is where a person's name already is and what
+	// the assignees in these files already agree with. A name is not something
+	// to invent: with neither this nor git, a comment is written unsigned,
+	// which is a state the format has.
+	Author string `yaml:"author" json:"author"`
 	// LastProject is the project a note was last captured into.
 	//
 	// Capture is meant to cost nothing, and choosing the same project again is
@@ -92,6 +99,7 @@ func Defaults() Settings {
 		ScalePercent:   100,
 		BacklogPath:    "",
 		LastProject:    "",
+		Author:         "",
 	}
 }
 
@@ -167,6 +175,7 @@ func (s Settings) normalised() Settings {
 	}
 	out.BacklogPath = strings.TrimSpace(out.BacklogPath)
 	out.LastProject = strings.TrimSpace(out.LastProject)
+	out.Author = strings.TrimSpace(out.Author)
 	// Clamped rather than trusted: a hand-edited 5 or 5000 would leave an
 	// interface nobody could use to fix the setting.
 	if out.ScalePercent < 75 {

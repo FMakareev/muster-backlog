@@ -190,6 +190,49 @@
 
   const parent = $derived(task?.family?.parent ?? null);
 
+  /**
+   * Saying something about a task.
+   *
+   * Comments are the one part of a task that is a conversation rather than a
+   * field, and the panel could read them and not write one. Who it is signed
+   * by is the application's answer, not the form's: identity is not something
+   * a text box should decide.
+   */
+  let comment = $state("");
+  let commenting = $state(false);
+  let author = $state("");
+
+  $effect(() => {
+    const open = task;
+    if (!open) {
+      author = "";
+      return;
+    }
+    void BoardService.CommentAuthor(open.project).then((who) => (author = who));
+  });
+
+  async function addComment(): Promise<void> {
+    if (!task || commenting || !comment.trim()) return;
+    commenting = true;
+    const result = await BoardService.AddComment(
+      task.project,
+      task.id,
+      comment,
+    );
+    commenting = false;
+    if (!result.ok) {
+      // What was typed stays: it is the thing that needs another try.
+      notify(
+        result.problem
+          ? `${result.problem.title}: ${result.problem.detail}`
+          : "The comment could not be added.",
+      );
+      return;
+    }
+    comment = "";
+    await refresh();
+  }
+
   function openRef(ref: {
     project: string;
     kind: string;
@@ -471,7 +514,7 @@
         <TaskLifecycle {task} />
       {/if}
 
-      {#if (entity.Comments?.length ?? 0) > 0}
+      {#if !isNote}
         <section>
           <h3
             class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
@@ -493,6 +536,35 @@
               </li>
             {/each}
           </ul>
+
+          <div class="mt-2 flex flex-col gap-1">
+            <textarea
+              class="min-h-16 w-full font-mono"
+              bind:value={comment}
+              aria-label="A comment"
+              placeholder="Say something about this task"
+              disabled={commenting}
+              onkeydown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void addComment();
+                }
+              }}></textarea>
+            <div class="flex items-baseline gap-3">
+              <button
+                type="button"
+                class="border-b border-chalk-faint text-body text-chalk hover:border-chalk"
+                disabled={commenting || !comment.trim()}
+                onclick={addComment}
+              >
+                {commenting ? "saying…" : "say it"}
+              </button>
+              <span class="font-mono text-micro text-chalk-faint">
+                {author ? `as ${author}` : "unsigned"}
+              </span>
+            </div>
+          </div>
         </section>
       {/if}
 

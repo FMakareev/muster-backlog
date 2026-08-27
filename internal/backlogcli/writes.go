@@ -249,6 +249,22 @@ var decisionID = regexp.MustCompile(`(?i)\bdecision-[0-9]+`)
 // joinValues renders a list the way the CLI takes one.
 func joinValues(values []string) string { return strings.Join(trimmed(values), ",") }
 
+// AddComment appends a comment to a task.
+//
+// The author is optional and omitted when empty, which is what the CLI does
+// with it: the file gets no author line at all rather than a placeholder. An
+// unsigned comment is a real state, not a failure to record one.
+func (r *Runner) AddComment(ctx context.Context, dir, taskID, text, author string) error {
+	if strings.TrimSpace(text) == "" {
+		return fmt.Errorf("a comment needs something in it")
+	}
+	args := []string{"--comment", text}
+	if who := strings.TrimSpace(author); who != "" {
+		args = append(args, "--comment-author", who)
+	}
+	return r.edit(ctx, dir, taskID, args...)
+}
+
 // SetDependencies replaces a task's dependency list.
 //
 // The CLI checks that each id exists in the project and refuses the whole

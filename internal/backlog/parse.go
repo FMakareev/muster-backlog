@@ -252,6 +252,15 @@ func parseComments(content string) []Comment {
 		switch {
 		case strings.HasPrefix(trimmed, "author:") && current == nil:
 			current = &Comment{Author: strings.TrimSpace(strings.TrimPrefix(trimmed, "author:"))}
+		// A comment can begin with its date and no author at all. The CLI
+		// writes one that way whenever --comment is given without
+		// --comment-author: there is no placeholder, the line is simply
+		// absent. Every comment in the corpus is signed, which is why this was
+		// missed until the application started writing them.
+		case strings.HasPrefix(trimmed, "created:") && current == nil:
+			current = &Comment{
+				Created: strings.TrimSpace(strings.TrimPrefix(trimmed, "created:")),
+			}
 		case strings.HasPrefix(trimmed, "created:") && current != nil && !inBody:
 			current.Created = strings.TrimSpace(strings.TrimPrefix(trimmed, "created:"))
 		case trimmed == frontmatterFence && current != nil && !inBody:

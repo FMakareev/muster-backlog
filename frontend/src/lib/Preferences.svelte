@@ -109,6 +109,24 @@
       </div>
 
       <div class={row}>
+        <span class={label}>The name your comments are signed with</span>
+        <input
+          class="w-full"
+          aria-label="The name your comments are signed with"
+          placeholder="taken from git"
+          value={$settings.author}
+          disabled={busy}
+          onchange={(e) =>
+            save({ ...$settings, author: e.currentTarget.value })}
+        />
+        <p class="text-body text-chalk-faint">
+          Leave this empty and git is asked, which is where your name already
+          is. With neither, a comment is written unsigned rather than signed
+          with something made up.
+        </p>
+      </div>
+
+      <div class={row}>
         <span class={label}>Where the Backlog.md CLI is</span>
         <input
           class="w-full font-mono"

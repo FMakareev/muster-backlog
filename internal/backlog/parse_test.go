@@ -238,3 +238,36 @@ func TestNonEntityFilesAreRejected(t *testing.T) {
 		})
 	}
 }
+
+// A comment with no author is a state the CLI produces: `task edit --comment`
+// without `--comment-author` writes the entry with no author line at all,
+// rather than an empty one. Every comment in the corpus is signed, so this was
+// missed until the application began writing them.
+func TestAnUnsignedCommentIsStillAComment(t *testing.T) {
+	body := "---\nid: TASK-1\ntitle: Talking\nstatus: To Do\n---\n\n" +
+		"## Comments\n\n<!-- COMMENTS:BEGIN -->\n" +
+		"author: @someone\ncreated: 2026-08-27 19:00\n---\nSigned.\n---\n\n" +
+		"created: 2026-08-27 19:13\n---\nUnsigned.\n---\n" +
+		"<!-- COMMENTS:END -->\n"
+
+	entity, err := backlog.ParseFile("task-1 - talking.md", []byte(body),
+		backlog.KindTask, backlog.ClassActive, true)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(entity.Comments) != 2 {
+		t.Fatalf("got %d comments, want both: %+v", len(entity.Comments), entity.Comments)
+	}
+	if entity.Comments[0].Author != "@someone" || entity.Comments[0].Body != "Signed." {
+		t.Errorf("the signed one is %+v", entity.Comments[0])
+	}
+	second := entity.Comments[1]
+	switch {
+	case second.Author != "":
+		t.Errorf("an author appeared on an unsigned comment: %q", second.Author)
+	case second.Body != "Unsigned.":
+		t.Errorf("body is %q", second.Body)
+	case second.Created == "":
+		t.Errorf("the date was lost: %+v", second)
+	}
+}

@@ -22,6 +22,14 @@ import * as settings$0 from "../settings/models.js";
 import * as $models from "./models.js";
 
 /**
+ * AddComment appends a comment to a task, signed with whoever is using the
+ * application.
+ */
+export function AddComment(projectPath: string, taskID: string, text: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2597410662, projectPath, taskID, text);
+}
+
+/**
  * AddLabel adds a label to a task without touching the others.
  */
 export function AddLabel(projectPath: string, taskID: string, label: string): $CancellablePromise<$models.WriteResult> {
@@ -155,6 +163,23 @@ export function CheckCriterion(projectPath: string, taskID: string, index: numbe
  */
 export function ChooseFolder(): $CancellablePromise<string> {
     return $Call.ByID(3013292659);
+}
+
+/**
+ * CommentAuthor is the name a comment will be signed with.
+ * 
+ * The preference first, because someone who set one meant it. Then whatever
+ * git answers for that folder - the repository's identity if it has one, the
+ * global one otherwise, which is usually still the right person. That is where
+ * a name already is, and the files already agree with it: the assignees in the
+ * author's own projects are the name git reports. Then nothing - a comment is
+ * written unsigned rather than signed with something invented, which is a
+ * state the format has and the CLI produces when asked for no author.
+ * 
+ * Exposed so the interface can show which name will be used before it is used.
+ */
+export function CommentAuthor(projectPath: string): $CancellablePromise<string> {
+    return $Call.ByID(2061055484, projectPath);
 }
 
 /**
@@ -532,6 +557,13 @@ export function SetTitle(projectPath: string, taskID: string, title: string): $C
  */
 export function Settings(): $CancellablePromise<settings$0.Settings> {
     return $Call.ByID(1296259787);
+}
+
+/**
+ * SettingsPath is where the preferences are read from and written to.
+ */
+export function SettingsPath(): $CancellablePromise<string> {
+    return $Call.ByID(3750147388);
 }
 
 /**

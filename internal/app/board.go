@@ -201,6 +201,9 @@ type BoardService struct {
 	// at their own file instead of manipulating the environment - the XDG
 	// lookup caches its variables at process start and cannot be moved later.
 	registryPath string
+	// settingsPath is where the preferences live. Injectable so that a test
+	// cannot write into the developer's own configuration, which one did.
+	settingsPath string
 }
 
 // NewBoardService returns a service reading the registry from its usual place.
@@ -208,9 +211,32 @@ func NewBoardService() *BoardService {
 	return NewBoardServiceAt(registry.DefaultPath())
 }
 
-// NewBoardServiceAt returns a service reading the registry from a given path.
+// NewBoardServiceAt returns a service reading the registry from a given path,
+// and the preferences from where they normally live.
 func NewBoardServiceAt(registryPath string) *BoardService {
-	return &BoardService{store: store.New(), registryPath: registryPath}
+	return NewBoardServiceWith(registryPath, settings.Path())
+}
+
+// NewBoardServiceWith returns a service reading both of its own files from
+// given paths.
+//
+// The preferences path is injectable for the same reason the registry's is: a
+// test that saves a preference must not write into the developer's own
+// configuration. One did, and left an author in it.
+func NewBoardServiceWith(registryPath, settingsPath string) *BoardService {
+	return &BoardService{
+		store:        store.New(),
+		registryPath: registryPath,
+		settingsPath: settingsPath,
+	}
+}
+
+// SettingsPath is where the preferences are read from and written to.
+func (s *BoardService) SettingsPath() string {
+	if s.settingsPath != "" {
+		return s.settingsPath
+	}
+	return settings.Path()
 }
 
 // ServiceName identifies the service in Wails logs.
@@ -231,7 +257,7 @@ func (s *BoardService) ServiceStartup(_ context.Context, _ application.ServiceOp
 // loadSettings reads the preferences, keeping the defaults when the file is
 // missing or unreadable rather than refusing to start.
 func (s *BoardService) loadSettings() {
-	prefs, err := settings.Load()
+	prefs, err := settings.LoadFrom(s.SettingsPath())
 
 	s.mu.Lock()
 	s.prefs = prefs
@@ -240,7 +266,7 @@ func (s *BoardService) loadSettings() {
 			Kind:   ProblemRegistry,
 			Title:  "Preferences could not be read",
 			Detail: err.Error(),
-			Path:   settings.Path(),
+			Path:   s.SettingsPath(),
 		})
 	}
 	s.mu.Unlock()
@@ -675,12 +701,12 @@ func (s *BoardService) Settings() settings.Settings {
 
 // SaveSettings stores the preferences and applies what can be applied at once.
 func (s *BoardService) SaveSettings(next settings.Settings) []Problem {
-	if err := next.Save(); err != nil {
+	if err := next.SaveTo(s.SettingsPath()); err != nil {
 		return []Problem{{
 			Kind:   ProblemRegistry,
 			Title:  "Preferences could not be saved",
 			Detail: err.Error(),
-			Path:   settings.Path(),
+			Path:   s.SettingsPath(),
 		}}
 	}
 	s.mu.Lock()
