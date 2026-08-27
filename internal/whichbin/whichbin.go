@@ -52,6 +52,11 @@ func Look(name string) (string, bool, error) {
 			return p, false, nil
 		}
 	}
+	// Last, and only now, ask the owner's shell. See shell.go for why this is
+	// not simply what the whole package does.
+	if p, ok := askShell(name); ok {
+		return p, false, nil
+	}
 	return "", false, fmt.Errorf("%s: %w", name, ErrNotFound)
 }
 
@@ -88,7 +93,12 @@ func dirs() []string {
 		return filepath.Join(append([]string{v}, rest...)...)
 	}
 	add(
+		// pnpm keeps its own binaries directly in PNPM_HOME and the ones it
+		// installs globally in bin underneath it, so both are searched. Only
+		// the first was, which is why a CLI installed with `pnpm add -g` was
+		// reported missing from a directory the message then listed.
 		env("PNPM_HOME"),
+		env("PNPM_HOME", "bin"),
 		env("BUN_INSTALL", "bin"),
 		env("VOLTA_HOME", "bin"),
 		env("CARGO_HOME", "bin"),
@@ -111,6 +121,7 @@ func dirs() []string {
 			in("bin"),
 			in(".claude", "local"), // Claude Code's own local install
 			in(".local", "share", "pnpm"),
+			in(".local", "share", "pnpm", "bin"),
 			in(".bun", "bin"),
 			in(".deno", "bin"),
 			in(".volta", "bin"),

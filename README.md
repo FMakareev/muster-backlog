@@ -86,7 +86,9 @@ Muster is worth having when the answer to _what is happening across everything I
 | [golangci-lint](https://golangci-lint.run)             | v2.13.1 (needed by the git hooks) |
 | [Backlog.md CLI](https://github.com/MrLesk/Backlog.md) | 1.48.0 minimum, 1.50.1 recommended (at runtime, not to build) |
 
-Muster looks for the CLI on PATH first and then in the places package managers install it — pnpm, npm, bun, cargo, `~/.local/bin` — because an application started from a desktop launcher does not inherit a shell's PATH, and neither does the CLI it runs: the binary pnpm installs is a shell script ending in `exec node`, and node is usually installed the same way. Both are handled. If it still cannot be found, the message names every directory that was searched, and Preferences takes an explicit path.
+Muster looks for the CLI on PATH first and then in the places package managers install it — pnpm, npm, bun, cargo, `~/.local/bin` — because an application started from a desktop launcher does not inherit a shell's PATH, and neither does the CLI it runs: the binary pnpm installs is a shell script ending in `exec node`, and node is usually installed the same way. Both are handled.
+
+If none of that finds it, it asks your login shell — `$SHELL -lic 'command -v backlog'` — which reads the profile where the PATH entry was written in the first place. That costs about a second and a half, so it is the last thing tried and the answer is kept for the rest of the session; it is also what makes the search work for an install location nobody thought to list. If even the shell does not know, the message names every directory that was searched and says the shell was asked, and Preferences takes an explicit path.
 
 1.48.0 is the floor because that is the version the [format contract](<backlog/docs/doc-3 - Backlog.md-Format-Contract.md>) was measured against; 1.50.1 writes byte-identical files but reports two failures that 1.48.0 swallows, so it is what the author runs. Muster never relies on an exit code for a write whose result it can check.
 

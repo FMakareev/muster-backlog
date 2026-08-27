@@ -38,6 +38,9 @@ func TestFoundInAPackageManagerBinWithNothingOnPath(t *testing.T) {
 	t.Setenv("PNPM_HOME", "")
 	t.Setenv("BUN_INSTALL", "")
 	t.Setenv("NPM_CONFIG_PREFIX", "")
+	// Nothing to ask a shell. The last resort reads the owner's real profile,
+	// which is the point of it and the one thing a fake HOME cannot isolate.
+	t.Setenv("SHELL", "")
 
 	found, searched := backlogcli.Find()
 	if len(found) == 0 || found[0] != want {
@@ -74,6 +77,13 @@ func TestNotFoundNamesEverywhereItLooked(t *testing.T) {
 	t.Setenv("PNPM_HOME", "")
 	t.Setenv("BUN_INSTALL", "")
 	t.Setenv("NPM_CONFIG_PREFIX", "")
+
+	// Two things a fake HOME does not cover, and both reached into the
+	// developer's own directories until they were set: XDG_DATA_HOME, which
+	// was still pointing at the real ~/.local/share, and the login shell,
+	// whose whole purpose is to answer from the owner's real profile.
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	t.Setenv("SHELL", "")
 
 	found, searched := backlogcli.Find()
 	if len(found) != 0 {
@@ -191,5 +201,63 @@ func TestABinaryThatCannotRunIsPassedOver(t *testing.T) {
 	}
 	if runner.Version() != "1.50.1" {
 		t.Errorf("version is %q", runner.Version())
+	}
+}
+
+// pnpm keeps its own binaries directly in PNPM_HOME and the ones it installs
+// globally in bin underneath it. Only the first was searched, so a CLI put
+// there by `pnpm add -g` was reported missing — and the message then listed
+// every directory except the one holding it.
+func TestFoundInThePnpmGlobalBin(t *testing.T) {
+	home := t.TempDir()
+	pnpm := filepath.Join(home, ".local", "share", "pnpm")
+	want := fakeCLI(t, filepath.Join(pnpm, "bin"), "1.50.1")
+
+	// A desktop launcher's environment: nothing useful on PATH, no shell to
+	// fall back to, and no PNPM_HOME either, because that is exported by a
+	// shell rc file the launcher never read.
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", filepath.Join(t.TempDir(), "empty"))
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("PNPM_HOME", "")
+	t.Setenv("BUN_INSTALL", "")
+	t.Setenv("NPM_CONFIG_PREFIX", "")
+	t.Setenv("SHELL", "")
+
+	found, searched := backlogcli.Find()
+	if len(found) == 0 || found[0] != want {
+		t.Fatalf("found %v, want %q (looked in %v)", found, want, searched)
+	}
+
+	// And the same when the shell did export PNPM_HOME.
+	t.Setenv("PNPM_HOME", pnpm)
+	if found, searched := backlogcli.Find(); len(found) == 0 || found[0] != want {
+		t.Fatalf("with PNPM_HOME set, found %v, want %q (looked in %v)", found, want, searched)
+	}
+}
+
+// The message names the shell when there is one to ask, because a list of
+// directories alone reads as though a fixed list was the whole search.
+func TestTheSearchSaysTheShellWasAsked(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", filepath.Join(t.TempDir(), "empty"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	t.Setenv("PNPM_HOME", "")
+	t.Setenv("SHELL", "/usr/bin/some-shell")
+
+	_, searched := backlogcli.Find()
+	last := searched[len(searched)-1]
+	if !strings.Contains(last, "login shell") || !strings.Contains(last, "some-shell") {
+		t.Errorf("the search does not say the shell was asked: %q", last)
+	}
+
+	// And does not claim it when there is no shell.
+	t.Setenv("SHELL", "")
+	_, searched = backlogcli.Find()
+	for _, entry := range searched {
+		if strings.Contains(entry, "login shell") {
+			t.Errorf("claimed a shell was asked when there is none: %q", entry)
+		}
 	}
 }

@@ -40,6 +40,14 @@ func Find() ([]string, []string) {
 			found = append(found, candidate)
 		}
 	}
+
+	// Said last because it is done last, and said at all because a message
+	// listing only directories reads as though a fixed list was the whole
+	// search — which is the complaint it earned when the list turned out to be
+	// missing somebody's directory. Claimed only when there is a shell to ask.
+	if shell := strings.TrimSpace(os.Getenv("SHELL")); shell != "" {
+		searched = append(searched, "your login shell ("+shell+")")
+	}
 	return found, searched
 }
 
@@ -115,7 +123,13 @@ func candidateDirs() []string {
 		}
 	}
 
-	add(os.Getenv("PNPM_HOME"))
+	// Both, because pnpm keeps its own binaries directly in PNPM_HOME and the
+	// ones it installs globally in bin underneath it. Only the first was
+	// listed, so a CLI installed with `pnpm add -g` was reported missing and
+	// the message then printed every directory except the one it was in.
+	if pnpm := os.Getenv("PNPM_HOME"); pnpm != "" {
+		add(pnpm, filepath.Join(pnpm, "bin"))
+	}
 	if bun := os.Getenv("BUN_INSTALL"); bun != "" {
 		add(filepath.Join(bun, "bin"))
 	}
@@ -131,7 +145,9 @@ func candidateDirs() []string {
 		}
 		add(
 			filepath.Join(data, "pnpm"),
+			filepath.Join(data, "pnpm", "bin"),
 			filepath.Join(home, ".local", "share", "pnpm"),
+			filepath.Join(home, ".local", "share", "pnpm", "bin"),
 			filepath.Join(home, ".bun", "bin"),
 			filepath.Join(home, ".local", "bin"),
 			filepath.Join(home, ".npm-global", "bin"),
