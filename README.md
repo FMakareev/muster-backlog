@@ -111,6 +111,41 @@ wails3 task package   # .deb, .rpm, .pkg.tar.zst and an AppImage into bin/
 
 Before trusting a build, walk the [smoke checklist](backlog/docs/doc-5%20-%20v0.1-smoke-checklist.md). It takes a few minutes and every step in it has failed at least once.
 
+## Talking to an agent
+
+`muster mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It draws no window and needs none — an MCP client spawns it and talks over a pipe, whether or not the desktop application is open.
+
+Backlog.md already ships its own MCP server, and it is per-project: an agent gets one repository at a time. This one answers across every project you have registered, which is the only reason it exists.
+
+Point a client at the binary:
+
+```json
+{
+  "mcpServers": {
+    "muster": { "command": "muster", "args": ["mcp"] }
+  }
+}
+```
+
+For Claude Code, `claude mcp add muster -- muster mcp` does the same thing.
+
+| Tool | Answers |
+| :-- | :-- |
+| `list_projects` | every registered project, its task count by status, and the statuses, priorities and types it declares |
+| `list_tasks` | tasks across all projects or one, with the board's filters |
+| `get_task` | one task in full: body, criteria, plan, notes, references |
+| `search` | text across tasks, drafts, documents, decisions and milestones |
+| `list_milestones` | milestones with their progress |
+| `list_entities` | documents, decisions, drafts or milestones, with their bodies |
+| `create_task` | writes a task, or captures a note into the inbox |
+| `set_field` | status, priority, assignee or milestone, one task at a time |
+| `set_label` | adds or removes a label |
+| `set_section` | replaces a description, plan or notes |
+
+Start with `list_projects`: ids and statuses are per-project, and nothing else makes sense without knowing which projects exist.
+
+Every write goes through the `backlog` CLI, exactly as the interface does — there is still one writer. Every tool that names a project resolves it against the registry and refuses anything else, so an agent cannot reach a folder you have not registered; asking for one lists what is registered instead. Reads work even when the CLI is missing, since an agent asking what is in flight has no use for it.
+
 ## Configuration
 
 Muster keeps one file of its own, at `$XDG_CONFIG_HOME/muster/projects.yml` — or `~/.config/muster/projects.yml` when `XDG_CONFIG_HOME` is unset. It records **where** projects are and how to display them, and nothing else:
