@@ -9,6 +9,7 @@
   import SectionEditor from "./SectionEditor.svelte";
   import TaskControls from "./TaskControls.svelte";
   import TaskLifecycle from "./TaskLifecycle.svelte";
+  import TaskRelations from "./TaskRelations.svelte";
   import {
     closeTask,
     findInProject,
@@ -287,39 +288,11 @@
         {@render field("Created", shortDate(String(entity.Created ?? "")))}
       </dl>
 
-      {#if (entity.Dependencies?.length ?? 0) > 0}
-        <section>
-          <h3
-            class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
-          >
-            Depends on
-          </h3>
-          <ul class="mt-1 flex flex-wrap gap-2">
-            {#each entity.Dependencies ?? [] as id (id)}
-              {@const found = dependency(id)}
-              <li>
-                {#if found}
-                  <button
-                    type="button"
-                    class="border-b border-chalk-faint font-mono text-data text-chalk hover:border-chalk"
-                    title={found.entity.Title}
-                    onclick={() => follow(id)}
-                  >
-                    {id}
-                  </button>
-                {:else}
-                  <span
-                    class="font-mono text-data text-chalk-faint"
-                    title="No task with this id in {task.projectName}"
-                  >
-                    {id}
-                  </span>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        </section>
-      {/if}
+      <TaskRelations
+        {task}
+        onOpen={follow}
+        resolves={(id) => dependency(id) !== null}
+      />
 
       {#if subtasks.length > 0}
         <section>

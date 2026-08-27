@@ -171,12 +171,35 @@
     api.intercept("move-card", (raw) => {
       // The intercept signature covers every store action, so narrow to what
       // a move actually carries rather than asserting a shape.
-      const event = raw as { id?: string | number; column?: string };
+      const event = raw as {
+        id?: string | number;
+        column?: string;
+        before?: string | number;
+      };
       const task =
         event.id === undefined ? undefined : byID.get(String(event.id));
       const target = event.column;
       if (!task || !target) return true;
-      if (task.entity.Status === target) return true;
+
+      // The card it was dropped in front of, or nothing for the end of the
+      // column. That is all manual order needs: the ordinal is worked out from
+      // the neighbours on the other side.
+      const before =
+        event.before === undefined
+          ? ""
+          : (byID.get(String(event.before))?.id ?? "");
+
+      if (task.entity.Status === target) {
+        void BoardService.Reorder(task.project, task.id, before).then(
+          (result) => {
+            if (!result.ok && result.problem) {
+              notify(`${result.problem.title}: ${result.problem.detail}`);
+            }
+            void refresh();
+          },
+        );
+        return true;
+      }
 
       if (!canMove(task.project, target)) {
         notify(
@@ -187,14 +210,27 @@
       }
 
       // Write through the CLI, then take whatever the files say afterwards.
-      void BoardService.SetStatus(task.project, task.id, target).then(
-        (result) => {
-          if (!result.ok && result.problem) {
-            notify(`${result.problem.title}: ${result.problem.detail}`);
+      // A card dropped at a particular place in another column is two changes,
+      // and both are made: the status, then the position, or it would land
+      // wherever its old ordinal happened to put it.
+      void BoardService.SetStatus(task.project, task.id, target)
+        .then(async (result) => {
+          if (!result.ok) {
+            if (result.problem) {
+              notify(`${result.problem.title}: ${result.problem.detail}`);
+            }
+            return;
           }
-          void refresh();
-        },
-      );
+          const moved = await BoardService.Reorder(
+            task.project,
+            task.id,
+            before,
+          );
+          if (!moved.ok && moved.problem) {
+            notify(`${moved.problem.title}: ${moved.problem.detail}`);
+          }
+        })
+        .finally(() => void refresh());
       return true;
     });
   }

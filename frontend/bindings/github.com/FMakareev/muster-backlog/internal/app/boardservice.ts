@@ -289,6 +289,24 @@ export function RemoveProject(path: string): $CancellablePromise<$models.WriteRe
 }
 
 /**
+ * Reorder puts a task in front of another one in its own column.
+ * 
+ * beforeID is the task it was dropped in front of, or "" for the end of the
+ * column - which is exactly what the board's drag reports. The new ordinal is
+ * the midpoint between the neighbours, which is the shape the format already
+ * carries: two ordinals in the author's corpus are hand-set midpoints written
+ * by Backlog.md's own web interface.
+ * 
+ * Ordinals are neither unique nor mandatory, so where there is no room between
+ * the neighbours the column is restacked at multiples of 1000 first. That is a
+ * write per task in one column of one project, and only when the gaps have
+ * been used up.
+ */
+export function Reorder(projectPath: string, taskID: string, beforeID: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1633487765, projectPath, taskID, beforeID);
+}
+
+/**
  * ReviseDraft rewrites a draft, in its own project or another one.
  * 
  * Backlog.md has no `draft edit`: `task edit` refuses a DRAFT id outright.
@@ -345,10 +363,47 @@ export function SetAssignee(projectPath: string, taskID: string, assignee: strin
 }
 
 /**
+ * SetDependencies replaces what a task waits on.
+ * 
+ * Ids are checked against the project before the CLI is asked, because the
+ * commonest mistake here is a reference to a task in another project - ids
+ * collide freely across projects - and saying so without running a command is
+ * both faster and clearer than the CLI's own message.
+ */
+export function SetDependencies(projectPath: string, taskID: string, ids: string[] | null): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(700059123, projectPath, taskID, ids);
+}
+
+/**
+ * SetDocumentation replaces a task's documentation links.
+ */
+export function SetDocumentation(projectPath: string, taskID: string, docs: string[] | null): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(2898838736, projectPath, taskID, docs);
+}
+
+/**
+ * SetModifiedFiles replaces a task's modified-file list.
+ * 
+ * The list can be changed but not emptied, because Backlog.md has no way to
+ * empty it: --modified-file "" exits 0 and does nothing. Saying so is better
+ * than a control that appears to work.
+ */
+export function SetModifiedFiles(projectPath: string, taskID: string, files: string[] | null): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(777220808, projectPath, taskID, files);
+}
+
+/**
  * SetPriority sets a task's priority.
  */
 export function SetPriority(projectPath: string, taskID: string, priority: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(192072010, projectPath, taskID, priority);
+}
+
+/**
+ * SetReferences replaces a task's references.
+ */
+export function SetReferences(projectPath: string, taskID: string, refs: string[] | null): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(547097472, projectPath, taskID, refs);
 }
 
 /**

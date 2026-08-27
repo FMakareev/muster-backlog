@@ -84,6 +84,84 @@ func (r *Runner) PromoteDraft(ctx context.Context, dir, draftID string) error {
 	return err
 }
 
+// SetDependencies replaces a task's dependency list.
+//
+// The CLI checks that each id exists in the project and refuses the whole
+// edit naming the ones it could not find, so nothing partial is written.
+func (r *Runner) SetDependencies(ctx context.Context, dir, taskID string, ids []string) error {
+	if len(trimmed(ids)) == 0 {
+		return r.edit(ctx, dir, taskID, "--clear-deps")
+	}
+	return r.edit(ctx, dir, taskID, "--dep", strings.Join(trimmed(ids), ","))
+}
+
+// SetReferences replaces a task's references. Empty clears them.
+func (r *Runner) SetReferences(ctx context.Context, dir, taskID string, refs []string) error {
+	if len(trimmed(refs)) == 0 {
+		return r.edit(ctx, dir, taskID, "--clear-refs")
+	}
+	args := []string{}
+	for _, ref := range trimmed(refs) {
+		args = append(args, "--ref", ref)
+	}
+	return r.edit(ctx, dir, taskID, args...)
+}
+
+// SetDocumentation replaces a task's documentation links. Empty clears them.
+func (r *Runner) SetDocumentation(ctx context.Context, dir, taskID string, docs []string) error {
+	if len(trimmed(docs)) == 0 {
+		return r.edit(ctx, dir, taskID, "--clear-docs")
+	}
+	args := []string{}
+	for _, doc := range trimmed(docs) {
+		args = append(args, "--doc", doc)
+	}
+	return r.edit(ctx, dir, taskID, args...)
+}
+
+// ErrCannotClear reports a field the CLI can set but not empty.
+var ErrCannotClear = errors.New("this field cannot be cleared")
+
+// SetModifiedFiles replaces a task's modified-file list.
+//
+// It cannot empty one. Measured on 1.50.1: there is no --clear-modified-files,
+// and --modified-file "" exits 0 having changed nothing - a silent no-op, the
+// worst of the three possible answers. Refusing here is what keeps the
+// interface from offering a control that does nothing.
+func (r *Runner) SetModifiedFiles(ctx context.Context, dir, taskID string, files []string) error {
+	kept := trimmed(files)
+	if len(kept) == 0 {
+		return fmt.Errorf("%w: modified_files", ErrCannotClear)
+	}
+	args := []string{}
+	for _, file := range kept {
+		args = append(args, "--modified-file", file)
+	}
+	return r.edit(ctx, dir, taskID, args...)
+}
+
+// SetOrdinal sets a task's manual ordering value.
+func (r *Runner) SetOrdinal(ctx context.Context, dir, taskID string, ordinal int) error {
+	return r.edit(ctx, dir, taskID, "--ordinal", fmt.Sprint(ordinal))
+}
+
+// NonEmpty drops blanks, so an interface that renders an empty row does not
+// write one. Exported because a caller has to know whether a list is empty
+// before deciding whether the CLI can express what it wants.
+func NonEmpty(values []string) []string { return trimmed(values) }
+
+// trimmed drops blanks, so an interface that renders an empty row does not
+// write one.
+func trimmed(values []string) []string {
+	var kept []string
+	for _, value := range values {
+		if v := strings.TrimSpace(value); v != "" {
+			kept = append(kept, v)
+		}
+	}
+	return kept
+}
+
 // CompleteTask moves a finished task into completed/.
 //
 // The CLI refuses anything that is not at its project's own last declared
