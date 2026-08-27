@@ -23,6 +23,36 @@ import (
 // Version is reported to the client during initialisation.
 const Version = "0.1.0"
 
+// instructions are sent at connection, before any tool is called.
+//
+// An agent working inside a project has two overlapping ways to do the same
+// thing: this server, and that project's own backlog CLI. The boundary is not
+// subtle and it is worth stating once, at the top, rather than hoping it can
+// be inferred from ten tool descriptions.
+//
+// It is stated here rather than in the projects' own instruction files because
+// this server will usually be running outside any project. Something that
+// spans repositories cannot rely on any one of them to explain it.
+const instructions = `Muster answers about every Backlog.md project a person ` +
+	`has registered, at once. That is the only thing it does that anything ` +
+	`else cannot.
+
+Use it to see across projects: what is in flight elsewhere, which milestone a ` +
+	`project is working towards, whether something is already tracked in ` +
+	`another repository, or to search every project at once. Start with ` +
+	`list_projects - ids, statuses, priorities and types are per-project, and ` +
+	`nothing else here makes sense without knowing which projects exist.
+
+Do not use it as a substitute for the backlog CLI when you are working inside ` +
+	`a project. That CLI is the authority there: it has the whole command ` +
+	`surface, it runs where you already are, and the project's own ` +
+	`instructions are written around it. The writes offered here are a small ` +
+	`subset, meant for changing something in a project you are not in.
+
+Every write goes through that same CLI, so a change made here is a change ` +
+	`made the ordinary way. Nothing reaches a folder the person has not ` +
+	`registered.`
+
 // Server answers MCP calls from the same data the interface reads.
 type Server struct {
 	registryPath string
@@ -71,7 +101,7 @@ func (s *Server) MCP() *mcp.Server {
 		Name:    "muster",
 		Title:   "Muster: every Backlog.md project at once",
 		Version: Version,
-	}, nil)
+	}, &mcp.ServerOptions{Instructions: instructions})
 
 	s.addReadTools(server)
 	s.addWriteTools(server)

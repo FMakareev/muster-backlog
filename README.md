@@ -148,6 +148,8 @@ For Claude Code, `claude mcp add --scope user muster -- muster mcp` does the sam
 
 Start with `list_projects`: ids and statuses are per-project, and nothing else makes sense without knowing which projects exist.
 
+The server says where its boundary is, so an agent does not have to guess. It sends an instruction at connection — use this to see across projects, not as a substitute for the `backlog` CLI when you are working inside one, where that CLI is the authority and has the whole command surface. Each write tool repeats it, because a tool description is read on its own. And every tool says whether it changes anything, so a client can stop asking permission for questions and keep asking for changes.
+
 Every write goes through the `backlog` CLI, exactly as the interface does — there is still one writer. Every tool that names a project resolves it against the registry and refuses anything else, so an agent cannot reach a folder you have not registered; asking for one lists what is registered instead. Reads work even when the CLI is missing, since an agent asking what is in flight has no use for it.
 
 ## Configuration

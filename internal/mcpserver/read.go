@@ -82,9 +82,23 @@ func shortDate(value string) string {
 	return value[:min(10, len(value))]
 }
 
+// reads marks a tool as answering without changing anything, so a client can
+// stop asking permission for questions and keep asking for changes.
+func reads() *mcp.ToolAnnotations {
+	no := false
+	return &mcp.ToolAnnotations{
+		ReadOnlyHint:   true,
+		IdempotentHint: true,
+		// The answer comes from files on this machine, not from anywhere the
+		// client would have to reason about.
+		OpenWorldHint: &no,
+	}
+}
+
 func (s *Server) addReadTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "list_projects",
+		Annotations: reads(),
+		Name:        "list_projects",
 		Description: "Every registered Backlog.md project, with how many tasks " +
 			"it holds, how they are spread across its statuses, and the " +
 			"statuses, priorities and types it declares. Start here: ids and " +
@@ -131,11 +145,15 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Limit           int      `json:"limit,omitempty" jsonschema:"stop after this many; 0 means all of them"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "list_tasks",
+		Annotations: reads(),
+		Name:        "list_tasks",
 		Description: "Tasks across every registered project, or one of them, " +
 			"with the same filters the board has. Archived and completed " +
 			"tasks are left out unless asked for. Bodies are not included: " +
-			"use get_task for one.",
+			"use get_task for one.\n\n" +
+			"This is the tool for looking beyond the project you are in. " +
+			"Inside one, its own backlog CLI lists tasks faster and knows " +
+			"more.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in listTasksIn) (*mcp.CallToolResult, []TaskSummary, error) {
 		s.Reload()
 		var projects []string
@@ -170,7 +188,8 @@ func (s *Server) addReadTools(server *mcp.Server) {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "get_task",
+		Annotations: reads(),
+		Name:        "get_task",
 		Description: "One task in full: description, acceptance criteria, " +
 			"implementation plan, notes, final summary, references and " +
 			"documentation. Ids are unique only inside a project, so the " +
@@ -223,7 +242,8 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Excerpt string `json:"excerpt,omitempty"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "search",
+		Annotations: reads(),
+		Name:        "search",
 		Description: "Find anything across every project by text: tasks, " +
 			"drafts, documents, decisions and milestones. Titles rank above " +
 			"bodies.",
@@ -254,7 +274,8 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Total   int    `json:"total"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "list_milestones",
+		Annotations: reads(),
+		Name:        "list_milestones",
 		Description: "Milestones across every project with their progress. " +
 			"This is the axis these backlogs are planned on, so it is usually " +
 			"the answer to what is being worked towards.",
@@ -310,7 +331,8 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Path    string `json:"path"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "list_entities",
+		Annotations: reads(),
+		Name:        "list_entities",
 		Description: "Documents, decisions, drafts or milestones, with their " +
 			"bodies. Decisions are where a project records why a choice was " +
 			"made, which is often what an agent is missing.",

@@ -75,6 +75,34 @@ func (s *Server) write(
 	return ok(Written{Project: p.Registry.DisplayName, ID: id, Did: did})
 }
 
+// writes marks a tool as changing something.
+//
+// destructive is for the ones that overwrite what was there: replacing a
+// section throws away the text it replaces, and setting a field forgets the
+// old value. Creating a task adds without taking anything away.
+//
+// None of them is idempotent in the sense the hint means: calling create_task
+// twice makes two tasks.
+func writes(destructive bool) *mcp.ToolAnnotations {
+	no := false
+	return &mcp.ToolAnnotations{
+		ReadOnlyHint:    false,
+		DestructiveHint: &destructive,
+		IdempotentHint:  false,
+		OpenWorldHint:   &no,
+	}
+}
+
+// insideAProject is the sentence every write carries.
+//
+// A tool description is read on its own, out of the order they were written
+// in, so each one has to say where it does and does not belong rather than
+// relying on the server's instructions having been read first.
+const insideAProject = "\n\nUse this to change something in a project you " +
+	"are not working inside. If you are in the project already, its own " +
+	"backlog CLI is the authority: it has the whole command surface, and " +
+	"this offers a small part of it."
+
 func (s *Server) addWriteTools(server *mcp.Server) {
 	type createIn struct {
 		Project            string   `json:"project" jsonschema:"the registered project to create it in"`
@@ -92,10 +120,11 @@ func (s *Server) addWriteTools(server *mcp.Server) {
 		Draft              bool     `json:"draft,omitempty" jsonschema:"capture it into the inbox instead of onto the board"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "create_task",
+		Annotations: writes(false),
+		Name:        "create_task",
 		Description: "Write a new task into a project, or a note into its " +
 			"inbox. Everything goes through the Backlog.md CLI, so the file " +
-			"is whatever that would have written.",
+			"is whatever that would have written." + insideAProject,
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in createIn) (*mcp.CallToolResult, Written, error) {
 		did := "created a task"
 		if in.Draft {
@@ -126,10 +155,12 @@ func (s *Server) addWriteTools(server *mcp.Server) {
 		Value string `json:"value" jsonschema:"the new value; empty clears the field where the CLI allows it"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "set_field",
+		Annotations: writes(true),
+		Name:        "set_field",
 		Description: "Change one field of one task: status, priority, " +
 			"assignee or milestone. A status must be one the project declares " +
-			"- they differ between projects and the CLI rejects anything else.",
+			"- they differ between projects and the CLI rejects anything " +
+			"else. The old value is not kept." + insideAProject,
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in setIn) (*mcp.CallToolResult, Written, error) {
 		field := strings.ToLower(strings.TrimSpace(in.Field))
 		return s.write(in.Project, "set "+field, func(cli *backlogcli.Runner, p store.ProjectState) (string, error) {
@@ -158,10 +189,12 @@ func (s *Server) addWriteTools(server *mcp.Server) {
 		Remove bool   `json:"remove,omitempty" jsonschema:"remove it instead of adding it"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "set_label",
+		Annotations: writes(false),
+		Name:        "set_label",
 		Description: "Add a label to a task, or take one off. Labels are " +
 			"free-form and shared across a project, so list_projects and " +
-			"list_tasks are worth reading before inventing a new one.",
+			"list_tasks are worth reading before inventing a new one." +
+			insideAProject,
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in labelIn) (*mcp.CallToolResult, Written, error) {
 		did := "added a label"
 		if in.Remove {
@@ -182,10 +215,12 @@ func (s *Server) addWriteTools(server *mcp.Server) {
 		Text    string `json:"text" jsonschema:"the whole section; it is replaced, not appended to"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "set_section",
+		Annotations: writes(true),
+		Name:        "set_section",
 		Description: "Replace a task's description, implementation plan or " +
 			"implementation notes. The whole section is replaced, because " +
-			"that is what the CLI takes.",
+			"that is what the CLI takes - read it with get_task first, or " +
+			"whatever was there is gone." + insideAProject,
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in sectionIn) (*mcp.CallToolResult, Written, error) {
 		section := strings.ToLower(strings.TrimSpace(in.Section))
 		return s.write(in.Project, "set the "+section, func(cli *backlogcli.Runner, p store.ProjectState) (string, error) {

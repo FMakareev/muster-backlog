@@ -328,3 +328,57 @@ func fileWith(t *testing.T, dir, match string) string {
 	t.Fatalf("nothing matching %q in %s", match, dir)
 	return ""
 }
+
+// What a client is told, checked from the client's side rather than by reading
+// the code that sets it. An instruction the client never receives is a
+// comment.
+func TestTheClientIsToldWhenToUseThisAndWhenNotTo(t *testing.T) {
+	session, _ := bench(t)
+
+	said := session.InitializeResult().Instructions
+	switch {
+	case said == "":
+		t.Fatal("the server sends no instructions at all")
+	case !strings.Contains(said, "every Backlog.md project"):
+		t.Errorf("the instructions do not say what this is for: %q", said)
+	case !strings.Contains(said, "backlog CLI"):
+		t.Errorf("the instructions do not say what to use instead: %q", said)
+	case !strings.Contains(said, "list_projects"):
+		t.Errorf("the instructions do not say where to start: %q", said)
+	}
+
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+
+	reads := map[string]bool{
+		"list_projects": true, "list_tasks": true, "get_task": true,
+		"search": true, "list_milestones": true, "list_entities": true,
+	}
+	for _, tool := range tools.Tools {
+		t.Run(tool.Name, func(t *testing.T) {
+			if tool.Annotations == nil {
+				t.Fatalf("%s says nothing about whether it changes anything", tool.Name)
+			}
+			if reads[tool.Name] {
+				if !tool.Annotations.ReadOnlyHint {
+					t.Errorf("%s answers a question but is not marked read-only", tool.Name)
+				}
+				return
+			}
+
+			// A write, then. It must not claim to be read-only, and its
+			// description has to bound itself: a tool description is read on
+			// its own, so relying on the instructions having been read first
+			// would be relying on luck.
+			if tool.Annotations.ReadOnlyHint {
+				t.Errorf("%s changes files but is marked read-only", tool.Name)
+			}
+			if !strings.Contains(tool.Description, "backlog CLI") {
+				t.Errorf("%s does not say when to prefer the project's own CLI: %q",
+					tool.Name, tool.Description)
+			}
+		})
+	}
+}
