@@ -108,12 +108,23 @@ export const showSettings = atom<boolean>(false);
 /** Whether the create-task form is open. */
 export const showNewTask = atom<boolean>(false);
 
-export function openNewTask(): void {
+/**
+ * The status the form should start on, empty for the project's own default.
+ *
+ * Set when the form is opened from somewhere that already implies one - the
+ * plus on a board column means "a task here", and asking for the status again
+ * on the next screen would be asking a question that has been answered.
+ */
+export const newTaskStatus = atom<string>("");
+
+export function openNewTask(status = ""): void {
+  newTaskStatus.set(status);
   showNewTask.set(true);
 }
 
 export function closeNewTask(): void {
   showNewTask.set(false);
+  newTaskStatus.set("");
 }
 
 /** Whether the problems panel is open. */

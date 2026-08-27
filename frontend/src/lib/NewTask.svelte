@@ -7,6 +7,7 @@
   import {
     closeNewTask,
     defaultProject,
+    newTaskStatus,
     openTask,
     rememberProject,
     showNewTask,
@@ -57,10 +58,22 @@
     // the first option the moment it renders, which used to count as a
     // choice and left the focused project ignored.
     project = defaultProject();
+    // Whoever opened the form may already have said where the task goes: the
+    // plus on a board column means a task in that column.
+    status = $newTaskStatus;
     titleField?.focus();
   });
 
   const statuses = $derived(config?.statuses ?? []);
+
+  // A status only exists inside a project. Changing the project to one that
+  // does not declare the chosen status falls back to that project's default
+  // rather than sending it a status the CLI will reject.
+  $effect(() => {
+    if (status && statuses.length > 0 && !statuses.includes(status)) {
+      status = "";
+    }
+  });
   const priorities = $derived(config?.priorities ?? []);
   const types = $derived(config?.types ?? []);
 

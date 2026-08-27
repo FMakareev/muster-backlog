@@ -12,7 +12,7 @@
     refresh,
   } from "./board";
   import { notify } from "./notices";
-  import { groupBy, openTask, visibleTasks } from "./ui";
+  import { groupBy, openNewTask, openTask, visibleTasks } from "./ui";
   import Card from "./Card.svelte";
 
   /**
@@ -150,15 +150,28 @@
   }
 
   function init(api: KanbanInstanceApi): void {
-    // Creating, editing and deleting cards from the board are refused for now.
-    // The board would happily do all three in memory, showing a task the files
-    // on disk do not have — which is the one thing this application must never
-    // do. They arrive when the CLI writes them.
-    for (const action of ["add-card", "update-card", "delete-card"] as const) {
+    /**
+     * The plus on a column head, and a double-click on its empty space.
+     *
+     * Both ask for a task in that column, and both are answered by opening
+     * the form on that status rather than by the board's own inline editor.
+     * The card is still refused: the board would add it in memory, showing a
+     * task the files on disk do not have, which is the one thing this
+     * application must never do. The task appears when the CLI has written it.
+     */
+    api.intercept("add-card", (raw) => {
+      const event = raw as { card?: { column?: string } };
+      openNewTask(event.card?.column ?? "");
+      return false;
+    });
+
+    // Editing and deleting a card in place stay refused, and the panel is
+    // where both of those actually live.
+    for (const action of ["update-card", "delete-card"] as const) {
       api.intercept(action, () => {
         notify(
-          "Tasks are created and edited with the backlog CLI. " +
-            "Muster only moves them for now.",
+          "Open a task to edit it. A task is filed or archived from its " +
+            "panel rather than deleted from the board.",
         );
         return false;
       });

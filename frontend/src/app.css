@@ -453,12 +453,16 @@ input[type="checkbox"] {
   color: #f7768e;
 }
 
-/* SVAR's per-column add control creates a card in memory. Muster writes only
-   through the backlog CLI, so an affordance that would produce a task the files
-   do not have is removed rather than left to be discovered. The corresponding
-   store actions are refused as well, so this is presentation, not the guard. */
+/* SVAR's per-column add control was hidden while the board could not create
+   anything: it would have added a card in memory, showing a task the files on
+   disk do not have. It opens the create form on that column's status now, so
+   the button is real and only needs to look like the rest of the header. */
 .wx-willow-dark-theme .wx-add {
-  display: none;
+  color: var(--color-chalk-faint);
+}
+
+.wx-willow-dark-theme .wx-add:hover {
+  color: var(--color-chalk);
 }
 
 /* SVAR's themes load an icon font and Open Sans from cdn.svar.dev. A

@@ -163,7 +163,7 @@
       class="flex items-baseline gap-1.5 rounded-sm px-2 py-1 text-body
              text-chalk-dim hover:text-chalk"
       title="Create a task"
-      onclick={openNewTask}
+      onclick={() => openNewTask()}
     >
       New task
       <kbd class="font-mono text-micro text-chalk-faint">n</kbd>
