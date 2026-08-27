@@ -312,3 +312,53 @@ func TestRevisingKeepsEveryFieldADraftCanHold(t *testing.T) {
 			note.Priority, len(note.AcceptanceCriteria))
 	}
 }
+
+// Notes open in the panel, which used to mean every task-editing control was
+// offered against one — and every one of them failed, because Backlog.md has
+// no way to edit a draft. The interface no longer offers them; this is the
+// floor under that.
+func TestTaskEditsAreRefusedOnANote(t *testing.T) {
+	if _, err := exec.LookPath("backlog"); err != nil {
+		t.Skip("the backlog CLI is not installed")
+	}
+	one := newProject(t, "one", map[string]string{
+		"task-1 - a.md": task("TASK-1", "A real task", "To Do"),
+	})
+	draft(t, one, "DRAFT-4", "A captured thought", time.Now())
+	s := startService(t, withRegistry(t, one))
+
+	attempts := map[string]func() app.WriteResult{
+		"description": func() app.WriteResult {
+			return s.SetSection(one, "DRAFT-4", "description", "Rewritten.")
+		},
+		"title":    func() app.WriteResult { return s.SetTitle(one, "DRAFT-4", "Renamed") },
+		"status":   func() app.WriteResult { return s.SetStatus(one, "DRAFT-4", "To Do") },
+		"priority": func() app.WriteResult { return s.SetPriority(one, "DRAFT-4", "high") },
+		"label":    func() app.WriteResult { return s.AddLabel(one, "DRAFT-4", "idea") },
+		"deps": func() app.WriteResult {
+			return s.SetDependencies(one, "DRAFT-4", []string{"TASK-1"})
+		},
+	}
+	for name, attempt := range attempts {
+		result := attempt()
+		if result.OK {
+			t.Errorf("editing the %s of a note was accepted", name)
+			continue
+		}
+		if result.Problem == nil || !strings.Contains(result.Problem.Title, "not a task") {
+			t.Errorf("%s: refused with %+v, want it named as a note", name, result.Problem)
+		}
+		// And the CLI's own confusing answer never reaches the interface.
+		if result.Problem != nil && strings.Contains(result.Problem.Detail, "not found") {
+			t.Errorf("%s: the CLI's message leaked: %q", name, result.Problem.Detail)
+		}
+	}
+
+	// The note is untouched, and the same edits still work on a real task.
+	if got := s.Drafts(); len(got) != 1 || got[0].Entity.Title != "A captured thought" {
+		t.Errorf("the note changed: %v", titles(got))
+	}
+	if result := s.SetTitle(one, "TASK-1", "Still editable"); !result.OK {
+		t.Errorf("editing a real task broke: %+v", result.Problem)
+	}
+}

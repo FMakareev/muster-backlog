@@ -44,7 +44,7 @@ func (s *BoardService) SetDependencies(projectPath, taskID string, ids []string)
 		}}
 	}
 
-	return s.write(projectPath, fmt.Sprintf("%s's dependencies could not be changed", taskID),
+	return s.editTask(projectPath, taskID, fmt.Sprintf("%s's dependencies could not be changed", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.SetDependencies(context.Background(),
 				s.dataDirFor(projectPath), taskID, ids)
@@ -61,7 +61,7 @@ func plural(ids []string) string {
 
 // SetReferences replaces a task's references.
 func (s *BoardService) SetReferences(projectPath, taskID string, refs []string) WriteResult {
-	return s.write(projectPath, fmt.Sprintf("%s's references could not be changed", taskID),
+	return s.editTask(projectPath, taskID, fmt.Sprintf("%s's references could not be changed", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.SetReferences(context.Background(),
 				s.dataDirFor(projectPath), taskID, refs)
@@ -70,7 +70,7 @@ func (s *BoardService) SetReferences(projectPath, taskID string, refs []string) 
 
 // SetDocumentation replaces a task's documentation links.
 func (s *BoardService) SetDocumentation(projectPath, taskID string, docs []string) WriteResult {
-	return s.write(projectPath, fmt.Sprintf("%s's documentation could not be changed", taskID),
+	return s.editTask(projectPath, taskID, fmt.Sprintf("%s's documentation could not be changed", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.SetDocumentation(context.Background(),
 				s.dataDirFor(projectPath), taskID, docs)
@@ -92,7 +92,7 @@ func (s *BoardService) SetModifiedFiles(projectPath, taskID string, files []stri
 			Path: projectPath,
 		}}
 	}
-	return s.write(projectPath, fmt.Sprintf("%s's file list could not be changed", taskID),
+	return s.editTask(projectPath, taskID, fmt.Sprintf("%s's file list could not be changed", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.SetModifiedFiles(context.Background(),
 				s.dataDirFor(projectPath), taskID, files)
@@ -133,7 +133,7 @@ func (s *BoardService) Reorder(projectPath, taskID, beforeID string) WriteResult
 		ordinal, _ = placeAmong(column, taskID, beforeID)
 	}
 
-	return s.write(projectPath, fmt.Sprintf("%s could not be reordered", taskID),
+	return s.editTask(projectPath, taskID, fmt.Sprintf("%s could not be reordered", taskID),
 		func(cli *backlogcli.Runner) error {
 			return cli.SetOrdinal(context.Background(),
 				s.dataDirFor(projectPath), taskID, ordinal)
@@ -233,7 +233,7 @@ func (s *BoardService) restack(projectPath string, column []backlog.Entity) Writ
 		if e.HasOrdinal && *e.Ordinal == want {
 			continue
 		}
-		result := s.write(projectPath, fmt.Sprintf("%s could not be reordered", id),
+		result := s.editTask(projectPath, id, fmt.Sprintf("%s could not be reordered", id),
 			func(cli *backlogcli.Runner) error {
 				return cli.SetOrdinal(context.Background(),
 					s.dataDirFor(projectPath), id, want)

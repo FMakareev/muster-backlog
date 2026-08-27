@@ -14,6 +14,7 @@
     closeTask,
     findInProject,
     openTask,
+    screen,
     selectedTask,
     toggleTaskView,
   } from "./ui";
@@ -91,6 +92,43 @@
   }
 
   const centred = $derived($settings.taskView === "centred");
+
+  /**
+   * A note is not editable here, and the panel must not pretend it is.
+   *
+   * Backlog.md has no way to edit a draft: every control below writes through
+   * `task edit`, which answers "not found" for a DRAFT id. Opening notes in the
+   * panel is worth having - it is the only place the whole body can be read -
+   * so what changes is what is offered, not whether it opens.
+   */
+  const isNote = $derived(task?.kind === "draft");
+
+  // Promoting from here is the same act as promoting from the inbox: the note
+  // becomes a task and the panel follows it, so the thing you were reading is
+  // the thing you can now edit.
+  let promoting = $state(false);
+
+  async function promoteNote(): Promise<void> {
+    if (!task || promoting) return;
+    promoting = true;
+    const result = await BoardService.PromoteDraft(task.project, task.id);
+    promoting = false;
+    if (!result.ok) {
+      notify(
+        result.problem
+          ? `${result.problem.title}: ${result.problem.detail}`
+          : "The note could not be promoted.",
+      );
+      return;
+    }
+    const project = task.project;
+    await refresh();
+    if (result.taskId) {
+      openTask({ project, kind: "task", class: "active", id: result.taskId });
+    } else {
+      closeTask();
+    }
+  }
 
   let renaming = $state(false);
   let titleDraft = $state("");
@@ -240,7 +278,9 @@
         </p>
       {/if}
 
-      {#if renaming}
+      {#if isNote}
+        <h1 class="text-title font-semibold text-chalk">{entity.Title}</h1>
+      {:else if renaming}
         <input
           class="w-full"
           bind:value={titleDraft}
@@ -265,7 +305,38 @@
         </button>
       {/if}
 
-      <TaskControls {task} />
+      {#if isNote}
+        <!-- What a note can actually have done to it, in the place a person
+             is standing when they want to do it. -->
+        <section class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span class="text-body text-chalk-faint">
+            Backlog.md cannot edit a note. Promote it to work on it, or rewrite
+            it in the inbox — which captures a new note and discards this one.
+          </span>
+          <span class="ml-auto flex shrink-0 items-baseline gap-4">
+            <button
+              type="button"
+              class="min-h-6 font-mono text-data text-chalk hover:underline"
+              disabled={promoting}
+              onclick={promoteNote}
+            >
+              {promoting ? "promoting…" : "promote it"}
+            </button>
+            <button
+              type="button"
+              class="min-h-6 font-mono text-data text-chalk-faint hover:text-chalk"
+              onclick={() => {
+                closeTask();
+                screen.set("inbox");
+              }}
+            >
+              rewrite it in the inbox
+            </button>
+          </span>
+        </section>
+      {:else}
+        <TaskControls {task} />
+      {/if}
 
       <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-data">
         {#snippet field(label: string, value: string)}
@@ -282,11 +353,13 @@
         {@render field("Created", shortDate(String(entity.Created ?? "")))}
       </dl>
 
-      <TaskRelations
-        {task}
-        onOpen={follow}
-        resolves={(id) => dependency(id) !== null}
-      />
+      {#if !isNote}
+        <TaskRelations
+          {task}
+          onOpen={follow}
+          resolves={(id) => dependency(id) !== null}
+        />
+      {/if}
 
       {#if subtasks.length > 0}
         <section>
@@ -320,21 +393,60 @@
         </section>
       {/if}
 
-      <CriteriaEditor
-        project={task.project}
-        taskID={task.id}
-        criteria={entity.AcceptanceCriteria}
-      />
-
-      {#each sections as [key, heading] (key)}
-        <SectionEditor
+      {#if isNote}
+        <!-- Read-only, and complete: the whole body is why a note opens here. -->
+        {#each sections as [key, heading] (key)}
+          {#if sectionSource(key).trim()}
+            <section>
+              <h3
+                class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+              >
+                {heading}
+              </h3>
+              <div class="mt-1">
+                <Markdown
+                  source={sectionSource(key)}
+                  project={task.project}
+                  {onTaskRef}
+                />
+              </div>
+            </section>
+          {/if}
+        {/each}
+        {#if (entity.AcceptanceCriteria?.length ?? 0) > 0}
+          <section>
+            <h3
+              class="text-micro font-medium tracking-[0.14em] text-chalk-faint uppercase"
+            >
+              Acceptance criteria
+            </h3>
+            <ul class="mt-1 flex flex-col gap-1">
+              {#each entity.AcceptanceCriteria ?? [] as criterion (criterion.Index)}
+                <li class="text-body text-chalk-dim">
+                  #{criterion.Index}
+                  {criterion.Text}
+                </li>
+              {/each}
+            </ul>
+          </section>
+        {/if}
+      {:else}
+        <CriteriaEditor
           project={task.project}
           taskID={task.id}
-          section={key}
-          {heading}
-          source={sectionSource(key)}
+          criteria={entity.AcceptanceCriteria}
         />
-      {/each}
+
+        {#each sections as [key, heading] (key)}
+          <SectionEditor
+            project={task.project}
+            taskID={task.id}
+            section={key}
+            {heading}
+            source={sectionSource(key)}
+          />
+        {/each}
+      {/if}
 
       {#if sectionSource("final_summary").trim()}
         <section>
