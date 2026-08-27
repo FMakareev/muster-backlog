@@ -45,7 +45,8 @@
       role="dialog"
       aria-label="Preferences"
       tabindex="-1"
-      class="flex w-[32rem] flex-col gap-4 rounded-sm border border-rule bg-ink-sunken p-4"
+      class="flex max-h-[calc(100%-6rem)] w-[32rem] flex-col gap-4 overflow-y-auto
+             rounded-sm border border-rule bg-ink-sunken p-4"
     >
       <header class="flex items-baseline gap-3">
         <h2 class="text-title font-semibold">Preferences</h2>
