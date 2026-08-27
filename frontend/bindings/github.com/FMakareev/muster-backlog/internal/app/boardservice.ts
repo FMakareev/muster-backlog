@@ -26,6 +26,13 @@ export function AddLabel(projectPath: string, taskID: string, label: string): $C
 }
 
 /**
+ * AddMilestone creates a milestone in a project.
+ */
+export function AddMilestone(projectPath: string, name: string, description: string): $CancellablePromise<$models.CreateResult> {
+    return $Call.ByID(887181141, projectPath, name, description);
+}
+
+/**
  * AddProject registers an existing folder.
  * 
  * The folder must already hold a Backlog.md project: registering a folder that
@@ -315,6 +322,13 @@ export function RemoveProject(path: string): $CancellablePromise<$models.WriteRe
 }
 
 /**
+ * RenameMilestone renames a milestone and the tasks that point at it.
+ */
+export function RenameMilestone(projectPath: string, $from: string, to: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(1336817938, projectPath, $from, to);
+}
+
+/**
  * Reorder puts a task in front of another one in its own column.
  * 
  * beforeID is the task it was dropped in front of, or "" for the end of the
@@ -330,6 +344,18 @@ export function RemoveProject(path: string): $CancellablePromise<$models.WriteRe
  */
 export function Reorder(projectPath: string, taskID: string, beforeID: string): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(1633487765, projectPath, taskID, beforeID);
+}
+
+/**
+ * RetireMilestone takes a milestone out of the active list.
+ * 
+ * Two commands behind one idea, and the difference is what happens to the
+ * tasks rather than to the file: both archive/milestones it. Keeping the tasks
+ * as they are is `milestone archive`; clearing or reassigning them is
+ * `milestone remove`. The caller says which, because both rewrite other files.
+ */
+export function RetireMilestone(projectPath: string, name: string, handling: string, reassignTo: string): $CancellablePromise<$models.WriteResult> {
+    return $Call.ByID(657282333, projectPath, name, handling, reassignTo);
 }
 
 /**

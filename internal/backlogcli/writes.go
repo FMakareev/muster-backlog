@@ -84,6 +84,75 @@ func (r *Runner) PromoteDraft(ctx context.Context, dir, draftID string) error {
 	return err
 }
 
+// AddMilestone creates a milestone and returns its id.
+func (r *Runner) AddMilestone(ctx context.Context, dir, name, description string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", fmt.Errorf("a milestone needs a name")
+	}
+	args := []string{"milestone", "add", name}
+	args = appendIf(args, "-d", description)
+
+	out, err := r.Exec(ctx, dir, args...)
+	if err != nil {
+		return "", err
+	}
+	return milestoneID.FindString(out), nil
+}
+
+var milestoneID = regexp.MustCompile(`(?i)\bm-[0-9]+`)
+
+// RenameMilestone renames a milestone, keeping its id.
+//
+// The tasks that point at it are updated by default, and that is left on: a
+// milestone renamed while its tasks still name the old one is a rename that
+// only half happened.
+func (r *Runner) RenameMilestone(ctx context.Context, dir, from, to string) error {
+	_, err := r.Exec(ctx, dir, "milestone", "rename", from, to)
+	return err
+}
+
+// ArchiveMilestone moves a milestone into archive/milestones and leaves the
+// tasks pointing at it exactly as they are.
+func (r *Runner) ArchiveMilestone(ctx context.Context, dir, name string) error {
+	_, err := r.Exec(ctx, dir, "milestone", "archive", name)
+	return err
+}
+
+// TaskHandling is what becomes of the tasks when a milestone is removed.
+type TaskHandling string
+
+// The three the CLI offers.
+const (
+	// HandlingClear empties the milestone field on every task that named it.
+	HandlingClear TaskHandling = "clear"
+	// HandlingKeep leaves the tasks pointing at a milestone that is no longer
+	// in the active list.
+	HandlingKeep TaskHandling = "keep"
+	// HandlingReassign moves them to another milestone.
+	HandlingReassign TaskHandling = "reassign"
+)
+
+// RemoveMilestone removes a milestone and decides what happens to its tasks.
+//
+// It archives the file exactly as ArchiveMilestone does - measured, not
+// assumed: both end up in archive/milestones. The difference between them is
+// entirely in what they do to the tasks, which is why the choice has to be
+// made explicitly rather than hidden behind a word.
+func (r *Runner) RemoveMilestone(
+	ctx context.Context, dir, name string, handling TaskHandling, reassignTo string,
+) error {
+	if handling == HandlingReassign && strings.TrimSpace(reassignTo) == "" {
+		return fmt.Errorf("reassigning needs a milestone to reassign to")
+	}
+	args := []string{"milestone", "remove", name, "--task-handling", string(handling)}
+	if handling == HandlingReassign {
+		args = append(args, "--reassign-to", reassignTo)
+	}
+	_, err := r.Exec(ctx, dir, args...)
+	return err
+}
+
 // NewDocument is what `backlog doc create` accepts.
 //
 // No content: the command does not take any. A document is created empty and

@@ -4,6 +4,7 @@
   import { milestones, projects, refresh } from "./board";
   import AddProject from "./AddProject.svelte";
   import { projectColour } from "./colour";
+  import Milestones from "./Milestones.svelte";
   import { notify } from "./notices";
 
   /**
@@ -18,6 +19,9 @@
   let adding = $state(false);
   let busy = $state("");
   let confirming = $state("");
+  // Which project's milestones are open. Closed by default: this is the
+  // registry screen, and most visits to it are not about milestones.
+  let planning = $state("");
 
   function milestonesOf(path: string) {
     return $milestones.filter((m) => m.project === path);
@@ -188,6 +192,15 @@
                 {milestone.done}/{milestone.total}
               </span>
             {/each}
+            <button
+              type="button"
+              class="min-h-6 font-mono text-micro text-chalk-faint hover:text-chalk"
+              aria-expanded={planning === project.path}
+              onclick={() =>
+                (planning = planning === project.path ? "" : project.path)}
+            >
+              {planning === project.path ? "done" : "milestones"}
+            </button>
           {:else}
             <span class="text-body text-chalk">{project.problem}</span>
           {/if}
@@ -249,6 +262,13 @@
             {/if}
           </span>
         </div>
+
+        {#if planning === project.path}
+          <Milestones
+            project={project.path}
+            milestones={milestonesOf(project.path)}
+          />
+        {/if}
       </li>
     {/each}
   </ul>

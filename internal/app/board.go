@@ -641,6 +641,13 @@ func (s *BoardService) Milestones() []MilestoneView {
 		}
 
 		for _, m := range p.Scanned.Milestones {
+			// Archived milestones are retired: off the board, out of the
+			// grouping, and not offered as somewhere to put a task. They were
+			// listed alongside the live ones until retiring one from the
+			// application made it obvious.
+			if m.Class != backlog.ClassActive {
+				continue
+			}
 			c := counts[strings.ToLower(m.ID)]
 			// A task may name a milestone by title rather than by id.
 			if t := counts[strings.ToLower(m.Title)]; t[0] > c[0] {
