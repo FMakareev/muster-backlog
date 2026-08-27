@@ -20,6 +20,45 @@
 
   let busy = $state(false);
 
+  /**
+   * What this build is, and what it is talking to.
+   *
+   * A bug report opens by asking both, and until now neither could be
+   * answered from inside the application: the version was not stamped
+   * anywhere and the CLI's was read by the backend and shown to nobody. One
+   * button puts both on the clipboard, because a person copying a version
+   * string by hand copies it wrong.
+   */
+  let appVersion = $state("");
+  let cliVersion = $state("");
+  let copied = $state(false);
+
+  $effect(() => {
+    if (!$showSettings) return;
+    void BoardService.AppVersion()
+      .then((v) => (appVersion = v))
+      .catch(() => (appVersion = "unknown"));
+    void BoardService.CLIVersion()
+      .then((v) => (cliVersion = v))
+      .catch(() => (cliVersion = ""));
+  });
+
+  const versions = $derived(
+    `Muster ${appVersion || "unknown"}\n` +
+      `Backlog.md CLI ${cliVersion || "not found"}\n` +
+      `${navigator.userAgent}`,
+  );
+
+  async function copyVersions(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(versions);
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    } catch {
+      notify("The clipboard refused. The versions are shown above to copy.");
+    }
+  }
+
   async function save(next: typeof $settings): Promise<void> {
     busy = true;
     settings.set(next);
@@ -169,6 +208,25 @@
           On a wide screen a panel against the edge puts the text a long way
           from where the eye rests.
         </p>
+      </div>
+
+      <div class="{row} border-t border-rule pt-3">
+        <span class={label}>Versions</span>
+        <p class="font-mono text-data text-chalk-dim">
+          Muster {appVersion || "…"}
+        </p>
+        <p class="font-mono text-data text-chalk-dim">
+          Backlog.md CLI {cliVersion || "not found"}
+        </p>
+        <div class="flex items-baseline gap-3">
+          <button
+            type="button"
+            class="min-h-6 font-mono text-data text-chalk-faint hover:text-chalk"
+            onclick={copyVersions}
+          >
+            {copied ? "copied" : "copy for a bug report"}
+          </button>
+        </div>
       </div>
     </section>
   </div>

@@ -94,6 +94,16 @@ export function Analytics(): $CancellablePromise<$models.AnalyticsView[] | null>
 }
 
 /**
+ * AppVersion is what this build of Muster calls itself.
+ * 
+ * Exposed to the interface because a bug report asks for it and the person
+ * writing one should not have to find a terminal to answer.
+ */
+export function AppVersion(): $CancellablePromise<string> {
+    return $Call.ByID(3255458695);
+}
+
+/**
  * ArchiveTask moves a task into archive/tasks.
  */
 export function ArchiveTask(projectPath: string, taskID: string): $CancellablePromise<$models.WriteResult> {

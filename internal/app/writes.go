@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/FMakareev/muster-backlog/internal/backlogcli"
+	"github.com/FMakareev/muster-backlog/internal/buildinfo"
 )
 
 // ProblemCLI reports that the backlog CLI is missing or unusable. It is
@@ -359,4 +360,12 @@ func (s *BoardService) SetAcceptanceCriteria(projectPath, taskID string, items [
 			return cli.SetAcceptanceCriteria(
 				context.Background(), s.dataDirFor(projectPath), taskID, items)
 		})
+}
+
+// AppVersion is what this build of Muster calls itself.
+//
+// Exposed to the interface because a bug report asks for it and the person
+// writing one should not have to find a terminal to answer.
+func (s *BoardService) AppVersion() string {
+	return buildinfo.Version()
 }

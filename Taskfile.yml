@@ -3,6 +3,16 @@ version: '3'
 vars:
   APP_NAME: "muster"
   BIN_DIR: "bin"
+  # The version, from the one place it is written. build/config.yml is what
+  # wails reads for every manifest and what release-please updates, so
+  # stamping the binary from it means the number in `muster --version`, in the
+  # .deb, and in the macOS bundle cannot disagree. The Taskfile's own
+  # `version: '3'` is not indented and is not matched.
+  PRODUCT_VERSION:
+    sh: sed -n 's/^[[:space:]][[:space:]]*version:[[:space:]]*"\(.*\)".*/\1/p' build/config.yml | head -1
+  # Stamped into every build. A binary that cannot say which version it is
+  # makes every bug report start with a guess.
+  VERSION_LDFLAGS: '-X github.com/FMakareev/muster-backlog/internal/buildinfo.stamped={{.PRODUCT_VERSION}}'
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "pnpm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
   # Target OS for build/package/run. Defaults to the host OS, and is overridden

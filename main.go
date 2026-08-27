@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/FMakareev/muster-backlog/internal/app"
+	"github.com/FMakareev/muster-backlog/internal/buildinfo"
 	"github.com/FMakareev/muster-backlog/internal/mcpserver"
 	"github.com/FMakareev/muster-backlog/internal/registry"
 )
@@ -37,6 +39,17 @@ func main() {
 	// over stdio and never constructs the application, which is what lets an
 	// agent use Muster whether or not the window is open - and what an MCP
 	// client expects: a process it spawns and talks to over a pipe.
+	// Asked before anything is built, because a person checking which version
+	// they are running should not have to start a window to find out - and
+	// because it is the first line of any bug report.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--version", "-version", "-v", "version":
+			fmt.Println(buildinfo.Line())
+			return
+		}
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		if err := serveMCP(); err != nil && !errors.Is(err, context.Canceled) {
 			log.Fatalf("muster mcp: %v", err)

@@ -1,0 +1,46 @@
+name: release-please
+
+# Versioning is derived from history rather than maintained by hand. This
+# reads the Conventional Commits on the default branch and keeps a release
+# pull request open with the next version and the changelog entries it implies.
+# Merging that pull request is what cuts a release: it tags, writes
+# CHANGELOG.md, updates build/config.yml — the one place the version is
+# written, which the build stamps into the binary — and publishes a GitHub
+# release.
+#
+# Building the artefacts that hang off that release is a separate workflow, so
+# a failure to package cannot leave a half-made tag behind.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      # Writing the release commit, the tag and the release itself.
+      contents: write
+      # Opening and updating the release pull request.
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+    outputs:
+      # Whether this push produced a release, and which tag, so the workflow
+      # that builds the artefacts can hang off it.
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}

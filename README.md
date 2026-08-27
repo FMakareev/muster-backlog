@@ -198,6 +198,14 @@ There is no registry file until you create one, and that is not an error — the
 
 Everything is held in memory and reloaded from disk rather than cached in a database. Measured over nine real projects and 884 tasks: a full load takes about 100 ms, reloading a single project after a file change costs about 11 ms, and a filtered query over the whole corpus takes under a millisecond. The startup budget is 2 seconds, enforced by a test.
 
+## Versions and releases
+
+`muster --version` answers, and so does Preferences, which shows the same number beside the Backlog.md CLI's and copies both for a bug report.
+
+The version is written in exactly one place, `build/config.yml`. The build stamps the binary from it, the `.deb` takes its version from it, and [release-please](https://github.com/googleapis/release-please) bumps it: it reads the Conventional Commits on the default branch, keeps a release pull request open with the next version and the changelog entries it implies, and merging that pull request tags the release. A build that was never stamped calls itself `dev` rather than claiming a number nobody released.
+
+What a version number promises while the major version is still zero — which releases may break something, and what counts as breaking — is written at the top of [CHANGELOG.md](CHANGELOG.md).
+
 ## Git hooks
 
 Installed by `pnpm install`. They format and lint staged files before a commit, check the commit message against the convention, and run tests before a push. See [CONTRIBUTING.md](CONTRIBUTING.md).
