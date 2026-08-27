@@ -4,6 +4,15 @@ includes:
   common: ../Taskfile.yml
 
 vars:
+  # nfpm builds the Maintainer field from these. Nothing was setting them, so
+  # every .deb, .rpm and Arch package declared an empty maintainer, which is a
+  # malformed package. They come from git, which already knows who is
+  # building, so nothing personal is committed to the repository.
+  MAINTAINER_NAME:
+    sh: git config user.name 2>/dev/null || echo "Muster"
+  MAINTAINER_EMAIL:
+    sh: git config user.email 2>/dev/null || echo "noreply@github.com"
+
   # Signing configuration - edit these values for your project
   # PGP_KEY: "path/to/signing-key.asc"
   # SIGN_ROLE: "builder"  # Options: origin, maint, archive, builder
@@ -158,6 +167,8 @@ tasks:
     # binary is stamped with.
     env:
       PRODUCT_VERSION: '{{.PRODUCT_VERSION}}'
+      GIT_COMMITTER_NAME: '{{.MAINTAINER_NAME}}'
+      GIT_COMMITTER_EMAIL: '{{.MAINTAINER_EMAIL}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
@@ -169,6 +180,8 @@ tasks:
     # binary is stamped with.
     env:
       PRODUCT_VERSION: '{{.PRODUCT_VERSION}}'
+      GIT_COMMITTER_NAME: '{{.MAINTAINER_NAME}}'
+      GIT_COMMITTER_EMAIL: '{{.MAINTAINER_EMAIL}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
@@ -180,6 +193,8 @@ tasks:
     # binary is stamped with.
     env:
       PRODUCT_VERSION: '{{.PRODUCT_VERSION}}'
+      GIT_COMMITTER_NAME: '{{.MAINTAINER_NAME}}'
+      GIT_COMMITTER_EMAIL: '{{.MAINTAINER_EMAIL}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
@@ -194,10 +209,16 @@ tasks:
       # this happens to be built with, which is not a word anyone types into a
       # launcher looking for this. Corrected after generating rather than by
       # hand, so a rebuild cannot quietly put them back.
+      # Idempotent on purpose. This task runs more than once in a packaging
+      # run, and an unconditional append put a second Comment= in the file:
+      # appimagetool refuses a desktop entry with a duplicate key, so the
+      # AppImage failed at the very last step. Any existing Comment is removed
+      # before one is added.
       - >-
         sed -i
         -e 's/^Name=.*/Name=Muster/'
         -e 's/^Keywords=.*/Keywords=backlog;tasks;kanban;markdown;/'
+        -e '/^Comment=/d'
         -e '/^Name=/a Comment=A local-first task manager over all your Backlog.md projects at once'
         "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop"
     vars:

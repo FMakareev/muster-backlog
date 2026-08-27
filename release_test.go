@@ -138,3 +138,40 @@ func TestTheChangelogKeepsAnUnreleasedSection(t *testing.T) {
 		t.Error("CHANGELOG.md does not say what a version number means before 1.0")
 	}
 }
+
+// The desktop entry is corrected after the generator writes it, and that
+// correction runs more than once in a packaging run. An unconditional append
+// put a second Comment= in the file, which appimagetool rejects outright —
+// the AppImage failed at the very last step, after two minutes of bundling.
+func TestTheDesktopCorrectionIsIdempotent(t *testing.T) {
+	content, err := os.ReadFile("build/linux/Taskfile.yml")
+	if err != nil {
+		t.Fatalf("read the linux Taskfile: %v", err)
+	}
+	text := string(content)
+
+	appends := strings.Contains(text, "/^Name=/a Comment=")
+	deletes := strings.Contains(text, "-e '/^Comment=/d'")
+	if appends && !deletes {
+		t.Error("the desktop entry gains a Comment line without removing any first, so running the task twice writes two and appimagetool refuses the file")
+	}
+}
+
+// nfpm builds the Maintainer field from these two variables. Nothing set them
+// for a long time, so every package declared "Maintainer: <>".
+func TestThePackagesNameAMaintainer(t *testing.T) {
+	content, err := os.ReadFile("build/linux/Taskfile.yml")
+	if err != nil {
+		t.Fatalf("read the linux Taskfile: %v", err)
+	}
+	text := string(content)
+	for _, want := range []string{"GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("nothing sets %s, so the package declares an empty maintainer", want)
+		}
+	}
+	// And the version, which was the same kind of silence.
+	if strings.Count(text, "PRODUCT_VERSION:") < 3 {
+		t.Error("not every packaging task sets PRODUCT_VERSION, so some package takes an unset variable as its version")
+	}
+}
