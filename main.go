@@ -22,6 +22,16 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// The application's own icon, carried in the binary.
+//
+// The same mark the packaging uses, from the same vector, at the size the
+// desktop actually draws it: a tray at about twenty-two pixels, a window
+// switcher at forty-eight. Embedding the 1024px sheet would mean resampling
+// it hard on every draw for nothing.
+//
+//go:embed build/appicon-256.png
+var mark []byte
+
 func main() {
 	// One binary, two ways in. `muster mcp` speaks the Model Context Protocol
 	// over stdio and never constructs the application, which is what lets an
@@ -34,9 +44,14 @@ func main() {
 		return
 	}
 
+	// The tray builds its icon from this, so it has to be set before anything
+	// can create one.
+	app.SetMark(mark)
+
 	a := application.New(application.Options{
 		Name:        "Muster",
 		Description: "A local-first desktop task manager over all your Backlog.md projects at once",
+		Icon:        mark,
 		Services: []application.Service{
 			application.NewService(app.NewService()),
 			application.NewService(app.NewBoardService()),
@@ -50,8 +65,13 @@ func main() {
 	})
 
 	window := a.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:   app.MainWindowName,
-		Title:  "Muster",
+		Name:  app.MainWindowName,
+		Title: "Muster",
+		// The window icon is per-platform. Linux is the only platform this
+		// release claims, and LinuxWindow is a value rather than a pointer, so
+		// setting it here changes nothing else: the GPU policy stays at the
+		// same zero value it already had.
+		Linux:  application.LinuxWindow{Icon: mark},
 		Width:  1280,
 		Height: 800,
 		// A board over several projects needs room; below this it stops being readable.

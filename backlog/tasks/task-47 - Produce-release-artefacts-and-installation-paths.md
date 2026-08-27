@@ -4,13 +4,11 @@ title: Produce release artefacts and installation paths
 status: To Do
 assignee: []
 created_date: '2026-08-26 15:03'
-updated_date: '2026-08-26 15:25'
+updated_date: '2026-08-27 20:13'
 labels: []
 milestone: m-4
 dependencies:
-  - TASK-8
-  - TASK-11
-  - TASK-30
+  - TASK-78
 priority: high
 type: chore
 ordinal: 47000

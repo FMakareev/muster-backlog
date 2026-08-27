@@ -3,6 +3,11 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
+# Regenerating this file with `wails3 task common:update:build-assets` puts
+# the template's own defaults back over three of the values below: the version
+# becomes a literal 0.0.0 instead of the build's, the vendor becomes "My
+# Company", and the homepage becomes wails.io. Check those three after any
+# regeneration.
 name: "muster"
 arch: ${GOARCH}
 platform: "linux"
@@ -11,7 +16,7 @@ section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 description: "A local-first desktop task manager over all your Backlog.md projects at once"
-vendor: ""
+vendor: "FMakareev"
 homepage: "https://github.com/FMakareev/muster-backlog"
 license: "MIT"
 release: "1"

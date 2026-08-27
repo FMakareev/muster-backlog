@@ -5,12 +5,12 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "" # The name of the company
+  companyName: "FMakareev" # The name of the company
   productName: "Muster" # The name of the application
   productIdentifier: "dev.muster.backlog" # The unique product identifier
   description: "A local-first desktop task manager over all your Backlog.md projects at once" # The application description
   copyright: "(c) 2026 FMakareev - MIT" # Copyright text
-  comments: "" # Comments
+  comments: "Reads Backlog.md markdown directly and writes only through the backlog CLI" # Comments
   version: "0.0.0" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension

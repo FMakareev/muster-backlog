@@ -102,13 +102,20 @@ wails3 task build
 ./bin/muster
 ```
 
-A window opens with a placeholder board. That is currently the whole of it — there is no registry to point at your projects yet.
+A window opens. On first run there is no registry, so it offers to add a project: point it at any folder — one that already has a `backlog/` directory is registered as it is, and one that does not can be initialised from there. Everything after that is the board over whatever you registered.
 
 Day to day:
 
 ```sh
 wails3 task run       # build and run
 wails3 task dev       # run with frontend hot reload
+```
+
+The application's icon is `build/appicon.svg`. Every other size and format comes from it — the packaged PNG, the one embedded in the binary, the Windows `.ico`, the macOS `.icns` — so the mark cannot differ between platforms:
+
+```sh
+node build/icon/render.mjs          # needs a global Playwright; see the script
+wails3 task common:generate:icons
 ```
 
 Linux packages, if you want them rather than the bare binary:

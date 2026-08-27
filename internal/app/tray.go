@@ -23,7 +23,22 @@ var (
 	trayMode bool
 	// trayUnavailable records that the desktop has nowhere to put an icon.
 	trayUnavailable bool
+	// markPNG is the application's own icon, handed in from main so the
+	// picture lives with the build assets rather than being duplicated here.
+	// Empty in tests and in server mode, where nothing draws it.
+	markPNG []byte
 )
+
+// SetMark gives the application its icon.
+//
+// A tray item with no icon is a blank space with a menu behind it, which is
+// exactly what this was until the mark existed. Called once from main, before
+// anything can create a tray.
+func SetMark(png []byte) {
+	trayMu.Lock()
+	markPNG = png
+	trayMu.Unlock()
+}
 
 // applyWindowBehaviour turns the tray on or off to match the preference.
 //
@@ -76,6 +91,16 @@ func TrayUnavailable() bool {
 func newTray(app *application.App) *application.SystemTray {
 	t := app.SystemTray.New()
 	t.SetLabel("Muster")
+
+	// The size a tray actually draws is the reason the mark is a letter built
+	// from blocks rather than an arrangement of small parts: it is about
+	// twenty-two pixels here.
+	trayMu.Lock()
+	mark := markPNG
+	trayMu.Unlock()
+	if len(mark) > 0 {
+		t.SetIcon(mark)
+	}
 
 	menu := application.NewMenu()
 	menu.Add("Show Muster").OnClick(func(*application.Context) {

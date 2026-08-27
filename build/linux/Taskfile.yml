@@ -171,6 +171,17 @@ tasks:
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
       - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" -categories "{{.CATEGORIES}}"
+      # The generator writes the binary's name where the product's name goes,
+      # leaves no description at all, and sets Keywords=wails - the framework
+      # this happens to be built with, which is not a word anyone types into a
+      # launcher looking for this. Corrected after generating rather than by
+      # hand, so a rebuild cannot quietly put them back.
+      - >-
+        sed -i
+        -e 's/^Name=.*/Name=Muster/'
+        -e 's/^Keywords=.*/Keywords=backlog;tasks;kanban;markdown;/'
+        -e '/^Name=/a Comment=A local-first task manager over all your Backlog.md projects at once'
+        "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop"
     vars:
       APP_NAME: '{{.APP_NAME}}'
       EXEC: '{{.APP_NAME}}'

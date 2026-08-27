@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Muster</title>
+  <rect x="154" y="154" width="132" height="132" rx="20" fill="#7aa2f7"/>
+  <rect x="154" y="300" width="132" height="132" rx="20" fill="#7aa2f7"/>
+  <rect x="154" y="446" width="132" height="132" rx="20" fill="#7aa2f7"/>
+  <rect x="154" y="592" width="132" height="132" rx="20" fill="#7aa2f7"/>
+  <rect x="154" y="738" width="132" height="132" rx="20" fill="#7aa2f7"/>
+  <rect x="738" y="154" width="132" height="132" rx="20" fill="#e0af68"/>
+  <rect x="738" y="300" width="132" height="132" rx="20" fill="#e0af68"/>
+  <rect x="738" y="446" width="132" height="132" rx="20" fill="#e0af68"/>
+  <rect x="738" y="592" width="132" height="132" rx="20" fill="#e0af68"/>
+  <rect x="738" y="738" width="132" height="132" rx="20" fill="#e0af68"/>
+  <rect x="300" y="300" width="132" height="132" rx="20" fill="#9ece6a"/>
+  <rect x="446" y="446" width="132" height="132" rx="20" fill="#e6e9f0"/>
+  <rect x="592" y="300" width="132" height="132" rx="20" fill="#bb9af7"/>
+</svg>

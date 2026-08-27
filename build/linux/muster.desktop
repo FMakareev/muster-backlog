@@ -1,10 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=muster
+Name=Muster
+Comment=A local-first task manager over all your Backlog.md projects at once
 Exec=muster
 Icon=muster
 Categories=Development;
 Terminal=false
-Keywords=wails
+Keywords=backlog;tasks;kanban;markdown;
 Version=1.0
 StartupNotify=false
