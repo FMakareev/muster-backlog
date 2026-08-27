@@ -6,6 +6,7 @@
   } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
   import { settings } from "./board";
   import { notify } from "./notices";
+  import AgentClients from "./AgentClients.svelte";
   import { dismissable } from "./overlay";
   import { showSettings } from "./ui";
 
@@ -101,6 +102,10 @@
           projects and suits nobody who needs larger type. This moves type,
           spacing and controls together.
         </p>
+      </div>
+
+      <div class="border-t border-rule pt-3">
+        <AgentClients />
       </div>
 
       <div class={row}>

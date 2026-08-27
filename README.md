@@ -117,6 +117,10 @@ Before trusting a build, walk the [smoke checklist](backlog/docs/doc-5%20-%20v0.
 
 Backlog.md already ships its own MCP server, and it is per-project: an agent gets one repository at a time. This one answers across every project you have registered, which is the only reason it exists.
 
+Preferences has a list of the AI clients this machine has, and connects one in a click: it runs that client's own command, or writes that client's own configuration file. It shows exactly what it will run or write before doing either, keeps a backup of any file it changes, and disconnects by the same button. Nine clients are described in a data file — `internal/agents/agents.json` — because clients change their syntax more often than this ships; `MUSTER_AGENTS_FILE` points at a replacement without a rebuild.
+
+The rest of this section is what that button does, for anyone who would rather do it themselves.
+
 Point a client at the binary:
 
 ```json
@@ -127,7 +131,7 @@ Point a client at the binary:
 }
 ```
 
-For Claude Code, `claude mcp add muster -- muster mcp` does the same thing.
+For Claude Code, `claude mcp add --scope user muster -- muster mcp` does the same thing. Use the binary's full path unless `muster` is on the PATH your client will have — which, for anything started from a desktop launcher, it very likely is not.
 
 | Tool | Answers |
 | :-- | :-- |

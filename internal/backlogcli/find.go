@@ -2,34 +2,37 @@ package backlogcli
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/FMakareev/muster-backlog/internal/whichbin"
 )
 
 // Find locates the Backlog.md CLI and reports everywhere it looked.
 //
-// PATH first, because that is where a correctly set up machine has it and
-// because it is what a person would expect to control. Everything after is for
-// the case this exists to solve: an application started from a desktop
-// launcher inherits the session environment rather than a shell's, so a CLI
-// installed by pnpm, npm, bun or cargo into a directory that only a shell rc
-// file adds to PATH is invisible to it - which is exactly where Backlog.md
+// The looking itself is whichbin's: PATH first, because a PATH entry is the
+// owner saying where a name should come from, then the short list of places
+// installers actually use. That matters here because an application started
+// from a desktop launcher inherits the session environment rather than a
+// shell's, so a CLI installed by pnpm, npm or bun into a directory only a shell
+// rc file adds to PATH is invisible to it - which is exactly where Backlog.md
 // installs, and why a packaged build reported it missing while the same binary
 // ran in a terminal on the same machine.
 //
-// The list of places searched is returned either way. A person who has already
-// installed the thing is not helped by being told to install it; they are
-// helped by seeing where it was looked for.
+// More than one candidate comes back because a file can be there and still not
+// run, and the caller has to be able to try the next one.
 func Find() ([]string, []string) {
-	var found, searched []string
+	searched := []string{"PATH"}
 
-	searched = append(searched, "PATH")
-	if onPath, err := exec.LookPath(BinaryName); err == nil {
-		found = append(found, onPath)
+	var found []string
+	if binary, _ := whichbin.Find(BinaryName); binary != "" {
+		found = append(found, binary)
 	}
 
+	// The explicit list is kept for two reasons whichbin cannot serve: telling
+	// someone where the search went when it failed, and offering a second
+	// candidate when the first is a wrapper that cannot run.
 	for _, dir := range candidateDirs() {
 		candidate := filepath.Join(dir, BinaryName)
 		searched = append(searched, candidate)

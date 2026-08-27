@@ -1,0 +1,196 @@
+{
+  "_comment": "How to add Muster's MCP server to the agent clients people actually use. This is data, not code, because the clients change their command syntax and their config locations more often than we ship: fixing a line here beats a release. MUSTER_AGENTS_FILE points at a replacement file - for tests, and for trying a client before support ships. {command} is the absolute path to this binary, which is spawned with the mcp subcommand; {name} is the server name. Kinds: cli (run the client's own command), config (one entry in its JSON), toml (one table in its TOML, leaving the rest of the file untouched).",
+  "name": "muster",
+  "providers": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "kind": "cli",
+      "bin": "claude",
+      "add": [
+        "mcp",
+        "add",
+        "--scope",
+        "user",
+        "{name}",
+        "--",
+        "{command}",
+        "mcp"
+      ],
+      "remove": [
+        "mcp",
+        "remove",
+        "--scope",
+        "user",
+        "{name}"
+      ],
+      "check": [
+        "mcp",
+        "list"
+      ],
+      "checkContains": "{name}",
+      "note": "Added for your user, so every project sees it.",
+      "docs": "https://docs.claude.com/en/docs/claude-code/mcp"
+    },
+    {
+      "id": "vscode",
+      "label": "VS Code",
+      "kind": "cli",
+      "bin": "code",
+      "add": [
+        "--add-mcp",
+        "{\"name\":\"{name}\",\"type\":\"stdio\",\"command\":\"{command}\",\"args\":[\"mcp\"]}"
+      ],
+      "note": "VS Code has no command to remove a server: use its MCP view, or edit mcp.json.",
+      "docs": "https://code.visualstudio.com/docs/copilot/chat/mcp-servers"
+    },
+    {
+      "id": "cursor",
+      "label": "Cursor",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.cursor/mcp.json",
+        "darwin": "~/.cursor/mcp.json",
+        "windows": "~/.cursor/mcp.json"
+      },
+      "jsonPath": [
+        "mcpServers",
+        "{name}"
+      ],
+      "value": {
+        "command": "{command}",
+        "args": [
+          "mcp"
+        ]
+      },
+      "docs": "https://docs.cursor.com/context/model-context-protocol"
+    },
+    {
+      "id": "windsurf",
+      "label": "Windsurf",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.codeium/windsurf/mcp_config.json",
+        "darwin": "~/.codeium/windsurf/mcp_config.json",
+        "windows": "~/.codeium/windsurf/mcp_config.json"
+      },
+      "jsonPath": [
+        "mcpServers",
+        "{name}"
+      ],
+      "value": {
+        "command": "{command}",
+        "args": [
+          "mcp"
+        ]
+      },
+      "docs": "https://docs.windsurf.com/windsurf/cascade/mcp"
+    },
+    {
+      "id": "antigravity",
+      "label": "Antigravity",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.gemini/config/mcp_config.json",
+        "darwin": "~/.gemini/config/mcp_config.json",
+        "windows": "~/.gemini/config/mcp_config.json"
+      },
+      "jsonPath": [
+        "mcpServers",
+        "{name}"
+      ],
+      "value": {
+        "command": "{command}",
+        "args": [
+          "mcp"
+        ]
+      },
+      "note": "Antigravity wants serverUrl for a remote server; url and httpUrl are ignored there.",
+      "docs": "https://antigravity.google/docs/mcp"
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "kind": "toml",
+      "paths": {
+        "linux": "~/.codex/config.toml",
+        "darwin": "~/.codex/config.toml",
+        "windows": "~/.codex/config.toml"
+      },
+      "section": "mcp_servers.{name}",
+      "lines": [
+        "command = \"{command}\"",
+        "args = [\"mcp\"]"
+      ],
+      "note": "Written into ~/.codex/config.toml, which the CLI and the IDE extension share. codex mcp add does the same thing from a terminal.",
+      "docs": "https://developers.openai.com/codex/mcp"
+    },
+    {
+      "id": "claude-desktop",
+      "label": "Claude Desktop",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.config/Claude/claude_desktop_config.json",
+        "darwin": "~/Library/Application Support/Claude/claude_desktop_config.json",
+        "windows": "~/AppData/Roaming/Claude/claude_desktop_config.json"
+      },
+      "jsonPath": [
+        "mcpServers",
+        "{name}"
+      ],
+      "value": {
+        "command": "{command}",
+        "args": [
+          "mcp"
+        ]
+      },
+      "note": "Claude Desktop speaks stdio only, so the connection goes through mcp-remote (needs Node).",
+      "docs": "https://modelcontextprotocol.io/quickstart/user"
+    },
+    {
+      "id": "zed",
+      "label": "Zed",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.config/zed/settings.json",
+        "darwin": "~/.config/zed/settings.json",
+        "windows": "~/AppData/Roaming/Zed/settings.json"
+      },
+      "jsonPath": [
+        "context_servers",
+        "{name}"
+      ],
+      "value": {
+        "source": "custom",
+        "command": "{command}",
+        "args": [
+          "mcp"
+        ]
+      },
+      "docs": "https://zed.dev/docs/ai/mcp"
+    },
+    {
+      "id": "opencode",
+      "label": "opencode",
+      "kind": "config",
+      "paths": {
+        "linux": "~/.config/opencode/opencode.json",
+        "darwin": "~/.config/opencode/opencode.json",
+        "windows": "~/AppData/Roaming/opencode/opencode.json"
+      },
+      "jsonPath": [
+        "mcp",
+        "{name}"
+      ],
+      "value": {
+        "type": "local",
+        "command": [
+          "{command}",
+          "mcp"
+        ],
+        "enabled": true
+      },
+      "docs": "https://opencode.ai/docs/mcp-servers/"
+    }
+  ]
+}

@@ -12,6 +12,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as agents$0 from "../agents/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as settings$0 from "../settings/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -41,6 +44,38 @@ export function AddMilestone(projectPath: string, name: string, description: str
  */
 export function AddProject(path: string, edit: $models.ProjectEdit): $CancellablePromise<$models.WriteResult> {
     return $Call.ByID(2556526182, path, edit);
+}
+
+/**
+ * AgentApply carries out that plan. Nothing happens without this call.
+ */
+export function AgentApply(id: string, disconnect: boolean): $CancellablePromise<agents$0.Result> {
+    return $Call.ByID(694071789, id, disconnect);
+}
+
+/**
+ * AgentClients lists the clients Muster knows how to connect, and whether each
+ * is installed here. It starts nobody else's program, so it answers at once.
+ */
+export function AgentClients(): $CancellablePromise<agents$0.Status[] | null> {
+    return $Call.ByID(188692845);
+}
+
+/**
+ * AgentConnections is the slow half of that answer: for each installed CLI
+ * client, whether Muster is already in its configuration. Asking means running
+ * the client, so the interface shows the list first and fills these in when
+ * they arrive.
+ */
+export function AgentConnections(): $CancellablePromise<agents$0.Status[] | null> {
+    return $Call.ByID(2368244344);
+}
+
+/**
+ * AgentPlan is exactly what connecting - or disconnecting - would do.
+ */
+export function AgentPlan(id: string, disconnect: boolean): $CancellablePromise<agents$0.Plan> {
+    return $Call.ByID(804291396, id, disconnect);
 }
 
 /**
