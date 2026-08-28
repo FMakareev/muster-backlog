@@ -335,7 +335,7 @@ Cutting it as a draft and publishing it afterwards would close that window, and 
 
 Both halves live in one workflow rather than two, and that is not tidiness: a release created with `GITHUB_TOKEN` raises no `release` event and its tag raises no `push` event, so a workflow keyed on either would sit there and never run.
 
-What a version number promises while the major version is still zero — which releases may break something, and what counts as breaking — is written at the top of [CHANGELOG.md](CHANGELOG.md).
+What a version number promises — which releases may break something, and what counts as breaking — is written at the foot of [CHANGELOG.md](CHANGELOG.md), below the releases, since release-please writes new entries at the top.
 
 ## Git hooks
 

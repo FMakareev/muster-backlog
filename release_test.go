@@ -146,33 +146,36 @@ func TestTheReleaseConfigBumpsTheFileTheBuildReads(t *testing.T) {
 	if !found {
 		t.Error("release-please does not update build/config.yml, so a release would not change the version any build reports")
 	}
-	// The documented policy before 1.0: a minor may break, a patch does not.
-	// Both settings are what make that true rather than aspirational.
-	if !root.BumpMinorPreMajor {
-		t.Error("bump-minor-pre-major is off, so a breaking change would go to 1.0 rather than a minor")
-	}
-	if root.BumpPatchForMinor {
-		t.Error("bump-patch-for-minor-pre-major is on, so a feature would land as a patch, which the versioning policy says does not break anything")
+	// Neither pre-1.0 bump setting is still here. Both govern how versions
+	// move only while the major version is zero, so after v1.0.0 they decide
+	// nothing — and a setting that decides nothing, sitting in the file that
+	// looks like where the policy lives, is read as policy by the next person.
+	// The promise in force is written in CHANGELOG.md.
+	if root.BumpMinorPreMajor || root.BumpPatchForMinor {
+		t.Error("the release config still carries a pre-1.0 bump setting, which has governed nothing since v1.0.0 and reads as though it does")
 	}
 }
 
 // The changelog is where the versioning promise is written down, and where
 // everything unreleased collects.
-func TestTheChangelogKeepsAnUnreleasedSection(t *testing.T) {
+func TestTheChangelogSaysWhatAVersionNumberPromises(t *testing.T) {
 	content, err := os.ReadFile("CHANGELOG.md")
 	if err != nil {
 		t.Fatalf("read CHANGELOG.md: %v", err)
 	}
 	text := string(content)
-	for _, want := range []string{"## Unreleased", "Keep a Changelog", "Semantic Versioning"} {
+	for _, want := range []string{"## Versioning", "Keep a Changelog", "Semantic Versioning"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("CHANGELOG.md does not mention %q", want)
 		}
 	}
-	// What a minor bump means before 1.0 is the whole question a version
-	// number raises here, and it has to be answered in the file itself.
-	if !strings.Contains(text, "Versioning before 1.0") {
-		t.Error("CHANGELOG.md does not say what a version number means before 1.0")
+	// The promise that is in force. A file describing life before 1.0, after
+	// 1.0 shipped, is worse than one saying nothing: it reads as current.
+	if strings.Contains(text, "Versioning before 1.0") {
+		t.Error("CHANGELOG.md still explains what a version means before 1.0, which stopped being true at v1.0.0")
+	}
+	if strings.Contains(text, "Nothing released yet") {
+		t.Error("CHANGELOG.md says nothing has been released, directly below the release it lists")
 	}
 }
 

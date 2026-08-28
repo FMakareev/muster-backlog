@@ -73,31 +73,29 @@
 
 ## Changelog
 
-Every entry here is derived from the commit history rather than written by
+Every entry above is derived from the commit history rather than written by
 hand: [release-please](https://github.com/googleapis/release-please) reads the
 [Conventional Commits](https://www.conventionalcommits.org/) on the default
-branch, opens a release pull request, and writes everything below the
-Unreleased heading when that pull request is merged. Edit a commit message,
-not this file.
+branch, opens a release pull request, and writes a new section directly under
+the title when that pull request is merged. Edit a commit message, not this
+file. These closing sections stay at the bottom because releases accumulate at
+the top.
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 versioning is [Semantic Versioning](https://semver.org/spec/v2.0.0.html), read
-the way the section below says while the major version is still zero.
+the way the section below says.
 
-## Versioning before 1.0
+## Versioning
 
-While the version starts with `0.`, SemVer allows anything to change in any
-release. That is not much of a promise, so here is the one this project keeps
-instead.
+- **A major bump — `1.0.0` to `2.0.0` — may break something.** It is the only
+  release that may. What counts as breaking is listed below, and every one of
+  them appears in the release notes under its own heading.
+- **A minor bump — `1.0.0` to `1.1.0` — adds.** New capability, nothing taken
+  away.
+- **A patch bump — `1.0.0` to `1.0.1` — fixes.** Nothing added, nothing taken
+  away.
 
-- **A minor bump — `0.1.0` to `0.2.0` — may break something.** It is where a
-  breaking change goes while the major version is zero. What counts as
-  breaking is listed below, and every one of them appears in the release notes
-  under its own heading.
-- **A patch bump — `0.1.0` to `0.1.1` — does not.** Fixes and additions that
-  take nothing away.
-
-Breaking, before 1.0, means any of these:
+Breaking means any of these:
 
 - The registry file `projects.yml` stops being readable by the previous
   version, or a field in it changes meaning.
@@ -117,11 +115,11 @@ Two things are deliberately **not** breaking changes, at any version:
 - The layout of the interface. Where a button lives is not an interface anyone
   can depend on programmatically.
 
-At 1.0 the first list becomes a major-version promise instead, which is what
-1.0 is for.
+### How 1.0 was reached
 
-## Unreleased
-
-Nothing released yet. Everything so far is on the way to the first tag; see
-[the roadmap](backlog/docs/doc-2%20-%20Roadmap-to-1.0.md) for what is still
-missing.
+Not deliberately. release-please cuts the first release of a package as
+`1.0.0` unless the configuration says otherwise, and this one did not, so the
+first release the automation produced carried the number the project had
+planned to arrive at later. It was kept rather than withdrawn, and the promise
+above is now in force from that release onwards. The work the 1.0 milestone
+was going to gate is tracked in the backlog and is still to be done.
