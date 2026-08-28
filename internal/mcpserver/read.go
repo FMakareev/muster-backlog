@@ -95,6 +95,23 @@ func reads() *mcp.ToolAnnotations {
 	}
 }
 
+// Every listing answers with an object around its list, because the protocol
+// says structuredContent is a JSON object and a client that validates the
+// result rejects a bare array outright — the whole response, before the agent
+// sees any of it. Five tools did exactly that: the data was read correctly and
+// thrown away at the client.
+//
+// One named field each rather than a shared envelope, so the name says what
+// the list holds when an agent reads the schema.
+
+type projectList struct {
+	Projects []ProjectSummary `json:"projects" jsonschema:"every registered project"`
+}
+
+type taskList struct {
+	Tasks []TaskSummary `json:"tasks" jsonschema:"the tasks that matched"`
+}
+
 func (s *Server) addReadTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Annotations: reads(),
@@ -104,13 +121,13 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"statuses, priorities and types it declares. Start here: ids and " +
 			"statuses are per-project and nothing else in this server makes " +
 			"sense without knowing which projects exist.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []ProjectSummary, error) {
+	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, projectList, error) {
 		s.Reload()
 		// The one tool an agent starts with, and the one place a missing
 		// registry has to be said out loud rather than answered with an empty
 		// list that reads as "you have no projects".
 		if s.missing {
-			return nil, nil, s.noRegistry()
+			return nil, projectList{}, s.noRegistry()
 		}
 		var out []ProjectSummary
 		for _, p := range s.store.Projects() {
@@ -135,7 +152,7 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			}
 			out = append(out, summary)
 		}
-		return ok(out)
+		return ok(projectList{Projects: out})
 	})
 
 	type listTasksIn struct {
@@ -160,13 +177,13 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"This is the tool for looking beyond the project you are in. " +
 			"Inside one, its own backlog CLI lists tasks faster and knows " +
 			"more.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, in listTasksIn) (*mcp.CallToolResult, []TaskSummary, error) {
+	}, func(_ context.Context, _ *mcp.CallToolRequest, in listTasksIn) (*mcp.CallToolResult, taskList, error) {
 		s.Reload()
 		var projects []string
 		if strings.TrimSpace(in.Project) != "" {
 			p, err := s.project(in.Project)
 			if err != nil {
-				return fail[[]TaskSummary](err)
+				return fail[taskList](err)
 			}
 			projects = []string{p.Registry.Path}
 		}
@@ -190,7 +207,7 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			}
 			out = append(out, summarise(item))
 		}
-		return ok(out)
+		return ok(taskList{Tasks: out})
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -247,16 +264,19 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Title   string `json:"title"`
 		Excerpt string `json:"excerpt,omitempty"`
 	}
+	type hitList struct {
+		Hits []hit `json:"hits" jsonschema:"what matched, best first"`
+	}
 	mcp.AddTool(server, &mcp.Tool{
 		Annotations: reads(),
 		Name:        "search",
 		Description: "Find anything across every project by text: tasks, " +
 			"drafts, documents, decisions and milestones. Titles rank above " +
 			"bodies.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, in searchIn) (*mcp.CallToolResult, []hit, error) {
+	}, func(_ context.Context, _ *mcp.CallToolRequest, in searchIn) (*mcp.CallToolResult, hitList, error) {
 		s.Reload()
 		if s.missing {
-			return nil, nil, s.noRegistry()
+			return nil, hitList{}, s.noRegistry()
 		}
 		limit := in.Limit
 		if limit <= 0 {
@@ -272,7 +292,7 @@ func (s *Server) addReadTools(server *mcp.Server) {
 				Excerpt: found.Excerpt,
 			})
 		}
-		return ok(out)
+		return ok(hitList{Hits: out})
 	})
 
 	type milestone struct {
@@ -282,16 +302,19 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Done    int    `json:"done"`
 		Total   int    `json:"total"`
 	}
+	type milestoneList struct {
+		Milestones []milestone `json:"milestones" jsonschema:"every milestone, across every project"`
+	}
 	mcp.AddTool(server, &mcp.Tool{
 		Annotations: reads(),
 		Name:        "list_milestones",
 		Description: "Milestones across every project with their progress. " +
 			"This is the axis these backlogs are planned on, so it is usually " +
 			"the answer to what is being worked towards.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []milestone, error) {
+	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, milestoneList, error) {
 		s.Reload()
 		if s.missing {
-			return nil, nil, s.noRegistry()
+			return nil, milestoneList{}, s.noRegistry()
 		}
 		var out []milestone
 		for _, p := range s.store.Projects() {
@@ -326,7 +349,7 @@ func (s *Server) addReadTools(server *mcp.Server) {
 				})
 			}
 		}
-		return ok(out)
+		return ok(milestoneList{Milestones: out})
 	})
 
 	type entityIn struct {
@@ -342,29 +365,32 @@ func (s *Server) addReadTools(server *mcp.Server) {
 		Body    string `json:"body,omitempty"`
 		Path    string `json:"path"`
 	}
+	type entityList struct {
+		Entities []entityOut `json:"entities" jsonschema:"what was found, of the kind asked for"`
+	}
 	mcp.AddTool(server, &mcp.Tool{
 		Annotations: reads(),
 		Name:        "list_entities",
 		Description: "Documents, decisions, drafts or milestones, with their " +
 			"bodies. Decisions are where a project records why a choice was " +
 			"made, which is often what an agent is missing.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, in entityIn) (*mcp.CallToolResult, []entityOut, error) {
+	}, func(_ context.Context, _ *mcp.CallToolRequest, in entityIn) (*mcp.CallToolResult, entityList, error) {
 		s.Reload()
 		if s.missing {
-			return nil, nil, s.noRegistry()
+			return nil, entityList{}, s.noRegistry()
 		}
 		kind := backlog.Kind(strings.ToLower(strings.TrimSpace(in.Kind)))
 		switch kind {
 		case backlog.KindDocument, backlog.KindDecision, backlog.KindDraft, backlog.KindMilestone:
 		default:
-			return fail[[]entityOut](badKind(in.Kind))
+			return fail[entityList](badKind(in.Kind))
 		}
 
 		var only string
 		if strings.TrimSpace(in.Project) != "" {
 			p, err := s.project(in.Project)
 			if err != nil {
-				return fail[[]entityOut](err)
+				return fail[entityList](err)
 			}
 			only = p.Registry.Path
 		}
@@ -387,7 +413,7 @@ func (s *Server) addReadTools(server *mcp.Server) {
 				Path:    item.Entity.Path,
 			})
 		}
-		return ok(out)
+		return ok(entityList{Entities: out})
 	})
 }
 

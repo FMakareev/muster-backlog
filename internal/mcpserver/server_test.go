@@ -129,7 +129,9 @@ func TestTheAggregateIsWhatItAnswersWith(t *testing.T) {
 		ByStatus map[string]int `json:"byStatus"`
 		Statuses []string       `json:"statuses"`
 	}
-	projects := call[[]project](t, session, "list_projects", struct{}{})
+	projects := call[struct {
+		Projects []project `json:"projects"`
+	}](t, session, "list_projects", struct{}{}).Projects
 	if len(projects) != 2 {
 		t.Fatalf("got %d projects, want both", len(projects))
 	}
@@ -150,7 +152,10 @@ func TestTheAggregateIsWhatItAnswersWith(t *testing.T) {
 		Title   string `json:"title"`
 		Status  string `json:"status"`
 	}
-	all := call[[]task](t, session, "list_tasks", map[string]any{})
+	type taskList struct {
+		Tasks []task `json:"tasks"`
+	}
+	all := call[taskList](t, session, "list_tasks", map[string]any{}).Tasks
 	if len(all) != 3 {
 		t.Fatalf("got %d tasks across both projects, want 3: %+v", len(all), all)
 	}
@@ -163,11 +168,11 @@ func TestTheAggregateIsWhatItAnswersWith(t *testing.T) {
 	}
 
 	// The same filters the board has.
-	high := call[[]task](t, session, "list_tasks", map[string]any{"priorities": []string{"high"}})
+	high := call[taskList](t, session, "list_tasks", map[string]any{"priorities": []string{"high"}}).Tasks
 	if len(high) != 1 || high[0].Title != "First in alpha" {
 		t.Errorf("filtering by priority gave %+v", high)
 	}
-	beta := call[[]task](t, session, "list_tasks", map[string]any{"project": "Beta"})
+	beta := call[taskList](t, session, "list_tasks", map[string]any{"project": "Beta"}).Tasks
 	if len(beta) != 1 || beta[0].Project != "Beta" {
 		t.Errorf("filtering by project gave %+v", beta)
 	}
@@ -217,7 +222,10 @@ func TestAnUnregisteredProjectIsRefused(t *testing.T) {
 	type task struct {
 		Project string `json:"project"`
 	}
-	if all := call[[]task](t, session, "list_tasks", map[string]any{}); len(all) != 3 {
+	type taskList struct {
+		Tasks []task `json:"tasks"`
+	}
+	if all := call[taskList](t, session, "list_tasks", map[string]any{}).Tasks; len(all) != 3 {
 		t.Errorf("omitting the project gave %d tasks, want every one", len(all))
 	}
 	// And the refusal says what is registered, so an agent can correct itself.
@@ -280,9 +288,12 @@ func TestWritesGoThroughTheCLIAndLandOnDisk(t *testing.T) {
 	type entity struct {
 		Title string `json:"title"`
 	}
-	drafts := call[[]entity](t, session, "list_entities", map[string]any{
+	type entityList struct {
+		Entities []entity `json:"entities"`
+	}
+	drafts := call[entityList](t, session, "list_entities", map[string]any{
 		"kind": "draft", "project": "Alpha",
-	})
+	}).Entities
 	if len(drafts) != 1 || drafts[0].Title != "A captured thought" {
 		t.Errorf("the inbox holds %+v", drafts)
 	}
@@ -430,6 +441,58 @@ func TestAMissingRegistryIsSaidOutLoud(t *testing.T) {
 		}
 		if !strings.Contains(said, "MUSTER_REGISTRY") {
 			t.Errorf("%s does not say how to point it elsewhere: %s", tool, said)
+		}
+	}
+}
+
+// The protocol says structuredContent in a tools/call result is a JSON
+// object. Five tools returned a Go slice, so the schema said
+// ["null","array"] and a client that validates the result rejected the whole
+// response — the data was read correctly and thrown away before the agent saw
+// it. Nothing here noticed, because these tests decode the structured answer
+// directly instead of checking it against the schema the server declares.
+//
+// This is that check. It needs no project data, so it runs anywhere.
+func TestEveryToolAnswersWithAnObject(t *testing.T) {
+	server, err := mcpserver.New(filepath.Join(t.TempDir(), "projects.yml"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	clientTransport, serverTransport := mcp.NewInMemoryTransports()
+	go func() { _ = server.MCP().Run(context.Background(), serverTransport) }()
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	session, err := client.Connect(context.Background(), clientTransport, nil)
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+	if len(tools.Tools) == 0 {
+		t.Fatal("no tools at all")
+	}
+
+	for _, tool := range tools.Tools {
+		if tool.OutputSchema == nil {
+			continue
+		}
+		raw, err := json.Marshal(tool.OutputSchema)
+		if err != nil {
+			t.Fatalf("%s: %v", tool.Name, err)
+		}
+		var schema struct {
+			Type any `json:"type"`
+		}
+		if err := json.Unmarshal(raw, &schema); err != nil {
+			t.Fatalf("%s: %v", tool.Name, err)
+		}
+		if got, ok := schema.Type.(string); !ok || got != "object" {
+			t.Errorf("%s declares an output schema of type %v; a client that "+
+				"validates the result will reject every answer it gives",
+				tool.Name, schema.Type)
 		}
 	}
 }
