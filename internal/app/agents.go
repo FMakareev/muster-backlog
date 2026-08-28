@@ -25,19 +25,19 @@ import (
 // which is where agents run. muster-mcp links none of that.
 const mcpServerName = "muster-mcp"
 
-// mcpCommand is what a client is told to spawn, or empty when it is not here.
+// serverFileName is the server binary's name on this platform.
+func serverFileName() string {
+	if runtime.GOOS == "windows" {
+		return mcpServerName + ".exe"
+	}
+	return mcpServerName
+}
+
+// besideExecutable is the server sitting next to this binary, or empty.
 //
-// An absolute path, not the word "muster-mcp": a client started from a
-// launcher has no more of a shell's PATH than this application did when it
-// could not find the Backlog.md CLI. Registering a bare name would reproduce
-// that bug inside somebody else's program, where it is harder to diagnose.
-//
-// Looked for beside this binary, because that is where every way of
-// installing them puts them together - the package, the AppImage, and a
-// build tree's bin directory. Empty rather than a guess when it is missing:
-// writing a command that does not exist into another program's configuration
-// is the failure this whole change is about.
-func mcpCommand() string {
+// Where every way of installing them puts the two together: the package, the
+// AppImage, and a build tree's bin directory.
+func besideExecutable() string {
 	binary, err := os.Executable()
 	if err != nil {
 		return ""
@@ -45,28 +45,40 @@ func mcpCommand() string {
 	if resolved, err := filepath.EvalSymlinks(binary); err == nil {
 		binary = resolved
 	}
-
-	name := mcpServerName
-	if runtime.GOOS == "windows" {
-		name += ".exe"
-	}
-	beside := filepath.Join(filepath.Dir(binary), name)
+	beside := filepath.Join(filepath.Dir(binary), serverFileName())
 	if info, err := os.Stat(beside); err == nil && !info.IsDir() {
 		return beside
 	}
-
-	// Then wherever a person could run it from, which covers an install that
-	// separates the two.
-	if path, ok := whichbin.Find(mcpServerName); ok {
-		return path
-	}
 	return ""
+}
+
+// locateServer decides what a client should be told to spawn.
+//
+// An absolute path, not the word "muster-mcp": a client started from a
+// launcher has no more of a shell's PATH than this application did when it
+// could not find the Backlog.md CLI. Registering a bare name would reproduce
+// that bug inside somebody else's program, where it is harder to diagnose.
+//
+// In a container the obvious answer is the wrong one, and confidently so:
+// see container.go. Everywhere else it is the server beside this binary, then
+// wherever a person could run it from.
+func locateServer() serverLocation {
+	if inContainer() {
+		return containerLocation()
+	}
+	if beside := besideExecutable(); beside != "" {
+		return serverLocation{Command: beside}
+	}
+	if path, ok := whichbin.Find(mcpServerName); ok {
+		return serverLocation{Command: path}
+	}
+	return serverLocation{Problem: missingServer}
 }
 
 // AgentClients lists the clients Muster knows how to connect, and whether each
 // is installed here. It starts nobody else's program, so it answers at once.
 func (s *BoardService) AgentClients() ([]agents.Status, error) {
-	return agents.List(mcpCommand())
+	return agents.List(serverCommand().Command)
 }
 
 // AgentConnections is the slow half of that answer: for each installed CLI
@@ -74,7 +86,7 @@ func (s *BoardService) AgentClients() ([]agents.Status, error) {
 // the client, so the interface shows the list first and fills these in when
 // they arrive.
 func (s *BoardService) AgentConnections() ([]agents.Status, error) {
-	return agents.Connections(mcpCommand())
+	return agents.Connections(serverCommand().Command)
 }
 
 // missingServer is what to say when the thing a client would be told to spawn
@@ -90,31 +102,41 @@ const missingServer = mcpServerName + " is not next to this application, and " +
 	"with the package and the AppImage; from a build tree, `wails3 task build` " +
 	"makes it."
 
-// serverCommand is mcpCommand, behind a name a test can replace.
+// serverCommand is locateServer, behind a name a test can replace.
 //
 // The refusal below is the behaviour worth testing and it cannot be reached
 // on a machine that has the server installed - which every machine that has
 // run the package does. A seam here beats a test that skips exactly where it
 // matters.
-var serverCommand = mcpCommand
+var serverCommand = locateServer
 
 // AgentPlan is exactly what connecting - or disconnecting - would do.
 func (s *BoardService) AgentPlan(id string, disconnect bool) agents.Plan {
-	command := serverCommand()
+	server := serverCommand()
 	// Disconnecting only needs the name, so it is still offered: somebody
 	// whose server binary has gone is exactly who needs to remove the entry
 	// pointing at it.
-	if command == "" && !disconnect {
-		return agents.Plan{ID: id, Error: missingServer}
+	if server.Command == "" && !disconnect {
+		return agents.Plan{ID: id, Error: server.Problem}
 	}
-	return agents.PlanFor(id, command, disconnect)
+	plan := agents.PlanFor(id, server.Command, disconnect)
+	// Said before anything is written, because which environment the command
+	// resolves in is the thing that was invisible when this went wrong.
+	if server.Where != "" && !disconnect && plan.Error == "" {
+		if plan.Note == "" {
+			plan.Note = server.Where
+		} else {
+			plan.Note = server.Where + "\n\n" + plan.Note
+		}
+	}
+	return plan
 }
 
 // AgentApply carries out that plan. Nothing happens without this call.
 func (s *BoardService) AgentApply(id string, disconnect bool) agents.Result {
-	command := serverCommand()
-	if command == "" && !disconnect {
-		return agents.Result{Error: missingServer}
+	server := serverCommand()
+	if server.Command == "" && !disconnect {
+		return agents.Result{Error: server.Problem}
 	}
-	return agents.Apply(id, command, disconnect)
+	return agents.Apply(id, server.Command, disconnect)
 }

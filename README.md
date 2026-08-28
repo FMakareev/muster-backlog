@@ -180,7 +180,17 @@ The registry is found even when `XDG_CONFIG_HOME` is redirected — inside Obsid
 claude mcp add --scope user muster -e MUSTER_REGISTRY=~/.config/muster/projects.yml -- /usr/local/bin/muster-mcp
 ```
 
-The path to the binary is the part that cannot be solved from this side. A Flatpak sandbox cannot see `/usr/local/bin` at all, so a client running inside one has to reach the host itself — `flatpak-spawn --host /usr/local/bin/muster-mcp` — or be given a copy inside the sandbox. Muster's connector registers a path that is correct on the host, which is the only path it can know.
+The path to the binary depends on which side of a boundary each program is on, and the two cases are mirror images.
+
+**Muster in a container, the client outside it.** A distrobox or toolbox container shares your home directory, so the file the connector edits is the host's while `/usr/local/bin/muster-mcp` means nothing there — a real path, on the wrong filesystem. The connector detects the container and registers the copy in `~/.local/bin` instead, which both sides can see, and the plan says so before writing anything. If there is no copy there it refuses and tells you to make one:
+
+```sh
+distrobox-export --bin /usr/local/bin/muster-mcp
+```
+
+That wrapper runs the binary through the container from the host, hops back out from a different container, and execs it directly from its own — so one registered path works from anywhere.
+
+**The client in a sandbox, Muster outside it.** This one cannot be solved from Muster's side: a Flatpak sandbox cannot see `/usr/local/bin` at all, so a client running inside one has to reach the host itself — `flatpak-spawn --host /usr/local/bin/muster-mcp` — or be given a copy inside the sandbox.
 
 The rest of this section is what that button does, for anyone who would rather do it themselves.
 
