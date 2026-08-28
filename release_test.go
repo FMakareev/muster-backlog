@@ -214,9 +214,9 @@ func TestThePackagesNameAMaintainer(t *testing.T) {
 }
 
 // A release that builds nothing reaches nobody, and the ways this goes wrong
-// are all quiet ones: a job that never runs, a version published with no
-// downloads, artefacts nobody can check.
-func TestTheReleaseWorkflowAttachesArtefactsBeforePublishing(t *testing.T) {
+// are all quiet ones: a job that never runs, artefacts nobody can check, a
+// release cut in a way that makes release-please lose track of what shipped.
+func TestTheReleaseWorkflowAttachesArtefacts(t *testing.T) {
 	w := readWorkflow(t, ".github/workflows/release-please.yml")
 
 	job, ok := w.Jobs["artefacts"]
@@ -235,36 +235,32 @@ func TestTheReleaseWorkflowAttachesArtefactsBeforePublishing(t *testing.T) {
 		t.Errorf("the artefacts job is not conditioned on a release having happened: %q", job.If)
 	}
 
-	// The order is the promise: everything is attached, and only then is the
-	// release made public.
-	uploaded, published, checksums := -1, -1, false
-	for i, step := range job.Steps {
+	uploaded, checksums := false, false
+	for _, step := range job.Steps {
 		if strings.Contains(step.Run, "sha256sum") {
 			checksums = true
 		}
 		if strings.Contains(step.Run, "gh release upload") {
-			uploaded = i
-		}
-		if strings.Contains(step.Run, "--draft=false") {
-			published = i
+			uploaded = true
 		}
 	}
-	if uploaded < 0 {
+	if !uploaded {
 		t.Error("nothing is uploaded to the release")
-	}
-	if published < 0 {
-		t.Error("the release is never taken out of draft, so it stays invisible")
-	}
-	if uploaded >= 0 && published >= 0 && published < uploaded {
-		t.Error("the release is published before its artefacts are attached, which is the window this shape exists to close")
 	}
 	if !checksums {
 		t.Error("no checksums are published, so a download cannot be verified")
 	}
 
-	// Cutting the release as a draft is the other half of it. Without this
-	// the release is public the moment it is made and the ordering above buys
-	// nothing.
+	// Not a draft, and this is the check that costs something to understand.
+	//
+	// Cutting the release as a draft is the obvious way to keep a version
+	// from being visible before its downloads exist, and it was done that way
+	// once. A draft records a tag name but GitHub does not create the tag
+	// until the release is published, and release-please finds the previous
+	// release by its tag: in the same run it then works out the next release
+	// pull request, finds no tag for what it has just released, decides
+	// nothing has ever shipped, and opens a pull request whose changelog
+	// repeats the whole history. That is what happened to v1.0.0.
 	content, err := os.ReadFile("release-please-config.json")
 	if err != nil {
 		t.Fatalf("read the release config: %v", err)
@@ -277,8 +273,8 @@ func TestTheReleaseWorkflowAttachesArtefactsBeforePublishing(t *testing.T) {
 	if err := json.Unmarshal(content, &config); err != nil {
 		t.Fatalf("the release config is not valid JSON: %v", err)
 	}
-	if !config.Packages["."].Draft {
-		t.Error("the release is created public, so it is visible with nothing attached while the artefacts are still building")
+	if config.Packages["."].Draft {
+		t.Error("the release is cut as a draft, which leaves it untagged: release-please then cannot see that it happened and proposes the next version with every already-released change in it")
 	}
 }
 

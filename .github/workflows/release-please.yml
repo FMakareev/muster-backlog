@@ -15,10 +15,22 @@ name: release-please
 # off this one by `needs` runs in the same event, and reads the tag straight
 # out of the outputs above it.
 #
-# The release is cut as a draft and published only once the artefacts are
-# attached. Nobody ever sees a version with nothing to download, and a
-# packaging run that fails leaves a draft to re-run rather than a public
-# release to retract.
+# The release is public from the moment it is cut, and the artefacts arrive a
+# few minutes later. Cutting it as a draft instead — so that no version is
+# ever visible with nothing to download — was tried and does not work here,
+# and the failure is worth writing down because it looks like it should:
+#
+# a draft release records a tag name but GitHub does not create the tag until
+# the release is published, and release-please finds the previous release by
+# its tag. In the same run it then works out the next release pull request,
+# finds no tag for what it has just released, concludes that nothing has ever
+# shipped, and opens a pull request whose changelog repeats every feature in
+# the project's history. That happened on the first real release: v1.0.0 went
+# out correctly, and a 1.1.0 pull request appeared beside it listing the
+# release's own contents.
+#
+# A few minutes of a release with no downloads is cheaper than release-please
+# not knowing what has shipped.
 
 on:
   push:
@@ -64,7 +76,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
 
   artefacts:
-    name: build, attach and publish
+    name: build and attach the artefacts
     needs: release-please
     if: needs.release-please.outputs.released == 'true'
     runs-on: ubuntu-latest
@@ -83,12 +95,8 @@ jobs:
       # The commit this push carried, which is the release commit: the merge
       # of the release pull request is what triggered this run, so what is
       # checked out here holds the bumped build/config.yml and every artefact
-      # carries that version.
-      #
-      # Not the tag. A draft release records a tag name but does not create
-      # the tag — GitHub creates it when the release is published, which is
-      # the last step below — so checking out the tag would fail here for a
-      # reason that has nothing to do with the release.
+      # carries that version. The tag would do as well now that the release is
+      # published, and this needs no tag to exist.
       - uses: actions/checkout@v5
 
       - uses: actions/setup-go@v6
@@ -172,10 +180,7 @@ jobs:
           (cd dist && sha256sum muster* > SHA256SUMS)
           ls -l dist
 
+      # --clobber so a re-run of a failed job replaces what it managed to
+      # upload rather than refusing.
       - name: Attach them to the release
         run: gh release upload "${TAG}" dist/* --clobber
-
-      # Last. Until this line the release is a draft: the version exists, the
-      # tag exists, and nobody has been offered a download that is not there.
-      - name: Publish the release
-        run: gh release edit "${TAG}" --draft=false

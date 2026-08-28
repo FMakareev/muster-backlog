@@ -329,7 +329,9 @@ Its **time budget is ten minutes** with the caches warm. Measured on one machine
 
 The version is written in exactly one place, `build/config.yml`. The build stamps the binary from it, the `.deb` takes its version from it, and [release-please](https://github.com/googleapis/release-please) bumps it: it reads the Conventional Commits on the default branch, keeps a release pull request open with the next version and the changelog entries it implies, and merging that pull request cuts the release. A build that was never stamped calls itself `dev` rather than claiming a number nobody released.
 
-Merging it does not publish anything yet. The release is created as a draft; a second job packages the release commit, refuses to go on unless every binary reports the version being released, attaches the artefacts with their checksums, and only then clears the draft flag. So a version is never visible with nothing to download, and a packaging run that fails leaves a draft to re-run rather than a public release to retract.
+A second job then packages that same release commit, refuses to go on unless every binary reports the version being released, and attaches the artefacts with their checksums. The release itself is public from the moment it is cut, so for the few minutes that packaging takes it carries notes and no downloads.
+
+Cutting it as a draft and publishing it afterwards would close that window, and it was done that way once. It does not work: a draft records a tag name but GitHub creates the tag only when the release is published, and release-please finds the previous release by its tag — so in the same run it decides nothing has ever shipped and opens a pull request for the next version with the whole history in its changelog. That is what happened to v1.0.0.
 
 Both halves live in one workflow rather than two, and that is not tidiness: a release created with `GITHUB_TOKEN` raises no `release` event and its tag raises no `push` event, so a workflow keyed on either would sit there and never run.
 
