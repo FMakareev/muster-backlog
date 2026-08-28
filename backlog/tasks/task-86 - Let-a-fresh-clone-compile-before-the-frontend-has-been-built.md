@@ -1,11 +1,11 @@
 ---
 id: TASK-86
 title: Let a fresh clone compile before the frontend has been built
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-28 14:40'
-updated_date: '2026-08-28 14:40'
+updated_date: '2026-08-28 14:44'
 labels: []
 dependencies: []
 priority: high
@@ -23,17 +23,17 @@ It is not a CI-only problem. The same clone cannot run `go test -tags gtk3 ./...
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A clone with no build history can lint and test without building the frontend first
-- [ ] #2 A real build still embeds the real frontend, so the placeholder cannot reach a binary
-- [ ] #3 A test fails if an embed pattern points at something no fresh clone would have
+- [x] #1 A clone with no build history can lint and test without building the frontend first
+- [x] #2 A real build still embeds the real frontend, so the placeholder cannot reach a binary
+- [x] #3 A test fails if an embed pattern points at something no fresh clone would have
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Linters and formatters pass across Go and frontend
-- [ ] #2 Automated tests cover the change and the suite is green
-- [ ] #3 User-facing behaviour change is reflected in README or docs
-- [ ] #4 Commits follow Conventional Commits and are scoped to this task
+- [x] #1 Linters and formatters pass across Go and frontend
+- [x] #2 Automated tests cover the change and the suite is green
+- [x] #3 User-facing behaviour change is reflected in README or docs
+- [x] #4 Commits follow Conventional Commits and are scoped to this task
 <!-- DOD:END -->
 
 ## Implementation Plan
@@ -45,3 +45,23 @@ It is not a CI-only problem. The same clone cannot run `go test -tags gtk3 ./...
 4. Add a test asserting every go:embed pattern resolves to something git tracks.
 5. Verify in a fresh clone: lint and test with no build history, then a real build, and confirm the built binary carries the real assets rather than the placeholder.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+An empty directory does not satisfy the pattern either — Go answers 'contains no embeddable files' — so the placeholder has to be a real file. Measured both.
+
+The ignore rule needed changing as well, not just an added exception: git will not re-include a file whose parent directory is excluded, so `frontend/dist` plus `!frontend/dist/.gitkeep` silently kept ignoring it — the first add only worked because it was forced. `frontend/dist/*` is what makes the exception take effect. Built assets stay ignored: git check-ignore still names index.html and assets/.
+
+Verified in a clone with no build history: frontend/dist holds only .gitkeep, golangci-lint reports 0 issues, and go test -tags gtk3 ./... is green across all fourteen packages. Before this, all of that failed at the embed.
+
+Then built that clone for real: the frontend build filled frontend/dist and the binary carries 21 references to frontend/dist/assets, against 0 in one built from the placeholder alone. So the placeholder cannot reach a release.
+
+Rejected: building the frontend before the lint step in CI. It repairs the pipeline and leaves the fresh clone and the pre-push hook broken, and pays a frontend build on every lint of Go code.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+main.go embeds all:frontend/dist, a generated and ignored directory, and Go resolves embed patterns at compile time — so on a clone with no build history nothing that compiles package main worked, CI's lint step included, and neither did the test command CONTRIBUTING documents. Tracked frontend/dist/.gitkeep and changed the ignore rule to exclude the directory's contents rather than the directory, which is what lets the exception apply. Verified by cloning: 0 lint issues and a green suite with only the placeholder present, then a real build that filled the directory and produced a binary carrying 21 references to the real assets against 0 from a placeholder-only build. TestEveryEmbeddedPathIsInTheRepository asks git rather than the filesystem, so it fails for a pattern a fresh clone would not have; fault-injected by untracking the placeholder.
+<!-- SECTION:FINAL_SUMMARY:END -->
