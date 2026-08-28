@@ -94,8 +94,61 @@ type Registry struct {
 // falling back to ~/.config/muster/projects.yml when XDG_CONFIG_HOME is unset,
 // which is what the xdg package resolves for us.
 func DefaultPath() string {
-	return filepath.Join(xdg.ConfigHome, AppDir, FileName)
+	// An explicit answer beats every guess, and it is the only thing that
+	// works for a client that cannot be given a different environment: a
+	// sandboxed agent can be handed one variable far more easily than a
+	// redirected XDG_CONFIG_HOME.
+	if explicit := strings.TrimSpace(os.Getenv(PathEnv)); explicit != "" {
+		if resolved, err := expand(explicit); err == nil {
+			return resolved
+		}
+		return explicit
+	}
+
+	resolved := filepath.Join(configHome(), AppDir, FileName)
+	if _, err := os.Stat(resolved); err == nil {
+		return resolved
+	}
+
+	// XDG_CONFIG_HOME is redirected inside a sandbox - Obsidian's Flatpak
+	// points it at ~/.var/app/md.obsidian.Obsidian/config - so an agent
+	// started from one looked in a directory that has no registry and was
+	// told there were no projects. The registry it meant is the one under the
+	// real home, and that is where every unsandboxed run of this application
+	// put it.
+	//
+	// Only when the resolved path holds nothing: an existing setup keeps
+	// reading exactly the file it reads today, and reading and writing still
+	// agree on one path, because this is the path both of them use.
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		fallback := filepath.Join(home, ".config", AppDir, FileName)
+		if fallback != resolved {
+			if _, err := os.Stat(fallback); err == nil {
+				return fallback
+			}
+		}
+	}
+	return resolved
 }
+
+// configHome is the config directory, read now rather than at package init.
+//
+// adrg/xdg computes its ConfigHome once when the package loads, which is
+// right for a process whose environment is settled before it starts and wrong
+// for anything that wants to answer for the environment it has - a test, most
+// of all. The variable wins when it is set and absolute, which is what the
+// specification says; otherwise the library's answer stands, including its
+// ~/.config default.
+func configHome() string {
+	if dir := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME")); filepath.IsAbs(dir) {
+		return dir
+	}
+	return xdg.ConfigHome
+}
+
+// PathEnv names the registry outright, for anything that cannot be given a
+// different XDG_CONFIG_HOME - a sandboxed agent client, most of all.
+const PathEnv = "MUSTER_REGISTRY"
 
 // Load reads and resolves the registry at its default location.
 func Load() (Registry, error) {

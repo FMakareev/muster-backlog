@@ -106,6 +106,12 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"sense without knowing which projects exist.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []ProjectSummary, error) {
 		s.Reload()
+		// The one tool an agent starts with, and the one place a missing
+		// registry has to be said out loud rather than answered with an empty
+		// list that reads as "you have no projects".
+		if s.missing {
+			return nil, nil, s.noRegistry()
+		}
 		var out []ProjectSummary
 		for _, p := range s.store.Projects() {
 			summary := ProjectSummary{
@@ -249,6 +255,9 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"bodies.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in searchIn) (*mcp.CallToolResult, []hit, error) {
 		s.Reload()
+		if s.missing {
+			return nil, nil, s.noRegistry()
+		}
 		limit := in.Limit
 		if limit <= 0 {
 			limit = 30
@@ -281,6 +290,9 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"the answer to what is being worked towards.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []milestone, error) {
 		s.Reload()
+		if s.missing {
+			return nil, nil, s.noRegistry()
+		}
 		var out []milestone
 		for _, p := range s.store.Projects() {
 			if !p.OK() {
@@ -338,6 +350,9 @@ func (s *Server) addReadTools(server *mcp.Server) {
 			"made, which is often what an agent is missing.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in entityIn) (*mcp.CallToolResult, []entityOut, error) {
 		s.Reload()
+		if s.missing {
+			return nil, nil, s.noRegistry()
+		}
 		kind := backlog.Kind(strings.ToLower(strings.TrimSpace(in.Kind)))
 		switch kind {
 		case backlog.KindDocument, backlog.KindDecision, backlog.KindDraft, backlog.KindMilestone:

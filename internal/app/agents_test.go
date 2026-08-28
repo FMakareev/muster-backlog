@@ -53,31 +53,18 @@ func TestTheCommandRegisteredIsTheServerBesideUs(t *testing.T) {
 // configuration. Writing a command that does not exist is the failure this
 // whole change is about: it looks like it worked and fails later, inside a
 // program that cannot explain why.
+//
+// The command is replaced rather than the filesystem arranged: whichbin
+// searches absolute directories like /usr/local/bin that no environment
+// variable can hide, so on any machine that has installed the package this
+// would otherwise skip - which is every machine where it matters.
 func TestConnectingIsRefusedWithoutTheServer(t *testing.T) {
-	// A directory of its own, so the lookup beside the executable finds
-	// nothing, and an empty PATH so the fallback finds nothing either.
-	t.Setenv("PATH", t.TempDir())
-	t.Setenv("HOME", t.TempDir())
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	t.Setenv("SHELL", "")
-	t.Setenv("PNPM_HOME", "")
-
-	binary, err := os.Executable()
-	if err != nil {
-		t.Fatalf("os.Executable: %v", err)
-	}
-	if resolved, err := filepath.EvalSymlinks(binary); err == nil {
-		binary = resolved
-	}
-	if _, err := os.Stat(filepath.Join(filepath.Dir(binary), serverName())); err == nil {
-		t.Skip("a server binary is sitting beside the test binary")
-	}
-
-	if got := mcpCommand(); got != "" {
-		t.Fatalf("found a server at %q where there is none", got)
-	}
+	original := serverCommand
+	t.Cleanup(func() { serverCommand = original })
+	serverCommand = func() string { return "" }
 
 	s := &BoardService{}
+
 	plan := s.AgentPlan("claude-code", false)
 	if plan.Error == "" {
 		t.Error("planned a connection with no server to connect to")
@@ -92,7 +79,7 @@ func TestConnectingIsRefusedWithoutTheServer(t *testing.T) {
 
 	// Disconnecting still works: somebody whose server has gone is exactly
 	// who needs to remove the entry pointing at it.
-	if plan := s.AgentPlan("claude-code", true); plan.Error == mcpServerName {
+	if plan := s.AgentPlan("claude-code", true); plan.Error == missingServer {
 		t.Error("refused to disconnect for want of the server being disconnected")
 	}
 }

@@ -172,6 +172,16 @@ Backlog.md already ships its own MCP server, and it is per-project: an agent get
 
 Preferences has a list of the AI clients this machine has, and connects one in a click: it runs that client's own command, or writes that client's own configuration file. It shows exactly what it will run or write before doing either, keeps a backup of any file it changes, and disconnects by the same button. Nine clients are described in a data file — `internal/agents/agents.json` — because clients change their syntax more often than this ships; `MUSTER_AGENTS_FILE` points at a replacement without a rebuild.
 
+A client that runs in a sandbox needs two things to line up, and both are now handled or explained.
+
+The registry is found even when `XDG_CONFIG_HOME` is redirected — inside Obsidian's Flatpak it points at `~/.var/app/md.obsidian.Obsidian/config`, which has never held a registry, and the server used to answer "no projects" rather than "no registry". It now falls back to `~/.config/muster/projects.yml`, says which file it looked for when there is none, and takes `MUSTER_REGISTRY` as an outright answer:
+
+```sh
+claude mcp add --scope user muster -e MUSTER_REGISTRY=~/.config/muster/projects.yml -- /usr/local/bin/muster-mcp
+```
+
+The path to the binary is the part that cannot be solved from this side. A Flatpak sandbox cannot see `/usr/local/bin` at all, so a client running inside one has to reach the host itself — `flatpak-spawn --host /usr/local/bin/muster-mcp` — or be given a copy inside the sandbox. Muster's connector registers a path that is correct on the host, which is the only path it can know.
+
 The rest of this section is what that button does, for anyone who would rather do it themselves.
 
 Point a client at the binary:

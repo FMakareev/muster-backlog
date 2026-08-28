@@ -258,3 +258,67 @@ func TestAPathIsAbbreviatedForShowing(t *testing.T) {
 		t.Errorf("Abbreviate(%q) = %q, want it untouched", sibling, got)
 	}
 }
+
+// A sandboxed client has XDG_CONFIG_HOME redirected — Obsidian's Flatpak
+// points it at ~/.var/app/md.obsidian.Obsidian/config — so the registry was
+// looked for in a directory that has never held one, and an agent was told
+// there were no projects.
+func TestTheRegistryIsFoundWhenTheConfigDirectoryIsRedirected(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	real := filepath.Join(home, ".config", "muster", "projects.yml")
+	if err := os.MkdirAll(filepath.Dir(real), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(real, []byte("projects: []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Redirected somewhere with no registry, the way a sandbox does it.
+	sandbox := filepath.Join(home, ".var", "app", "md.obsidian.Obsidian", "config")
+	t.Setenv("XDG_CONFIG_HOME", sandbox)
+	if got := registry.DefaultPath(); got != real {
+		t.Errorf("DefaultPath() = %q, want the registry under the real home at %q", got, real)
+	}
+
+	// And when the redirected directory does have one, that is the one: an
+	// existing setup keeps reading exactly the file it reads today, and
+	// reading and writing still agree on a single path.
+	inSandbox := filepath.Join(sandbox, "muster", "projects.yml")
+	if err := os.MkdirAll(filepath.Dir(inSandbox), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(inSandbox, []byte("projects: []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := registry.DefaultPath(); got != inSandbox {
+		t.Errorf("DefaultPath() = %q, want the one in the config directory at %q", got, inSandbox)
+	}
+}
+
+// Naming it outright is the only thing that works for a client that cannot be
+// handed a different XDG_CONFIG_HOME.
+func TestTheRegistryCanBeNamedOutright(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "somewhere-else"))
+
+	named := filepath.Join(home, "elsewhere", "registry.yml")
+	t.Setenv(registry.PathEnv, named)
+	if got := registry.DefaultPath(); got != named {
+		t.Errorf("DefaultPath() = %q, want the named one at %q", got, named)
+	}
+
+	// Written the way a person writes a path.
+	t.Setenv(registry.PathEnv, "~/elsewhere/registry.yml")
+	if got := registry.DefaultPath(); got != named {
+		t.Errorf("DefaultPath() = %q, want ~ expanded to %q", got, named)
+	}
+
+	// And nothing set means nothing changes.
+	t.Setenv(registry.PathEnv, "  ")
+	if got := registry.DefaultPath(); got == named {
+		t.Error("an empty value was treated as a path")
+	}
+}

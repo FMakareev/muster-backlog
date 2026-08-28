@@ -67,6 +67,10 @@ type Server struct {
 	// regardless: an agent asking what is in flight should not be stopped by a
 	// missing binary it has no use for.
 	cliErr error
+	// missing records that there is no registry file at all, as opposed to a
+	// registry with nothing in it. The store cannot tell those apart and an
+	// agent must not have to.
+	missing bool
 }
 
 // New builds a server over a registry.
@@ -81,6 +85,7 @@ func New(registryPath string) (*Server, error) {
 	}
 
 	s := &Server{registryPath: registryPath, store: store.New()}
+	s.missing = err != nil
 	s.store.Load(reg)
 	s.cli, s.cliErr = backlogcli.New()
 	return s, nil
@@ -94,7 +99,9 @@ func New(registryPath string) (*Server, error) {
 // session lasted. Every call reloads what it needs first.
 func (s *Server) Reload() {
 	reg, err := registry.LoadFrom(s.registryPath)
-	if err != nil && !strings.Contains(err.Error(), registry.ErrNoRegistry.Error()) {
+	s.missing = err != nil &&
+		strings.Contains(err.Error(), registry.ErrNoRegistry.Error())
+	if err != nil && !s.missing {
 		return
 	}
 	s.store.Load(reg)
@@ -124,7 +131,26 @@ func (s *Server) Run(ctx context.Context) error {
 // This is the whole of the access rule. An agent cannot reach a folder the
 // person has not registered, whatever it passes, and asking for one says so
 // rather than answering emptily.
+// noRegistry is what every tool answers when there is no registry to read.
+//
+// An empty answer and a missing file are not the same thing. The application
+// treats them the same on purpose - first run has no registry and the
+// interface offers to make one - but an agent asking what projects exist and
+// being told "none" has been given a wrong answer, not an unhelpful one, and
+// it cannot tell the difference. So the tools say which it is, and where the
+// file was looked for, because that is the one fact that settles it.
+func (s *Server) noRegistry() error {
+	return fmt.Errorf("no project registry at %s. Muster keeps the list of "+
+		"projects there; set %s to point somewhere else, which is what a "+
+		"client running in a sandbox or a container needs, since its "+
+		"XDG_CONFIG_HOME is not the one the registry was written under",
+		s.registryPath, registry.PathEnv)
+}
+
 func (s *Server) project(name string) (store.ProjectState, error) {
+	if s.missing {
+		return store.ProjectState{}, s.noRegistry()
+	}
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return store.ProjectState{}, fmt.Errorf("no project given")

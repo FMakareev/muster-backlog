@@ -90,9 +90,17 @@ const missingServer = mcpServerName + " is not next to this application, and " +
 	"with the package and the AppImage; from a build tree, `wails3 task build` " +
 	"makes it."
 
+// serverCommand is mcpCommand, behind a name a test can replace.
+//
+// The refusal below is the behaviour worth testing and it cannot be reached
+// on a machine that has the server installed - which every machine that has
+// run the package does. A seam here beats a test that skips exactly where it
+// matters.
+var serverCommand = mcpCommand
+
 // AgentPlan is exactly what connecting - or disconnecting - would do.
 func (s *BoardService) AgentPlan(id string, disconnect bool) agents.Plan {
-	command := mcpCommand()
+	command := serverCommand()
 	// Disconnecting only needs the name, so it is still offered: somebody
 	// whose server binary has gone is exactly who needs to remove the entry
 	// pointing at it.
@@ -104,7 +112,7 @@ func (s *BoardService) AgentPlan(id string, disconnect bool) agents.Plan {
 
 // AgentApply carries out that plan. Nothing happens without this call.
 func (s *BoardService) AgentApply(id string, disconnect bool) agents.Result {
-	command := mcpCommand()
+	command := serverCommand()
 	if command == "" && !disconnect {
 		return agents.Result{Error: missingServer}
 	}

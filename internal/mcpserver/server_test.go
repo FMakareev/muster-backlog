@@ -381,3 +381,55 @@ func TestTheClientIsToldWhenToUseThisAndWhenNotTo(t *testing.T) {
 		})
 	}
 }
+
+// An empty answer and a missing file are not the same thing, and an agent
+// cannot tell them apart. Being told "no projects" when the registry was
+// simply looked for in the wrong place — which is what a sandboxed client
+// does, its XDG_CONFIG_HOME redirected — is a wrong answer, not an unhelpful
+// one.
+func TestAMissingRegistryIsSaidOutLoud(t *testing.T) {
+	nowhere := filepath.Join(t.TempDir(), "muster", "projects.yml")
+
+	server, err := mcpserver.New(nowhere)
+	if err != nil {
+		t.Fatalf("the server refused to start without a registry: %v", err)
+	}
+
+	// It still starts, because a client that cannot connect cannot be told
+	// anything at all.
+	clientTransport, serverTransport := mcp.NewInMemoryTransports()
+	go func() { _ = server.MCP().Run(context.Background(), serverTransport) }()
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	session, err := client.Connect(context.Background(), clientTransport, nil)
+	if err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	for _, tool := range []string{"list_projects", "search", "list_milestones", "list_entities"} {
+		args := map[string]any{}
+		switch tool {
+		case "search":
+			args["text"] = "anything"
+		case "list_entities":
+			args["kind"] = "document"
+		}
+		res, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+			Name: tool, Arguments: args,
+		})
+		if err != nil {
+			t.Fatalf("%s: %v", tool, err)
+		}
+		if !res.IsError {
+			t.Errorf("%s answered as though nothing were wrong", tool)
+			continue
+		}
+		said := textOf(res)
+		if !strings.Contains(said, nowhere) {
+			t.Errorf("%s does not say where it looked: %s", tool, said)
+		}
+		if !strings.Contains(said, "MUSTER_REGISTRY") {
+			t.Errorf("%s does not say how to point it elsewhere: %s", tool, said)
+		}
+	}
+}
