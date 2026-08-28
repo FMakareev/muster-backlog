@@ -190,6 +190,39 @@ func TestTheContinuousIntegrationToolchainMatchesTheDocumentedOne(t *testing.T) 
 	}
 }
 
+// A Go tool installed with `go install` is compiled with the Go version this
+// job takes from go.mod, which quietly makes that tool's own go directive a
+// floor on this module's. golangci-lint v2.13.0 raised its to 1.26.0 while
+// go.mod declares 1.25.0, and the pipeline then died on "requires go >=
+// 1.26.0" before a single line of this project was compiled. Pinning an older
+// linter would have fixed it until the next time the linter moved.
+//
+// Nothing in the version pin shows that relationship, so this is what says it.
+func TestTheLinterIsNotBuiltFromSource(t *testing.T) {
+	content, err := os.ReadFile(".github/workflows/ci.yml")
+	if err != nil {
+		t.Fatalf("read the workflow: %v", err)
+	}
+	text := string(content)
+
+	for _, line := range strings.Split(text, "\n") {
+		if strings.Contains(line, "go install") && strings.Contains(line, "golangci-lint") {
+			t.Errorf("CI compiles golangci-lint with this project's Go, which ties the linter it can pin to the Go version go.mod declares: %s", strings.TrimSpace(line))
+		}
+	}
+
+	// And it does obtain it, at the pinned version rather than whatever the
+	// project happens to publish today.
+	if !strings.Contains(text, "releases/download/${GOLANGCI_VERSION}") {
+		t.Error("CI does not download the pinned golangci-lint release")
+	}
+
+	// A download is only the release that was pinned if something checks.
+	if !strings.Contains(text, "sha256sum --check") || !strings.Contains(text, "checksums.txt") {
+		t.Error("CI installs a downloaded golangci-lint without verifying it against the checksums published for that release")
+	}
+}
+
 // release-please only ever runs on a push to the branch it names, so naming
 // the wrong one means no release pull request is ever opened and nothing says
 // so. This is the check that would have caught it.

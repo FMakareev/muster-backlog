@@ -79,6 +79,8 @@ If you want to work on something, say so on the task before starting, so two peo
 
 See the [README](README.md) for the full prerequisite table. In short: Go 1.25+, Node 24+, pnpm 11+, the Wails v3 CLI, and `golangci-lint`.
 
+The Wails CLI is a `go install`. `golangci-lint` is not: it needs a newer Go than this project does, so on 1.25 that command fails and the README gives the one that fetches the release binary instead.
+
 ```sh
 git clone <this repository>
 cd muster-backlog

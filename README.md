@@ -92,12 +92,20 @@ If none of that finds it, it asks your login shell — `$SHELL -lic 'command -v 
 
 1.48.0 is the floor because that is the version the [format contract](<backlog/docs/doc-3 - Backlog.md-Format-Contract.md>) was measured against; 1.50.1 writes byte-identical files but reports two failures that 1.48.0 swallows, so it is what the author runs. Muster never relies on an exit code for a write whose result it can check.
 
-The two Go tools install themselves:
+The Wails CLI installs itself:
 
 ```sh
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
 ```
+
+`golangci-lint` is downloaded rather than built. `go install` compiles it with the Go you already have, and it asks for a newer one than this project does — v2.13.1 needs Go 1.26, Muster builds on 1.25 — so on the minimum Go in the table above that command fails before it starts, with `requires go >= 1.26.0`. Its own installer fetches the release binary and needs no Go at all:
+
+```sh
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.13.1/install.sh \
+  | sh -s -- -b "$(go env GOPATH)/bin" v2.13.1
+```
+
+On Go 1.26 or newer, `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1` works as well. CI takes the binary, so nothing there depends on which Go it was built with.
 
 The Wails CLI is itself a Wails program, so building it runs `pkg-config` for GTK 4 and WebKitGTK 6.0. On a machine that has GTK 3 instead — Ubuntu 24.04 among them — that first line fails before anything of this project is involved, complaining that `gtk4` is not in the pkg-config search path. Install it with the tag instead:
 
@@ -283,11 +291,7 @@ wails3 task lint      # golangci-lint, ESLint, Prettier, svelte-check
 wails3 task lint:fix  # apply every available autofix
 ```
 
-`golangci-lint` is the only tool not installed by the steps above:
-
-```sh
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-```
+`golangci-lint` is the only tool not installed by the steps above; [Prerequisites](#prerequisites) has the command.
 
 Frontend-only checks, from `frontend/`:
 
