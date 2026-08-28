@@ -55,7 +55,12 @@ func Version() string {
 // The Go version and the platform are on it because the two questions that
 // follow "which version?" in a bug report are "built with what?" and "running
 // where?", and asking a person to find those out is asking them to give up.
-func Line() string {
-	return fmt.Sprintf("muster %s (%s, %s/%s)",
-		Version(), runtime.Version(), runtime.GOOS, runtime.GOARCH)
+func Line() string { return LineFor("muster") }
+
+// LineFor is the same line for a program that is not the application itself.
+// Two binaries ship from this module and a version line that names the wrong
+// one is worse than none.
+func LineFor(program string) string {
+	return fmt.Sprintf("%s %s (%s, %s/%s)",
+		program, Version(), runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }

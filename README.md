@@ -164,7 +164,9 @@ Before trusting a build, walk the [smoke checklist](backlog/docs/doc-5%20-%20v0.
 
 ## Talking to an agent
 
-`muster mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It draws no window and needs none — an MCP client spawns it and talks over a pipe, whether or not the desktop application is open.
+**`muster-mcp`** is a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It draws no window and needs none — a client spawns it and talks over a pipe, whether or not the desktop application is open.
+
+It is a separate binary, and it has to be. The desktop application links a browser engine at load time, so `muster mcp` — which builds no window either — still cannot start inside a Flatpak sandbox, a container, or on a machine with no desktop, which is where agents run. `muster-mcp` links none of that: it is a static binary with no dynamic dependencies at all, and it ships beside the application in the package. `muster mcp` remains for a machine that has the desktop libraries anyway.
 
 Backlog.md already ships its own MCP server, and it is per-project: an agent gets one repository at a time. This one answers across every project you have registered, which is the only reason it exists.
 
@@ -177,12 +179,12 @@ Point a client at the binary:
 ```json
 {
   "mcpServers": {
-    "muster": { "command": "muster", "args": ["mcp"] }
+    "muster": { "command": "/usr/local/bin/muster-mcp" }
   }
 }
 ```
 
-For Claude Code, `claude mcp add --scope user muster -- muster mcp` does the same thing. Use the binary's full path unless `muster` is on the PATH your client will have — which, for anything started from a desktop launcher, it very likely is not.
+For Claude Code, `claude mcp add --scope user muster -- /usr/local/bin/muster-mcp` does the same thing. No arguments: a client should not have to know a subcommand. Use the full path unless `muster-mcp` is on the PATH your client will have — which, for anything started from a desktop launcher, it very likely is not.
 
 | Tool | Answers |
 | :-- | :-- |

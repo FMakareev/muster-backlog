@@ -24,6 +24,11 @@ release: "1"
 contents:
   - src: "./bin/muster"
     dst: "/usr/local/bin/muster"
+  # The MCP server. Beside the application, because that is where the
+  # connector looks, and shipped at all because the application itself cannot
+  # serve the protocol anywhere an agent runs: it links a browser engine.
+  - src: "./bin/muster-mcp"
+    dst: "/usr/local/bin/muster-mcp"
   - src: "./build/appicon.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/muster.png"
   - src: "./build/linux/muster.desktop"

@@ -16,12 +16,17 @@ import (
 
 	"github.com/FMakareev/muster-backlog/internal/backlog"
 	"github.com/FMakareev/muster-backlog/internal/backlogcli"
+	"github.com/FMakareev/muster-backlog/internal/buildinfo"
 	"github.com/FMakareev/muster-backlog/internal/registry"
 	"github.com/FMakareev/muster-backlog/internal/store"
 )
 
 // Version is reported to the client during initialisation.
-const Version = "0.1.0"
+//
+// From the build rather than written here. A constant meant a client was told
+// 0.1.0 by a binary that called itself 0.0.0, which is two numbers for one
+// thing and exactly what stamping the version was meant to end.
+func Version() string { return buildinfo.Version() }
 
 // instructions are sent at connection, before any tool is called.
 //
@@ -100,7 +105,7 @@ func (s *Server) MCP() *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "muster",
 		Title:   "Muster: every Backlog.md project at once",
-		Version: Version,
+		Version: Version(),
 	}, &mcp.ServerOptions{Instructions: instructions})
 
 	s.addReadTools(server)
