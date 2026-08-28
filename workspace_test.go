@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -69,4 +70,72 @@ func programsIn(script string) []string {
 		}
 	}
 	return programs
+}
+
+// An embed pattern is resolved by the compiler, so one that matches nothing is
+// not a missing asset at runtime — it is a package that does not build.
+// main.go embeds all:frontend/dist, which the frontend build generates and
+// .gitignore ignores, so on a clone with no build history every Go command
+// that touches package main failed outright: "pattern all:frontend/dist: no matching files
+// found". CI hit it in the lint step, and the test command CONTRIBUTING tells
+// a contributor to run before pushing failed the same way.
+//
+// The question this asks is the one that matters: not whether the pattern
+// resolves on this machine, where a previous build left the directory behind,
+// but whether it resolves for somebody who has just cloned. So it asks git
+// what is in the repository rather than asking the filesystem what is here.
+func TestEveryEmbeddedPathIsInTheRepository(t *testing.T) {
+	for _, file := range goFiles(t) {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatalf("read %s: %v", file, err)
+		}
+		for _, line := range strings.Split(string(content), "\n") {
+			directive := strings.TrimSpace(line)
+			if !strings.HasPrefix(directive, "//go:embed ") {
+				continue
+			}
+			for _, pattern := range strings.Fields(strings.TrimPrefix(directive, "//go:embed ")) {
+				// all: and $ only change which files inside a match are taken.
+				pattern = strings.TrimPrefix(strings.TrimPrefix(pattern, "all:"), "$")
+				// Patterns are relative to the file that carries them.
+				path := filepath.Join(filepath.Dir(file), pattern)
+
+				tracked, err := exec.Command("git", "ls-files", "--", path).Output()
+				if err != nil {
+					t.Skipf("git is not answering here: %v", err)
+				}
+				if len(strings.TrimSpace(string(tracked))) == 0 {
+					t.Errorf("%s embeds %q, and the repository contains nothing that matches it: a fresh clone cannot compile this package until something has been built", file, pattern)
+				}
+			}
+		}
+	}
+}
+
+// goFiles lists the module's own Go files, skipping the directories that hold
+// other people's.
+func goFiles(t *testing.T) []string {
+	t.Helper()
+	var files []string
+	err := filepath.WalkDir(".", func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case "node_modules", ".git", "frontend", "bin":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasSuffix(path, ".go") {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk the repository: %v", err)
+	}
+	return files
 }

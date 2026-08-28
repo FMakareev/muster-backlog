@@ -1,6 +1,16 @@
 # Build output
 bin
-frontend/dist
+# Contents rather than the directory itself: git will not re-include a file
+# whose parent directory is excluded, so `frontend/dist` alone would ignore the
+# placeholder below no matter what follows it.
+frontend/dist/*
+# ...except one placeholder. main.go embeds all:frontend/dist, and Go resolves
+# that at compile time: with the directory absent — or present and empty — no
+# Go command that builds package main works at all, so a fresh clone could
+# neither lint nor test until somebody built the frontend first. The tracked
+# file makes the pattern match. Nothing built ever reaches a binary through
+# it: a real build runs the frontend build first and fills the directory.
+!frontend/dist/.gitkeep
 
 # Dependencies (root and every workspace package)
 node_modules
