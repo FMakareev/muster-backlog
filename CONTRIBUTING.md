@@ -102,10 +102,10 @@ The hooks run most of this for you, but running it yourself is faster than findi
 
 ## Git hooks
 
-`pnpm install` installs them through the `prepare` script. To install them by hand:
+`pnpm install` installs them through the `prepare` script. lefthook is a workspace dependency, so nothing needs installing by hand first; to run it yourself:
 
 ```sh
-lefthook install
+pnpm exec lefthook install
 ```
 
 | Hook | What runs | Typical cost |

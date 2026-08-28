@@ -1,2 +1,14 @@
 packages:
   - frontend
+
+# What to do about a dependency's own install scripts. pnpm blocks them by
+# default and refuses to finish the install until the manifest decides, which
+# is the right default: an install script runs arbitrary code from a package
+# nobody read.
+#
+# lefthook's is declined. All it does is run `lefthook install -f`, which the
+# prepare script above it already does deliberately and visibly — and it skips
+# itself under CI in any case. Declining costs nothing and keeps one more
+# script from running on every install.
+allowBuilds:
+  lefthook: false
