@@ -14,7 +14,7 @@ info:
   # The application version, and the only place it is written: the build
   # stamps the binary from it and the .deb takes its version from it. The
   # annotation is how release-please finds the line to bump.
-  version: "0.0.0" # x-release-please-version
+  version: "1.0.0" # x-release-please-version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension
   #                               # If not set and Assets.car exists, defaults to "appicon"
