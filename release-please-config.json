@@ -12,7 +12,10 @@
       "draft": false,
       "prerelease": false,
       "extra-files": [
-        "build/config.yml"
+        {
+          "type": "generic",
+          "path": "build/config.yml"
+        }
       ],
       "changelog-sections": [
         {

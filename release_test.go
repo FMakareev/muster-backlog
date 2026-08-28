@@ -84,12 +84,14 @@ func TestTheReleaseConfigBumpsTheFileTheBuildReads(t *testing.T) {
 	}
 	var config struct {
 		Packages map[string]struct {
-			ReleaseType         string   `json:"release-type"`
-			ExtraFiles          []string `json:"extra-files"`
-			BumpMinorPreMajor   bool     `json:"bump-minor-pre-major"`
-			BumpPatchForMinor   bool     `json:"bump-patch-for-minor-pre-major"`
-			IncludeVInTag       bool     `json:"include-v-in-tag"`
-			IncludeComponentTag bool     `json:"include-component-in-tag"`
+			ReleaseType string `json:"release-type"`
+			// Raw, because an entry may be written either way and the
+			// difference between the two is the whole of this check.
+			ExtraFiles          []json.RawMessage `json:"extra-files"`
+			BumpMinorPreMajor   bool              `json:"bump-minor-pre-major"`
+			BumpPatchForMinor   bool              `json:"bump-patch-for-minor-pre-major"`
+			IncludeVInTag       bool              `json:"include-v-in-tag"`
+			IncludeComponentTag bool              `json:"include-component-in-tag"`
 		} `json:"packages"`
 	}
 	if err := json.Unmarshal(content, &config); err != nil {
@@ -100,10 +102,45 @@ func TestTheReleaseConfigBumpsTheFileTheBuildReads(t *testing.T) {
 	if !ok {
 		t.Fatal("the release config has no package for the repository root")
 	}
+	// Named as an object with an explicit updater, never as a bare string.
+	//
+	// A bare string is not a line edit. For a .yml file release-please pairs
+	// its annotation-driven updater with one that parses the YAML and writes
+	// it back out, and the second one wins the file: measured against this
+	// very config, thirty-nine lines became twelve. Every comment goes,
+	// including the x-release-please-version annotation the first updater
+	// needs; the top-level `version: '3'` — the Wails schema version, not the
+	// application's — is overwritten with the release number; and
+	// info.version keeps its old value and loses its quotes, so the Taskfile's
+	// sed matches nothing and every binary in that release reports an empty
+	// version.
+	//
+	// `generic` is the line edit: it changes the annotated line and nothing
+	// else.
 	found := false
-	for _, file := range root.ExtraFiles {
-		if file == "build/config.yml" {
-			found = true
+	for _, entry := range root.ExtraFiles {
+		var bare string
+		if err := json.Unmarshal(entry, &bare); err == nil {
+			if bare == "build/config.yml" {
+				found = true
+				t.Error("build/config.yml is listed as a bare string, which pairs the line edit with a YAML round-trip that wins the file")
+			}
+			continue
+		}
+		var file struct {
+			Type string `json:"type"`
+			Path string `json:"path"`
+		}
+		if err := json.Unmarshal(entry, &file); err != nil {
+			t.Errorf("an extra-files entry is neither a string nor an object: %s", entry)
+			continue
+		}
+		if file.Path != "build/config.yml" {
+			continue
+		}
+		found = true
+		if file.Type != "generic" {
+			t.Errorf("build/config.yml is updated as %q; anything but \"generic\" re-serialises the file and destroys the annotation, the comments and the schema version", file.Type)
 		}
 	}
 	if !found {
