@@ -28,6 +28,25 @@ func pretendContainer(t *testing.T, home string) {
 	sharedBinDir = func() string { return filepath.Join(home, ".local", "bin") }
 }
 
+// stubClient puts a stand-in for an agent client's own program on PATH.
+//
+// Planning for a "cli" client looks that program up, so a test that plans one
+// otherwise asks whether the machine running it has Claude Code installed.
+// That is not what any of these are about, and it is false on every CI runner:
+// the plan test failed there with "claude was not found" while the thing it
+// checks was working perfectly.
+//
+// PATH is replaced rather than prepended, so a machine that does have the
+// client cannot be the reason this passes.
+func stubClient(t *testing.T, name string) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatalf("write the stand-in client: %v", err)
+	}
+	t.Setenv("PATH", dir)
+}
+
 func writeServer(t *testing.T, dir string) string {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -125,6 +144,7 @@ func TestThePlanSaysWhereTheCommandWillRun(t *testing.T) {
 	home := t.TempDir()
 	pretendContainer(t, home)
 	writeServer(t, filepath.Join(home, ".local", "bin"))
+	stubClient(t, "claude")
 
 	s := &BoardService{}
 	plan := s.AgentPlan("claude-code", false)
