@@ -5,11 +5,20 @@ name: release-please
 # pull request open with the next version and the changelog entries it implies.
 # Merging that pull request is what cuts a release: it tags, writes
 # CHANGELOG.md, updates build/config.yml — the one place the version is
-# written, which the build stamps into the binary — and publishes a GitHub
+# written, which the build stamps into the binary — and creates a GitHub
 # release.
 #
-# Building the artefacts that hang off that release is a separate workflow, so
-# a failure to package cannot leave a half-made tag behind.
+# The artefacts are built here too, in a second job, and not in a workflow of
+# their own. That is not a preference: a release created with GITHUB_TOKEN
+# raises no `release` event and its tag raises no `push` event, so a workflow
+# keyed on either would sit there and never run, silently. A job that hangs
+# off this one by `needs` runs in the same event, and reads the tag straight
+# out of the outputs above it.
+#
+# The release is cut as a draft and published only once the artefacts are
+# attached. Nobody ever sees a version with nothing to download, and a
+# packaging run that fails leaves a draft to re-run rather than a public
+# release to retract.
 
 on:
   push:
@@ -25,6 +34,12 @@ permissions:
 concurrency:
   group: release-please
   cancel-in-progress: false
+
+env:
+  # The same pins as ci.yml. Two workflows building the same project with
+  # different toolchains would produce artefacts nothing had checked.
+  WAILS_VERSION: v3.0.0-beta.8
+  NODE_VERSION: "24"
 
 jobs:
   release-please:
@@ -42,8 +57,125 @@ jobs:
           manifest-file: .release-please-manifest.json
 
     outputs:
-      # Whether this push produced a release, and which tag, so the workflow
-      # that builds the artefacts can hang off it.
+      # Whether this push produced a release, and which tag, so the job that
+      # builds the artefacts can hang off it.
       released: ${{ steps.release.outputs.release_created }}
       tag: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
+
+  artefacts:
+    name: build, attach and publish
+    needs: release-please
+    if: needs.release-please.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    # Packaging is slower than the pipeline: the AppImage bundles a browser
+    # engine. Generous against a hang, not a budget.
+    timeout-minutes: 45
+    permissions:
+      # Uploading the assets, and clearing the draft flag.
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag }}
+      VERSION: ${{ needs.release-please.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      # The commit this push carried, which is the release commit: the merge
+      # of the release pull request is what triggered this run, so what is
+      # checked out here holds the bumped build/config.yml and every artefact
+      # carries that version.
+      #
+      # Not the tag. A draft release records a tag name but does not create
+      # the tag — GitHub creates it when the release is published, which is
+      # the last step below — so checking out the tag would fail here for a
+      # reason that has nothing to do with the release.
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # ubuntu-latest has no WebKitGTK 6.0, so this is the GTK 3 path. The
+      # build detects which is present and picks the tag itself.
+      - name: Install the GTK 3 development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install the Wails CLI
+        run: |
+          go install -tags gtk3 \
+            "github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}"
+
+      - name: Install the workspace
+        run: pnpm install --frozen-lockfile
+
+      # The same command a person runs. It produces the .deb, the .rpm, the
+      # Arch package and the AppImage, and builds both binaries on the way.
+      - name: Package
+        run: wails3 task package
+
+      # Nothing is uploaded until the artefacts say they are the release being
+      # made. The version travels from build/config.yml through the Taskfile
+      # into the binary, and a mismatch anywhere along that path would ship a
+      # release that cannot identify itself.
+      - name: The artefacts report the version being released
+        run: |
+          for binary in ./bin/muster ./bin/muster-mcp; do
+            reported=$("${binary}" --version)
+            echo "${binary}: ${reported}"
+            case "${reported}" in
+              *" ${VERSION} "*) ;;
+              *) echo "::error::${binary} does not report ${VERSION}"; exit 1 ;;
+            esac
+          done
+
+          # Extracted rather than mounted: a runner has no FUSE, so running
+          # the AppImage directly would fail for a reason that has nothing to
+          # do with the AppImage.
+          work=$(mktemp -d)
+          cp ./bin/muster-*.AppImage "${work}/"
+          (cd "${work}" && ./muster-*.AppImage --appimage-extract >/dev/null)
+          reported=$("${work}"/squashfs-root/AppRun --version)
+          echo "AppImage: ${reported}"
+          case "${reported}" in
+            *" ${VERSION} "*) ;;
+            *) echo "::error::the AppImage does not report ${VERSION}"; exit 1 ;;
+          esac
+
+      # Packaging names its output after the application, not the release, so
+      # every version would download as the same filename and sit in a
+      # downloads folder indistinguishable from the last one.
+      - name: Name the artefacts after the version
+        run: |
+          mkdir -p dist
+          cp "bin/muster.deb"           "dist/muster_${VERSION}_amd64.deb"
+          cp "bin/muster.rpm"           "dist/muster-${VERSION}.x86_64.rpm"
+          cp "bin/muster.pkg.tar.zst"   "dist/muster-${VERSION}-x86_64.pkg.tar.zst"
+          cp bin/muster-*.AppImage      "dist/muster-${VERSION}-x86_64.AppImage"
+          # On its own, because an agent client may run somewhere the desktop
+          # application cannot be installed at all — a sandbox, a container, a
+          # machine with no desktop. It is static and depends on nothing.
+          cp "bin/muster-mcp"           "dist/muster-mcp-${VERSION}-linux-amd64"
+          # Plain names, so `sha256sum -c SHA256SUMS` works in a downloads
+          # folder without anybody editing the file first.
+          (cd dist && sha256sum muster* > SHA256SUMS)
+          ls -l dist
+
+      - name: Attach them to the release
+        run: gh release upload "${TAG}" dist/* --clobber
+
+      # Last. Until this line the release is a draft: the version exists, the
+      # tag exists, and nobody has been offered a download that is not there.
+      - name: Publish the release
+        run: gh release edit "${TAG}" --draft=false

@@ -212,3 +212,91 @@ func TestThePackagesNameAMaintainer(t *testing.T) {
 		t.Error("not every packaging task sets PRODUCT_VERSION, so some package takes an unset variable as its version")
 	}
 }
+
+// A release that builds nothing reaches nobody, and the ways this goes wrong
+// are all quiet ones: a job that never runs, a version published with no
+// downloads, artefacts nobody can check.
+func TestTheReleaseWorkflowAttachesArtefactsBeforePublishing(t *testing.T) {
+	w := readWorkflow(t, ".github/workflows/release-please.yml")
+
+	job, ok := w.Jobs["artefacts"]
+	if !ok {
+		t.Fatal("the release workflow builds no artefacts, so a release is a tag and a changelog")
+	}
+
+	// In this workflow rather than one of its own, and that is not a style
+	// choice. A release created with GITHUB_TOKEN raises no `release` event
+	// and its tag raises no `push` event, so a workflow keyed on either would
+	// never run and nothing would say why. `needs` is what makes it run.
+	if !strings.Contains(toText(job.Needs), "release-please") {
+		t.Error("the artefacts job does not hang off the release job, so nothing gives it the tag")
+	}
+	if !strings.Contains(job.If, "released") {
+		t.Errorf("the artefacts job is not conditioned on a release having happened: %q", job.If)
+	}
+
+	// The order is the promise: everything is attached, and only then is the
+	// release made public.
+	uploaded, published, checksums := -1, -1, false
+	for i, step := range job.Steps {
+		if strings.Contains(step.Run, "sha256sum") {
+			checksums = true
+		}
+		if strings.Contains(step.Run, "gh release upload") {
+			uploaded = i
+		}
+		if strings.Contains(step.Run, "--draft=false") {
+			published = i
+		}
+	}
+	if uploaded < 0 {
+		t.Error("nothing is uploaded to the release")
+	}
+	if published < 0 {
+		t.Error("the release is never taken out of draft, so it stays invisible")
+	}
+	if uploaded >= 0 && published >= 0 && published < uploaded {
+		t.Error("the release is published before its artefacts are attached, which is the window this shape exists to close")
+	}
+	if !checksums {
+		t.Error("no checksums are published, so a download cannot be verified")
+	}
+
+	// Cutting the release as a draft is the other half of it. Without this
+	// the release is public the moment it is made and the ordering above buys
+	// nothing.
+	content, err := os.ReadFile("release-please-config.json")
+	if err != nil {
+		t.Fatalf("read the release config: %v", err)
+	}
+	var config struct {
+		Packages map[string]struct {
+			Draft bool `json:"draft"`
+		} `json:"packages"`
+	}
+	if err := json.Unmarshal(content, &config); err != nil {
+		t.Fatalf("the release config is not valid JSON: %v", err)
+	}
+	if !config.Packages["."].Draft {
+		t.Error("the release is created public, so it is visible with nothing attached while the artefacts are still building")
+	}
+}
+
+// Two workflows building the same project with different toolchains would ship
+// artefacts nothing had checked.
+func TestTheReleaseBuildUsesTheToolchainThePipelineChecked(t *testing.T) {
+	ci := readWorkflow(t, ".github/workflows/ci.yml")
+	release := readWorkflow(t, ".github/workflows/release-please.yml")
+
+	for _, name := range []string{"WAILS_VERSION", "NODE_VERSION"} {
+		pipeline, _ := ci.Env[name].(string)
+		shipped, _ := release.Env[name].(string)
+		if pipeline == "" {
+			t.Errorf("ci.yml does not pin %s", name)
+			continue
+		}
+		if shipped != pipeline {
+			t.Errorf("the pipeline builds with %s %q and the release builds with %q", name, pipeline, shipped)
+		}
+	}
+}

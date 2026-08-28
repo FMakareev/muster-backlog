@@ -21,8 +21,11 @@ type workflow struct {
 	On   map[string]any `yaml:"on"`
 	Env  map[string]any `yaml:"env"`
 	Jobs map[string]struct {
-		RunsOn         string `yaml:"runs-on"`
-		TimeoutMinutes int    `yaml:"timeout-minutes"`
+		RunsOn         string            `yaml:"runs-on"`
+		TimeoutMinutes int               `yaml:"timeout-minutes"`
+		Needs          any               `yaml:"needs"`
+		If             string            `yaml:"if"`
+		Env            map[string]string `yaml:"env"`
 		Steps          []struct {
 			Name string            `yaml:"name"`
 			Uses string            `yaml:"uses"`

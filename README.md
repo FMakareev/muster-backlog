@@ -75,6 +75,59 @@ Muster is worth having when the answer to _what is happening across everything I
 - **Not a server, a team tool, or a sync service.** One machine, one person, no accounts, no network.
 - **Not a time tracker**, and not an estimation tool.
 
+## Install
+
+Every release carries built packages for **Linux on x86_64**, produced by CI from the release commit rather than from anybody's machine. Pick the one your distribution speaks; they all install the same two programs, `muster` and `muster-mcp`.
+
+```sh
+# Debian, Ubuntu and derivatives
+sudo apt install ./muster_<version>_amd64.deb
+
+# Fedora, RHEL, openSUSE
+sudo dnf install ./muster-<version>.x86_64.rpm
+
+# Arch and derivatives
+sudo pacman -U ./muster-<version>-x86_64.pkg.tar.zst
+```
+
+Or take the AppImage, which needs no package manager and no root:
+
+```sh
+chmod +x muster-<version>-x86_64.AppImage
+./muster-<version>-x86_64.AppImage
+```
+
+Upgrading is the same command with the newer file; the packages replace the installed version in place. Your projects are not touched by any of it — Muster stores nothing but its own registry and settings under `~/.config/muster`, and the tasks themselves live in your repositories, written only through the `backlog` CLI.
+
+### Verify what you downloaded
+
+Every release publishes `SHA256SUMS` beside the artefacts. From the folder you downloaded into:
+
+```sh
+sha256sum --ignore-missing -c SHA256SUMS
+```
+
+`--ignore-missing` because the file lists every artefact of the release and you will have downloaded one or two of them. Without it, the files you did not take are reported as failures.
+
+### The MCP server on its own
+
+`muster-mcp` is what an agent client spawns, and the packages install it. It is also published as a separate file, `muster-mcp-<version>-linux-amd64`, because an agent may run somewhere the desktop application cannot be installed at all — inside a Flatpak sandbox, inside a container, or on a machine with no desktop. It is statically linked and depends on nothing, so it runs wherever it is put:
+
+```sh
+chmod +x muster-mcp-<version>-linux-amd64
+mv muster-mcp-<version>-linux-amd64 ~/.local/bin/muster-mcp
+```
+
+See [Talking to an agent](#talking-to-an-agent) for what to do with it.
+
+### What is not built
+
+**macOS and Windows.** Muster is a Wails application and the scaffolding for both is in the repository, but nothing builds them, nothing tests them, and no release carries them. Treat them as unknown rather than as unsupported.
+
+**Linux on arm64.** Same: it may well build, and nobody has.
+
+Building from source is covered below, and works anywhere the prerequisites do.
+
 ## Prerequisites
 
 | Requirement                                            | Version used                      |
@@ -274,7 +327,11 @@ Its **time budget is ten minutes** with the caches warm. Measured on one machine
 
 `muster --version` answers, and so does Preferences, which shows the same number beside the Backlog.md CLI's and copies both for a bug report.
 
-The version is written in exactly one place, `build/config.yml`. The build stamps the binary from it, the `.deb` takes its version from it, and [release-please](https://github.com/googleapis/release-please) bumps it: it reads the Conventional Commits on the default branch, keeps a release pull request open with the next version and the changelog entries it implies, and merging that pull request tags the release. A build that was never stamped calls itself `dev` rather than claiming a number nobody released.
+The version is written in exactly one place, `build/config.yml`. The build stamps the binary from it, the `.deb` takes its version from it, and [release-please](https://github.com/googleapis/release-please) bumps it: it reads the Conventional Commits on the default branch, keeps a release pull request open with the next version and the changelog entries it implies, and merging that pull request cuts the release. A build that was never stamped calls itself `dev` rather than claiming a number nobody released.
+
+Merging it does not publish anything yet. The release is created as a draft; a second job packages the release commit, refuses to go on unless every binary reports the version being released, attaches the artefacts with their checksums, and only then clears the draft flag. So a version is never visible with nothing to download, and a packaging run that fails leaves a draft to re-run rather than a public release to retract.
+
+Both halves live in one workflow rather than two, and that is not tidiness: a release created with `GITHUB_TOKEN` raises no `release` event and its tag raises no `push` event, so a workflow keyed on either would sit there and never run.
 
 What a version number promises while the major version is still zero — which releases may break something, and what counts as breaking — is written at the top of [CHANGELOG.md](CHANGELOG.md).
 
