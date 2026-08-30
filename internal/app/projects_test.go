@@ -417,3 +417,62 @@ func TestNoFolderDialogWithoutADesktop(t *testing.T) {
 		t.Errorf("ChooseFolder returned %q with no dialog to open", got)
 	}
 }
+
+// A write must not turn the folder's own name into an override.
+//
+// The whole entry is sent on every write, and the display name of a project
+// with no override is the folder name - so hiding one sent that name back and
+// the registry wrote it down. Rename the folder afterwards and the registry
+// keeps insisting on the old name, for no reason anyone can see. The Projects
+// screen guards its rename field against exactly this; its hide button did
+// not, and by the time this was found two entries in the author's own registry
+// carried a name identical to their folder.
+//
+// Guarding here rather than in the interface is the point: there is now more
+// than one place that offers hiding, and a rule kept in each of them is a rule
+// one of them will miss.
+func TestAWriteDoesNotFreezeTheFolderName(t *testing.T) {
+	one := newProject(t, "one", map[string]string{
+		"task-1 - a.md": task("TASK-1", "A", "To Do"),
+	})
+	path := withRegistry(t, one)
+	s := startService(t, path)
+
+	view := s.Projects()[0]
+	if view.Name != "one" {
+		t.Fatalf("display name is %q, want the folder name", view.Name)
+	}
+
+	// Exactly what a hide button sends: the entry as it stands, one field
+	// changed.
+	if result := s.SaveProject(view.Path, app.ProjectEdit{
+		Name: view.Name, Colour: view.Colour, Hidden: true,
+	}); !result.OK {
+		t.Fatalf("SaveProject: %+v", result.Problem)
+	}
+
+	written, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading the registry back: %v", err)
+	}
+	if strings.Contains(string(written), "name:") {
+		t.Errorf("hiding wrote an override the person never asked for:\n%s", written)
+	}
+	if !strings.Contains(string(written), "hidden: true") {
+		t.Errorf("hiding did not take:\n%s", written)
+	}
+
+	// A name that is genuinely a person's own is still written down.
+	if result := s.SaveProject(view.Path, app.ProjectEdit{
+		Name: "Something else", Hidden: true,
+	}); !result.OK {
+		t.Fatalf("SaveProject: %+v", result.Problem)
+	}
+	written, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading the registry back: %v", err)
+	}
+	if !strings.Contains(string(written), "name: Something else") {
+		t.Errorf("a real override was dropped:\n%s", written)
+	}
+}

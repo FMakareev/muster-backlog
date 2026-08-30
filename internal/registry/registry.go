@@ -242,6 +242,22 @@ func expand(path string) (string, error) {
 	return abs, nil
 }
 
+// Override is displayName's inverse: the name worth writing down.
+//
+// A name equal to the folder's own is not an override, it is the default
+// spelled out, and writing it freezes the folder name into the file - rename
+// the folder and the registry keeps insisting on the old one. Whatever rewrites
+// an entry sends every field back, including a display name it never chose, so
+// the rule belongs here where every write passes rather than in each control
+// that happens to offer one.
+func Override(name, path string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" || trimmed == filepath.Base(strings.TrimSpace(path)) {
+		return ""
+	}
+	return trimmed
+}
+
 // displayName falls back to the folder name, which is what a person would call
 // the project anyway.
 func displayName(name, path string) string {

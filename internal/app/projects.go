@@ -137,7 +137,7 @@ func (s *BoardService) AddProject(path string, edit ProjectEdit) WriteResult {
 		registry.Add(s.RegistryPath(), registry.Entry{
 			// Written as given, so a person's ~ stays a ~ in their own file.
 			Path:   strings.TrimSpace(path),
-			Name:   strings.TrimSpace(edit.Name),
+			Name:   registry.Override(edit.Name, path),
 			Colour: strings.TrimSpace(edit.Colour),
 			Hidden: edit.Hidden,
 		}))
@@ -152,7 +152,7 @@ func (s *BoardService) SaveProject(path string, edit ProjectEdit) WriteResult {
 	return s.registryWrite("The project could not be changed", path,
 		registry.Update(s.RegistryPath(), path, registry.Entry{
 			Path:   written,
-			Name:   strings.TrimSpace(edit.Name),
+			Name:   registry.Override(edit.Name, written),
 			Colour: strings.TrimSpace(edit.Colour),
 			Hidden: edit.Hidden,
 		}))
