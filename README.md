@@ -309,7 +309,7 @@ A milestone can also be made wherever one is chosen — the create form, the tas
 
 Milestones are managed from the same screen: added, renamed, and retired. Retiring one is where the care goes, because whichever command does it the file ends up in `archive/milestones` — the real choice is what becomes of the tasks that named it, and leaving them alone, clearing them and moving them elsewhere are three different things to a plan. The form says how many tasks are affected and makes the choice explicit.
 
-An entry may also carry `hidden: true`, which keeps a project registered and loaded but out of the board, the lists, search and the figures.
+An entry may also carry `hidden: true`, which keeps a project registered and loaded but out of the board, the lists, search and the figures. Hiding is offered where you are when you want it: **hover a project in the roll and press `hide`**, and the roll's foot then says how many are put away and gives each of them back. The Projects screen offers the same thing, and the two write the same entry. Hiding is a display choice, not an unregistering — the project is still read from disk, so bringing it back is instant rather than a rescan.
 
 Muster finds a project's data directory the way the Backlog.md CLI does: `backlog/`, then `.backlog/`, then a custom path named by `backlog_directory` in a root `backlog.config.yml`. A registered folder that holds no Backlog.md project is shown as such rather than dropped, and never prevents the others from loading.
 

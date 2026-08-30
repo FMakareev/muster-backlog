@@ -1,7 +1,7 @@
 <script lang="ts">
   import { BoardService } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app";
   import type { ProjectView } from "../../bindings/github.com/FMakareev/muster-backlog/internal/app/models";
-  import { milestones, projects, refresh } from "./board";
+  import { milestones, projects, refresh, setProjectHidden } from "./board";
   import AddProject from "./AddProject.svelte";
   import { projectColour } from "./colour";
   import Milestones from "./Milestones.svelte";
@@ -29,13 +29,13 @@
 
   async function save(
     project: ProjectView,
-    change: { name?: string; colour?: string; hidden?: boolean },
+    change: { name?: string; colour?: string },
   ): Promise<void> {
     busy = project.path;
     const result = await BoardService.SaveProject(project.path, {
       name: change.name ?? project.name,
       colour: change.colour ?? project.colour,
-      hidden: change.hidden ?? project.hidden,
+      hidden: project.hidden,
     });
     busy = "";
     if (!result.ok) {
@@ -46,6 +46,14 @@
       );
     }
     await refresh();
+  }
+
+  // Hiding goes through the shared write rather than through save(): the roll
+  // offers it too, and the two must not drift apart.
+  async function hide(project: ProjectView, hidden: boolean): Promise<void> {
+    busy = project.path;
+    await setProjectHidden(project, hidden);
+    busy = "";
   }
 
   async function move(project: ProjectView, by: number): Promise<void> {
@@ -234,7 +242,7 @@
               class="min-h-6 font-mono text-data text-chalk-faint hover:text-chalk"
               aria-pressed={project.hidden}
               disabled={busy === project.path}
-              onclick={() => save(project, { hidden: !project.hidden })}
+              onclick={() => hide(project, !project.hidden)}
             >
               {project.hidden ? "show" : "hide"}
             </button>

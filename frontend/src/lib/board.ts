@@ -15,6 +15,7 @@ import {
   WindowBehaviour,
 } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
 import type { Settings } from "../../bindings/github.com/FMakareev/muster-backlog/internal/settings/models";
+import { notify } from "./notices";
 
 /**
  * Backend state, mirrored into nanostores.
@@ -209,6 +210,30 @@ export async function applyWrite(
     whenFailed(`${result.problem.title}: ${result.problem.detail}`);
   }
   await refresh();
+}
+
+/**
+ * Hide a project, or bring it back.
+ *
+ * One function for both places that offer it. The registry entry is rewritten
+ * whole, so hiding one means sending its name and colour back untouched, and
+ * two copies of that would be two chances to disagree about what untouched
+ * means. Hiding is a display choice: the project stays registered and stays
+ * loaded, so coming back costs nothing.
+ */
+export async function setProjectHidden(
+  project: ProjectView,
+  hidden: boolean,
+): Promise<void> {
+  await applyWrite(
+    () =>
+      BoardService.SaveProject(project.path, {
+        name: project.name,
+        colour: project.colour,
+        hidden,
+      }),
+    notify,
+  );
 }
 
 /** Let screens that fetch their own data know a project was reloaded. */
