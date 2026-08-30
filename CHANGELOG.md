@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/FMakareev/muster-backlog/compare/v1.0.0...v1.1.0) (2026-08-30)
+
+
+### Added
+
+* **projects:** offer hiding where the projects are listed ([d0e31bd](https://github.com/FMakareev/muster-backlog/commit/d0e31bd8075f498eb65f698cdee4e063d92ec41b))
+
+
+### Fixed
+
+* **projects:** stop a write from freezing the folder name ([d22ec4e](https://github.com/FMakareev/muster-backlog/commit/d22ec4e02b3ea60e15ecd0f658b2ecd4e9bf5e01))
+* **release:** publish the release outright, not as a draft ([f44add0](https://github.com/FMakareev/muster-backlog/commit/f44add093af1abcf629c6751c8584eeac8aaf263))
+
+
+### Documentation
+
+* state the promise a major version now makes ([d55903e](https://github.com/FMakareev/muster-backlog/commit/d55903eed9cb6ec2238fe318e9f30f30bb4adde2))
+
 ## 1.0.0 (2026-08-28)
 
 
